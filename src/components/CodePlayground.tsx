@@ -15,6 +15,13 @@ import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 
+// Vercel Analytics custom events
+const trackEvent = (name: string, properties?: Record<string, any>) => {
+  if (typeof window !== 'undefined' && (window as any).va) {
+    (window as any).va('track', name, properties);
+  }
+};
+
 const CodePlayground = () => {
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
@@ -84,6 +91,12 @@ compiler_version = ">=0.31.0"
     const example = noirExamples.find(ex => ex.id === exampleId);
     if (!example) return;
 
+    // Track example loading
+    trackEvent('example_loaded', { 
+      example_id: exampleId, 
+      example_name: example.name 
+    });
+
     // Update the main.nr file with the example code
     setFiles(prev => ({
       ...prev,
@@ -141,6 +154,12 @@ compiler_version = ">=0.31.0"
     setProofData(null);
     setConsoleMessages([]);
 
+    // Track compilation attempt
+    trackEvent('compilation_started', { 
+      prove_and_verify: proveAndVerify,
+      has_inputs: Object.keys(inputs).length > 0 
+    });
+
     // Clear any existing queue and timeout
     stepQueueRef.current = [];
     if (stepTimeoutRef.current) {
@@ -163,9 +182,24 @@ compiler_version = ">=0.31.0"
       // NoirService handles error display through steps, just set proof data if successful
       if (!result.error) {
         setProofData(result);
+        // Track successful compilation
+        trackEvent('compilation_success', { 
+          prove_and_verify: proveAndVerify,
+          execution_time: result.executionTime 
+        });
+      } else {
+        // Track compilation error
+        trackEvent('compilation_error', { 
+          error_type: 'execution_error' 
+        });
       }
     } catch (error) {
       addConsoleMessage('error', `Execution Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
+      // Track compilation error
+      trackEvent('compilation_error', { 
+        error_type: 'exception',
+        error_message: error instanceof Error ? error.message : 'unknown' 
+      });
     } finally {
       setIsRunning(false);
     }
@@ -174,6 +208,8 @@ compiler_version = ">=0.31.0"
   const handleCopy = (content: string, type: string) => {
     navigator.clipboard.writeText(content);
     addConsoleMessage('info', `${type} copied to clipboard`);
+    // Track copy actions
+    trackEvent('content_copied', { content_type: type });
   };
 
   const handleDownloadProof = () => {
@@ -750,7 +786,7 @@ compiler_version = ">=0.31.0"
           </a> {" "}
           with ☕️
           . Contribute on{" "}
-          <a href="https://github.com/0xandee/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
             GitHub
           </a>
         </span>
