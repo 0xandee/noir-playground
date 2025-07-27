@@ -14,7 +14,6 @@ import {
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
-import { track } from '@vercel/analytics';
 
 const CodePlayground = () => {
   const [activeFile, setActiveFile] = useState("main.nr");
@@ -85,12 +84,6 @@ compiler_version = ">=0.31.0"
     const example = noirExamples.find(ex => ex.id === exampleId);
     if (!example) return;
 
-    // Track example loading
-    track('example_loaded', { 
-      example_id: exampleId, 
-      example_name: example.name 
-    });
-
     // Update the main.nr file with the example code
     setFiles(prev => ({
       ...prev,
@@ -148,12 +141,6 @@ compiler_version = ">=0.31.0"
     setProofData(null);
     setConsoleMessages([]);
 
-    // Track compilation attempt
-    track('compilation_started', { 
-      prove_and_verify: proveAndVerify,
-      has_inputs: Object.keys(inputs).length > 0 
-    });
-
     // Clear any existing queue and timeout
     stepQueueRef.current = [];
     if (stepTimeoutRef.current) {
@@ -176,24 +163,9 @@ compiler_version = ">=0.31.0"
       // NoirService handles error display through steps, just set proof data if successful
       if (!result.error) {
         setProofData(result);
-        // Track successful compilation
-        track('compilation_success', { 
-          prove_and_verify: proveAndVerify,
-          execution_time: result.executionTime 
-        });
-      } else {
-        // Track compilation error
-        track('compilation_error', { 
-          error_type: 'execution_error' 
-        });
       }
     } catch (error) {
       addConsoleMessage('error', `Execution Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
-      // Track compilation error
-      track('compilation_error', { 
-        error_type: 'exception',
-        error_message: error instanceof Error ? error.message : 'unknown' 
-      });
     } finally {
       setIsRunning(false);
     }
@@ -202,8 +174,6 @@ compiler_version = ">=0.31.0"
   const handleCopy = (content: string, type: string) => {
     navigator.clipboard.writeText(content);
     addConsoleMessage('info', `${type} copied to clipboard`);
-    // Track copy actions
-    track('content_copied', { content_type: type });
   };
 
   const handleDownloadProof = () => {
