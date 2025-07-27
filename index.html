@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noir Playground</title>
+    <meta name="description" content="Interactive Noir zero-knowledge proof development environment with Monaco editor integration. Write, compile, and test ZK circuits directly in your browser with real-time feedback." />
+    <meta name="keywords" content="noir, zero-knowledge, zk-proofs, cryptography, blockchain, privacy, circuit development, monaco editor, playground, aztec, proof systems" />
+    <meta name="author" content="Noir Playground Contributors" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://noir-playground.app/" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="application-name" content="Noir Playground" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+
+    <!-- OpenGraph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://noir-playground.app/" />
+    <meta property="og:title" content="Noir Playground - ZK Proof Development Environment" />
+    <meta property="og:description" content="Interactive browser-based environment for developing zero-knowledge proofs with Noir. Features Monaco editor, real-time compilation, and proof generation." />
+    <meta property="og:image" content="https://noir-playground.app/noir-playground-og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Noir Playground - Zero-Knowledge Proof Development" />
+    <meta property="og:site_name" content="Noir Playground" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://noir-playground.app/" />
+    <meta name="twitter:title" content="Noir Playground - ZK Proof Development Environment" />
+    <meta name="twitter:description" content="Interactive browser-based environment for developing zero-knowledge proofs with Noir. Features Monaco editor, real-time compilation, and proof generation." />
+    <meta name="twitter:image" content="https://noir-playground.app/noir-playground-twitter.png" />
+    <meta name="twitter:image:alt" content="Noir Playground Interface" />
+
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "Noir Playground",
+      "description": "Interactive browser-based environment for developing zero-knowledge proofs with Noir programming language",
+      "url": "https://noir-playground.app",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Web Browser",
+      "programmingLanguage": ["Noir", "TypeScript", "JavaScript"],
+      "creator": {
+        "@type": "Organization",
+        "name": "Noir Playground Contributors"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Monaco Editor with Noir syntax highlighting",
+        "Real-time circuit compilation",
+        "Zero-knowledge proof generation",
+        "Interactive development environment",
+        "Multi-file project support"
+      ]
+    }
+    </script>
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
