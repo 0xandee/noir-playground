@@ -2,9 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": "vite",
-  "analytics": {
-    "enable": true
-  },
   "headers": [
     {
       "source": "/(.*)",

@@ -14,13 +14,7 @@ import {
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
-
-// Vercel Analytics custom events
-const trackEvent = (name: string, properties?: Record<string, any>) => {
-  if (typeof window !== 'undefined' && (window as any).va) {
-    (window as any).va('track', name, properties);
-  }
-};
+import { track } from '@vercel/analytics';
 
 const CodePlayground = () => {
   const [activeFile, setActiveFile] = useState("main.nr");
@@ -92,7 +86,7 @@ compiler_version = ">=0.31.0"
     if (!example) return;
 
     // Track example loading
-    trackEvent('example_loaded', { 
+    track('example_loaded', { 
       example_id: exampleId, 
       example_name: example.name 
     });
@@ -155,7 +149,7 @@ compiler_version = ">=0.31.0"
     setConsoleMessages([]);
 
     // Track compilation attempt
-    trackEvent('compilation_started', { 
+    track('compilation_started', { 
       prove_and_verify: proveAndVerify,
       has_inputs: Object.keys(inputs).length > 0 
     });
@@ -183,20 +177,20 @@ compiler_version = ">=0.31.0"
       if (!result.error) {
         setProofData(result);
         // Track successful compilation
-        trackEvent('compilation_success', { 
+        track('compilation_success', { 
           prove_and_verify: proveAndVerify,
           execution_time: result.executionTime 
         });
       } else {
         // Track compilation error
-        trackEvent('compilation_error', { 
+        track('compilation_error', { 
           error_type: 'execution_error' 
         });
       }
     } catch (error) {
       addConsoleMessage('error', `Execution Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
       // Track compilation error
-      trackEvent('compilation_error', { 
+      track('compilation_error', { 
         error_type: 'exception',
         error_message: error instanceof Error ? error.message : 'unknown' 
       });
@@ -209,7 +203,7 @@ compiler_version = ">=0.31.0"
     navigator.clipboard.writeText(content);
     addConsoleMessage('info', `${type} copied to clipboard`);
     // Track copy actions
-    trackEvent('content_copied', { content_type: type });
+    track('content_copied', { content_type: type });
   };
 
   const handleDownloadProof = () => {
