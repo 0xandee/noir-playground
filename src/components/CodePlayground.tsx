@@ -750,7 +750,7 @@ compiler_version = ">=0.31.0"
           </a> {" "}
           with ☕️
           . Contribute on{" "}
-          <a href="https://github.com/0xandee/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+          <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
             GitHub
           </a>
         </span>
