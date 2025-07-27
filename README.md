@@ -6,7 +6,7 @@ A browser-based Noir zero-knowledge proof development environment with Monaco ed
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-blue)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB)](https://reactjs.org/)
 
-🚀 **[Live Demo](https://your-demo-url.vercel.app)** | 📚 **[Documentation](./docs)**
+🚀 **[Live Demo](https://noir-playground.app)** 
 
 ## Quick Start
 
