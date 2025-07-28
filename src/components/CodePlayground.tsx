@@ -460,7 +460,7 @@ compiler_version = ">=0.31.0"
                           <button
                             key={filename}
                             onClick={() => setActiveFile(filename)}
-                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50 ${activeFile === filename
+                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
                               ? 'bg-background text-foreground'
                               : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                               }`}
