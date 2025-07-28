@@ -152,6 +152,7 @@ export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disable
         smoothScrolling: true,
         cursorBlinking: 'blink',
         autoIndent: 'advanced',
+        padding: { top: 12 },
       }}
     />
   );
