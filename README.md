@@ -79,6 +79,15 @@ npm run preview  # Preview production build
 -   **Teaching ZK concepts** - Visual workflow demonstration
 -   **Experimenting** - Safe environment for testing ideas
 
+## Roadmap
+
+-   [ ] **Preload Common Dependencies**: Bundle popular Noir libraries (std, aztec, crypto) locally to enable dependency usage without external fetching
+-   [ ] **Interactive DAG renders of ACIR bytecodes**: Visual representation of circuit compilation output
+-   [ ] **Real-time circuit complexity metrics and heatmaps**: Performance analysis and optimization insights
+-   [ ] **Runtime witness value probing**: Debug witness generation and constraint satisfaction
+-   [ ] **Side-by-side inspector between code and constraints**: Compare Noir code with generated constraints
+-   [ ] **Circuit optimization** suggestions and analysis
+
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
