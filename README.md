@@ -2,9 +2,8 @@
 
 A browser-based Noir zero-knowledge proof development environment with Monaco editor integration.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.5+-blue)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-18+-61DAFB)](https://reactjs.org/)
+[![Noir](https://img.shields.io/badge/Noir-v1.0.0--beta.9-black?style=flat-square)](https://noir-lang.org/)
+[![Barretenberg](https://img.shields.io/badge/Barretenberg-v0.84.0-black?style=flat-square)](https://github.com/AztecProtocol/barretenberg)
 
 🚀 **[Live Demo](https://noir-playground.app)** | 📚 **[Documentation](./docs/noirjs-barretenberg-integration.md)**
 
