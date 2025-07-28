@@ -80,7 +80,7 @@ npm run preview  # Preview production build
 
 ## Roadmap
 
--   [ ] **Preload Common Dependencies**: Bundle popular Noir libraries (std, aztec, crypto) locally to enable dependency usage without external fetching
+-   [ ] **Preload Common Dependencies**: Bundle popular Noir libraries (std, aztec, crypto) locally to enable dependency usage without external fetching. Current issue: https://github.com/noir-lang/noir/issues/7823
 -   [ ] **Interactive DAG renders of ACIR bytecodes**: Visual representation of circuit compilation output
 -   [ ] **Real-time circuit complexity metrics and heatmaps**: Performance analysis and optimization insights
 -   [ ] **Runtime witness value probing**: Debug witness generation and constraint satisfaction
