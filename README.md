@@ -46,8 +46,8 @@ fn main(secret: Field, public_value: pub Field) -> Field {
 The playground automatically:
 
 1. Generates input forms based on your function signature
-2. Simulates circuit compilation and execution
-3. Creates mock zero-knowledge proofs
+2. Compiles and executes circuits
+3. Generates zero-knowledge proofs
 4. Provides detailed execution feedback
 
 ## Development
