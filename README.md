@@ -28,7 +28,7 @@ npm run dev
 -   **Real-time compilation** simulation with 5-step workflow
 -   **Dynamic input forms** generated from function signatures
 -   **Multi-file support** (main.nr + Nargo.toml)
--   **Zero-knowledge proof** generation and verification simulation
+-   **Zero-knowledge proof** generation and verification
 -   **Professional UI** with dark theme optimization
 
 ## Example
