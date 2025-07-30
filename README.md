@@ -86,6 +86,7 @@ npm run preview  # Preview production build
 -   [ ] **Runtime witness value probing**: Debug witness generation and constraint satisfaction
 -   [ ] **Side-by-side inspector between code and constraints**: Compare Noir code with generated constraints
 -   [ ] **Circuit optimization** suggestions and analysis
+-   [ ] Ensure compatibility with a future VS Code extension for core developer tools
 
 ## Contributing
 
