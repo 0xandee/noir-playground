@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useIsMobile } from "@/hooks/use-mobile";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import SharedSnippet from "./pages/SharedSnippet";
 import MobileWarning from "./components/MobileWarning";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/share/:id" element={<SharedSnippet />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

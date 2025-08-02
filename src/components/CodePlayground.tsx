@@ -10,15 +10,32 @@ import {
   Settings,
   Terminal,
   Cpu,
+  Share,
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
+import { ShareDialog } from "./ShareDialog";
 
-const CodePlayground = () => {
+interface CodePlaygroundProps {
+  initialCode?: string;
+  initialInputs?: Record<string, string>;
+  initialProofData?: {
+    proof?: Uint8Array;
+    witness?: Uint8Array;
+    publicInputs?: string[];
+    executionTime?: number;
+    returnValue?: string;
+  };
+  snippetTitle?: string;
+  snippetId?: string;
+}
+
+const CodePlayground = (props: CodePlaygroundProps = {}) => {
+  const { initialCode, initialInputs, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": `pub fn main(x: Field, y: pub Field) -> pub Field {
+    "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
     // Verify that x and y are both non-zero
     assert(x != 0);
     assert(y != 0);
@@ -30,14 +47,7 @@ const CodePlayground = () => {
     
     // Return the sum as proof output
     sum
-}`,
-    "Nargo.toml": `[package]
-name = "playground"
-type = "bin"
-authors = [""]
-compiler_version = ">=0.31.0"
-
-[dependencies]`
+}`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -48,8 +58,8 @@ compiler_version = ">=0.31.0"
     executionTime?: number;
     returnValue?: string;
     witness?: Uint8Array;
-  } | null>(null);
-  const [inputs, setInputs] = useState<Record<string, string>>({ x: "10", y: "25" });
+  } | null>(initialProofData || null);
+  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "25" });
   const [inputTypes, setInputTypes] = useState<Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>>({
     x: { type: "Field", isPublic: false },
     y: { type: "Field", isPublic: true }
@@ -63,9 +73,26 @@ compiler_version = ">=0.31.0"
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("current-example");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
+
+  // Extract input types when initial code is provided
+  useEffect(() => {
+    if (initialCode) {
+      const extracted = extractInputsFromCode(initialCode);
+      setInputTypes(extracted.types);
+      setParameterOrder(extracted.order);
+    }
+  }, [initialCode]);
+
+  // Update URL when snippet ID is provided
+  useEffect(() => {
+    if (snippetId && window.location.pathname !== `/share/${snippetId}`) {
+      window.history.replaceState(null, '', `/share/${snippetId}`);
+    }
+  }, [snippetId]);
 
   const addConsoleMessage = (type: 'error' | 'success' | 'info', message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -87,8 +114,7 @@ compiler_version = ">=0.31.0"
     // Update the main.nr file with the example code
     setFiles(prev => ({
       ...prev,
-      "main.nr": example.code,
-      ...(example.toml && { "Nargo.toml": example.toml })
+      "main.nr": example.code
     }));
 
     // Extract inputs from the code and set default values
@@ -156,7 +182,7 @@ compiler_version = ">=0.31.0"
         files["main.nr"],
         processedInputs,
         addStepWithDelay,
-        files["Nargo.toml"],
+        undefined,
         proveAndVerify
       );
 
@@ -188,6 +214,10 @@ compiler_version = ">=0.31.0"
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleShareClick = () => {
+    setShareDialogOpen(true);
   };
 
   const handleInputChange = (key: string, value: string) => {
@@ -278,13 +308,11 @@ compiler_version = ">=0.31.0"
 
   const getFileLanguage = (filename: string) => {
     if (filename.endsWith('.nr')) return 'noir';
-    if (filename.endsWith('.toml')) return 'toml';
     return 'plaintext';
   };
 
   const getFileIcon = (filename: string) => {
     if (filename.endsWith('.nr')) return <Code className="h-4 w-4 text-primary" />;
-    if (filename.endsWith('.toml')) return <Settings className="h-4 w-4 text-orange-500" />;
     return <FileText className="h-4 w-4 text-muted-foreground" />;
   };
 
@@ -427,6 +455,7 @@ compiler_version = ">=0.31.0"
         <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
       </header>
 
+
       {/* Main Content */}
       <section className="flex flex-1" aria-label="Development Environment">
         {/* Desktop Layout - Resizable Panels */}
@@ -443,18 +472,27 @@ compiler_version = ">=0.31.0"
                     <div className="flex items-center justify-between px-4 py-2">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
-                          <Select value={selectedExample} onValueChange={loadExample}>
-                            <SelectTrigger className="w-36 h-8 text-xs focus:ring-0 focus:ring-offset-0">
-                              <SelectValue placeholder="Examples" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {noirExamples.map((example) => (
-                                <SelectItem key={example.id} value={example.id}>
-                                  {example.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {snippetTitle ? (
+                            // Show snippet title instead of examples dropdown
+                            <div className="flex items-center gap-2 text-sm px-2">
+                              <span className="text-muted-foreground">Shared Snippet:</span>
+                              <span className="font-medium text-foreground">{snippetTitle}</span>
+                            </div>
+                          ) : (
+                            // Show examples dropdown in normal mode
+                            <Select value={selectedExample} onValueChange={loadExample}>
+                              <SelectTrigger className="w-36 h-8 text-xs focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Examples" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {noirExamples.map((example) => (
+                                  <SelectItem key={example.id} value={example.id}>
+                                    {example.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
                         {Object.keys(files).map((filename) => (
                           <button
@@ -549,7 +587,16 @@ compiler_version = ">=0.31.0"
                       <Cpu className="h-4 w-4 text-primary" />
                       <h2 className="text-sm font-medium">Circuit Inputs</h2>
                     </div>
-                    <div className="h-9 w-0" />
+                    <Button
+                      onClick={handleShareClick}
+                      variant="ghost"
+                      size="sm"
+                      title="Share"
+                      className="flex items-center gap-1"
+                    >
+                      <Share className="h-4 w-4" />
+                      <span className="text-sm">Share</span>
+                    </Button>
                   </header>
                   <div className="p-4 overflow-y-auto flex-1">
                     <div className="space-y-4">
@@ -755,6 +802,15 @@ compiler_version = ">=0.31.0"
           </a>
         </span>
       </footer>
+      
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        code={files["main.nr"]}
+        inputs={inputs}
+        // No TOML file needed
+        proofData={proofData}
+      />
     </main>
   );
 };
