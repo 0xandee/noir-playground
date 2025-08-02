@@ -10,15 +10,33 @@ import {
   Settings,
   Terminal,
   Cpu,
+  Share,
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
+import { ShareDialog } from "./ShareDialog";
 
-const CodePlayground = () => {
+interface CodePlaygroundProps {
+  initialCode?: string;
+  initialToml?: string;
+  initialInputs?: Record<string, string>;
+  initialProofData?: {
+    proof?: Uint8Array;
+    witness?: Uint8Array;
+    publicInputs?: string[];
+    executionTime?: number;
+    returnValue?: string;
+  };
+  snippetTitle?: string;
+  snippetId?: string;
+}
+
+const CodePlayground = (props: CodePlaygroundProps = {}) => {
+  const { initialCode, initialToml, initialInputs, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": `pub fn main(x: Field, y: pub Field) -> pub Field {
+    "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
     // Verify that x and y are both non-zero
     assert(x != 0);
     assert(y != 0);
@@ -31,7 +49,7 @@ const CodePlayground = () => {
     // Return the sum as proof output
     sum
 }`,
-    "Nargo.toml": `[package]
+    "Nargo.toml": initialToml || `[package]
 name = "playground"
 type = "bin"
 authors = [""]
@@ -48,8 +66,8 @@ compiler_version = ">=0.31.0"
     executionTime?: number;
     returnValue?: string;
     witness?: Uint8Array;
-  } | null>(null);
-  const [inputs, setInputs] = useState<Record<string, string>>({ x: "10", y: "25" });
+  } | null>(initialProofData || null);
+  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "25" });
   const [inputTypes, setInputTypes] = useState<Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>>({
     x: { type: "Field", isPublic: false },
     y: { type: "Field", isPublic: true }
@@ -63,9 +81,26 @@ compiler_version = ">=0.31.0"
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("current-example");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
+
+  // Extract input types when initial code is provided
+  useEffect(() => {
+    if (initialCode) {
+      const extracted = extractInputsFromCode(initialCode);
+      setInputTypes(extracted.types);
+      setParameterOrder(extracted.order);
+    }
+  }, [initialCode]);
+
+  // Update URL when snippet ID is provided
+  useEffect(() => {
+    if (snippetId && window.location.pathname !== `/share/${snippetId}`) {
+      window.history.replaceState(null, '', `/share/${snippetId}`);
+    }
+  }, [snippetId]);
 
   const addConsoleMessage = (type: 'error' | 'success' | 'info', message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -188,6 +223,10 @@ compiler_version = ">=0.31.0"
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleShareClick = () => {
+    setShareDialogOpen(true);
   };
 
   const handleInputChange = (key: string, value: string) => {
@@ -427,6 +466,16 @@ compiler_version = ">=0.31.0"
         <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
       </header>
 
+      {/* Snippet Title Header */}
+      {snippetTitle && (
+        <div className="border-b border-border bg-muted/50 px-4 py-2">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">Shared Snippet:</span>
+            <span className="font-medium text-foreground">{snippetTitle}</span>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <section className="flex flex-1" aria-label="Development Environment">
         {/* Desktop Layout - Resizable Panels */}
@@ -487,6 +536,13 @@ compiler_version = ">=0.31.0"
                           size="sm"
                         >
                           Run
+                        </Button>
+                        <Button
+                          onClick={handleShareClick}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Share className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -755,6 +811,15 @@ compiler_version = ">=0.31.0"
           </a>
         </span>
       </footer>
+      
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        code={files["main.nr"]}
+        inputs={inputs}
+        toml={files["Nargo.toml"]}
+        proofData={proofData}
+      />
     </main>
   );
 };
