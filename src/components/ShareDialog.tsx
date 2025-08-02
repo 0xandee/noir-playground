@@ -16,6 +16,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Checkbox } from './ui/checkbox';
+import { Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { snippetService } from '../services/SnippetService';
 import type { CreateSnippetData } from '../types/snippet';
@@ -29,8 +30,6 @@ interface ShareDialogProps {
   code: string;
   /** Current input values */
   inputs: Record<string, any>;
-  /** Optional TOML configuration */
-  toml?: string;
   /** Optional proof and witness data */
   proofData?: {
     proof?: Uint8Array;
@@ -43,12 +42,10 @@ export function ShareDialog({
   onOpenChange,
   code,
   inputs,
-  toml,
   proofData,
 }: ShareDialogProps) {
   // State management
   const [title, setTitle] = useState('');
-  const [includeCode, setIncludeCode] = useState(true);
   const [includeInputs, setIncludeInputs] = useState(true);
   const [includeProof, setIncludeProof] = useState(false);
   const [includeWitness, setIncludeWitness] = useState(false);
@@ -56,6 +53,7 @@ export function ShareDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [shareUrl, setShareUrl] = useState('');
   const [buttonText, setButtonText] = useState('Share');
+  const [copyFeedback, setCopyFeedback] = useState(false);
   
   // Initialize toast hook
   const { toast } = useToast();
@@ -75,7 +73,6 @@ export function ShareDialog({
   useEffect(() => {
     if (!open) {
       setTitle('');
-      setIncludeCode(true);
       setIncludeInputs(true);
       setIncludeProof(false);
       setIncludeWitness(false);
@@ -83,6 +80,7 @@ export function ShareDialog({
       setIsLoading(false);
       setShareUrl('');
       setButtonText('Share');
+      setCopyFeedback(false);
     }
   }, [open]);
 
@@ -106,9 +104,8 @@ export function ShareDialog({
       // Prepare snippet data based on user selections
       const snippetData: CreateSnippetData = {
         title: title.trim(),
-        code: includeCode ? code : '',
+        code: code, // Always include code
         inputs: includeInputs ? inputs : {},
-        toml: toml || null,
         proof: includeProof && proofData?.proof ? proofData.proof : null,
         witness: includeWitness && proofData?.witness ? proofData.witness : null,
         publicInputs: includePublicInputs && proofData?.publicInputs ? proofData.publicInputs : null,
@@ -156,6 +153,33 @@ export function ShareDialog({
   };
 
   /**
+   * Copies the share URL to clipboard
+   */
+  const handleCopyUrl = async () => {
+    if (!shareUrl) return;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopyFeedback(true);
+      
+      // Show brief feedback
+      setTimeout(() => setCopyFeedback(false), 1500);
+      
+      toast({
+        title: "URL copied!",
+        description: "Share URL copied to clipboard"
+      });
+    } catch (err) {
+      console.error('Failed to copy URL:', err);
+      toast({
+        title: "Copy failed",
+        description: "Failed to copy URL to clipboard",
+        variant: "destructive"
+      });
+    }
+  };
+
+  /**
    * Handles dialog close
    */
   const handleClose = () => {
@@ -194,88 +218,96 @@ export function ShareDialog({
           <div className="space-y-3">
             <Label>Include in share:</Label>
             
-            {/* Code Checkbox - Always checked and disabled */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-code"
-                checked={includeCode}
-                onCheckedChange={() => {}} // No-op since it's disabled
-                disabled={true}
-              />
-              <Label htmlFor="include-code" className="text-sm">
-                Code (required)
-              </Label>
+            {/* 2x2 Grid Layout for Checkboxes */}
+            <div className="grid grid-cols-2 gap-3">
+              {/* Row 1, Column 1: Input values */}
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="include-inputs"
+                  checked={includeInputs}
+                  onCheckedChange={(checked) => setIncludeInputs(!!checked)}
+                  disabled={isLoading}
+                />
+                <Label htmlFor="include-inputs" className="text-sm">
+                  Input values
+                </Label>
+              </div>
+
+              {/* Row 1, Column 2: Proof data (if available) */}
+              {hasProofData ? (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-proof"
+                    checked={includeProof}
+                    onCheckedChange={(checked) => setIncludeProof(!!checked)}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="include-proof" className="text-sm">
+                    Proof data
+                  </Label>
+                </div>
+              ) : (
+                <div></div> // Empty div to maintain grid structure
+              )}
+
+              {/* Row 2, Column 1: Witness data (if available) */}
+              {hasWitnessData ? (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-witness"
+                    checked={includeWitness}
+                    onCheckedChange={(checked) => setIncludeWitness(!!checked)}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="include-witness" className="text-sm">
+                    Witness data
+                  </Label>
+                </div>
+              ) : (
+                <div></div> // Empty div to maintain grid structure
+              )}
+
+              {/* Row 2, Column 2: Public inputs (if available) */}
+              {proofData?.publicInputs?.length ? (
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="include-public-inputs"
+                    checked={includePublicInputs}
+                    onCheckedChange={(checked) => setIncludePublicInputs(!!checked)}
+                    disabled={isLoading}
+                  />
+                  <Label htmlFor="include-public-inputs" className="text-sm">
+                    Public inputs
+                  </Label>
+                </div>
+              ) : (
+                <div></div> // Empty div to maintain grid structure
+              )}
             </div>
-
-            {/* Inputs Checkbox */}
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="include-inputs"
-                checked={includeInputs}
-                onCheckedChange={(checked) => setIncludeInputs(!!checked)}
-                disabled={isLoading}
-              />
-              <Label htmlFor="include-inputs" className="text-sm">
-                Input values
-              </Label>
-            </div>
-
-            {/* Proof Checkbox - Only show if proof data exists */}
-            {hasProofData && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="include-proof"
-                  checked={includeProof}
-                  onCheckedChange={(checked) => setIncludeProof(!!checked)}
-                  disabled={isLoading}
-                />
-                <Label htmlFor="include-proof" className="text-sm">
-                  Proof data
-                </Label>
-              </div>
-            )}
-
-            {/* Witness Checkbox - Only show if witness data exists */}
-            {hasWitnessData && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="include-witness"
-                  checked={includeWitness}
-                  onCheckedChange={(checked) => setIncludeWitness(!!checked)}
-                  disabled={isLoading}
-                />
-                <Label htmlFor="include-witness" className="text-sm">
-                  Witness data
-                </Label>
-              </div>
-            )}
-
-            {/* Public Inputs Checkbox - Only show if public inputs exist */}
-            {proofData?.publicInputs?.length && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="include-public-inputs"
-                  checked={includePublicInputs}
-                  onCheckedChange={(checked) => setIncludePublicInputs(!!checked)}
-                  disabled={isLoading}
-                />
-                <Label htmlFor="include-public-inputs" className="text-sm">
-                  Public inputs
-                </Label>
-              </div>
-            )}
           </div>
 
           {/* Share URL Display */}
           {shareUrl && (
             <div className="space-y-2">
               <Label htmlFor="share-url">Share URL</Label>
-              <Input
-                id="share-url"
-                value={shareUrl}
-                readOnly
-                className="w-full"
-              />
+              <div className="relative">
+                <Input
+                  id="share-url"
+                  value={shareUrl}
+                  readOnly
+                  className="w-full pr-24"
+                />
+                <button
+                  onClick={handleCopyUrl}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 px-2 py-1 rounded hover:bg-muted transition-colors"
+                  title="Copy URL"
+                >
+                  <Copy className={`h-4 w-4 ${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`} />
+                  <span className={`text-xs ${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`}>
+                    Copy link
+                  </span>
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground">
                 URL automatically copied to clipboard
               </p>

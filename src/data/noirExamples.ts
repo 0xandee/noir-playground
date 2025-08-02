@@ -4,7 +4,6 @@ export interface NoirExample {
   description: string;
   code: string;
   inputs: Record<string, string>;
-  toml?: string;
 }
 
 export const noirExamples: NoirExample[] = [

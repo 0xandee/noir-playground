@@ -48,10 +48,6 @@ function validateSnippetData(data: CreateSnippetData): void {
     throw new Error('Inputs must be a valid object');
   }
   
-  if (data.toml !== undefined && data.toml !== null && typeof data.toml !== 'string') {
-    throw new Error('TOML must be a string or null');
-  }
-  
   if (data.proof !== undefined && data.proof !== null && !(data.proof instanceof Uint8Array)) {
     throw new Error('Proof must be a Uint8Array or null');
   }
@@ -82,7 +78,6 @@ export function serializeSnippetForDatabase(snippetData: CreateSnippetData): Ser
       title: snippetData.title.trim(),
       code: snippetData.code,
       inputs: snippetData.inputs,
-      toml: snippetData.toml || null,
       proof: snippetData.proof ? uint8ArrayToHex(snippetData.proof) : null,
       witness: snippetData.witness ? uint8ArrayToHex(snippetData.witness) : null,
       public_inputs: snippetData.publicInputs || null,
@@ -107,7 +102,6 @@ export function deserializeSnippetFromDatabase(row: DatabaseSnippetRow): SharedS
       title: row.title,
       code: row.code,
       inputs: row.inputs,
-      toml: row.toml,
       proof: row.proof ? hexToUint8Array(row.proof) : null,
       witness: row.witness ? hexToUint8Array(row.witness) : null,
       publicInputs: row.public_inputs || null,

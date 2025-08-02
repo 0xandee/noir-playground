@@ -19,7 +19,6 @@ import { ShareDialog } from "./ShareDialog";
 
 interface CodePlaygroundProps {
   initialCode?: string;
-  initialToml?: string;
   initialInputs?: Record<string, string>;
   initialProofData?: {
     proof?: Uint8Array;
@@ -33,7 +32,7 @@ interface CodePlaygroundProps {
 }
 
 const CodePlayground = (props: CodePlaygroundProps = {}) => {
-  const { initialCode, initialToml, initialInputs, initialProofData, snippetTitle, snippetId } = props;
+  const { initialCode, initialInputs, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
     "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
@@ -48,14 +47,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     
     // Return the sum as proof output
     sum
-}`,
-    "Nargo.toml": initialToml || `[package]
-name = "playground"
-type = "bin"
-authors = [""]
-compiler_version = ">=0.31.0"
-
-[dependencies]`
+}`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -122,8 +114,7 @@ compiler_version = ">=0.31.0"
     // Update the main.nr file with the example code
     setFiles(prev => ({
       ...prev,
-      "main.nr": example.code,
-      ...(example.toml && { "Nargo.toml": example.toml })
+      "main.nr": example.code
     }));
 
     // Extract inputs from the code and set default values
@@ -191,7 +182,7 @@ compiler_version = ">=0.31.0"
         files["main.nr"],
         processedInputs,
         addStepWithDelay,
-        files["Nargo.toml"],
+        undefined,
         proveAndVerify
       );
 
@@ -317,13 +308,11 @@ compiler_version = ">=0.31.0"
 
   const getFileLanguage = (filename: string) => {
     if (filename.endsWith('.nr')) return 'noir';
-    if (filename.endsWith('.toml')) return 'toml';
     return 'plaintext';
   };
 
   const getFileIcon = (filename: string) => {
     if (filename.endsWith('.nr')) return <Code className="h-4 w-4 text-primary" />;
-    if (filename.endsWith('.toml')) return <Settings className="h-4 w-4 text-orange-500" />;
     return <FileText className="h-4 w-4 text-muted-foreground" />;
   };
 
@@ -466,15 +455,6 @@ compiler_version = ">=0.31.0"
         <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
       </header>
 
-      {/* Snippet Title Header */}
-      {snippetTitle && (
-        <div className="border-b border-border bg-muted/50 px-4 py-2">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Shared Snippet:</span>
-            <span className="font-medium text-foreground">{snippetTitle}</span>
-          </div>
-        </div>
-      )}
 
       {/* Main Content */}
       <section className="flex flex-1" aria-label="Development Environment">
@@ -492,18 +472,27 @@ compiler_version = ">=0.31.0"
                     <div className="flex items-center justify-between px-4 py-2">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1">
-                          <Select value={selectedExample} onValueChange={loadExample}>
-                            <SelectTrigger className="w-36 h-8 text-xs focus:ring-0 focus:ring-offset-0">
-                              <SelectValue placeholder="Examples" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {noirExamples.map((example) => (
-                                <SelectItem key={example.id} value={example.id}>
-                                  {example.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {snippetTitle ? (
+                            // Show snippet title instead of examples dropdown
+                            <div className="flex items-center gap-2 text-sm px-2">
+                              <span className="text-muted-foreground">Shared Snippet:</span>
+                              <span className="font-medium text-foreground">{snippetTitle}</span>
+                            </div>
+                          ) : (
+                            // Show examples dropdown in normal mode
+                            <Select value={selectedExample} onValueChange={loadExample}>
+                              <SelectTrigger className="w-36 h-8 text-xs focus:ring-0 focus:ring-offset-0">
+                                <SelectValue placeholder="Examples" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {noirExamples.map((example) => (
+                                  <SelectItem key={example.id} value={example.id}>
+                                    {example.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                         </div>
                         {Object.keys(files).map((filename) => (
                           <button
@@ -536,13 +525,6 @@ compiler_version = ">=0.31.0"
                           size="sm"
                         >
                           Run
-                        </Button>
-                        <Button
-                          onClick={handleShareClick}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Share className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -605,7 +587,16 @@ compiler_version = ">=0.31.0"
                       <Cpu className="h-4 w-4 text-primary" />
                       <h2 className="text-sm font-medium">Circuit Inputs</h2>
                     </div>
-                    <div className="h-9 w-0" />
+                    <Button
+                      onClick={handleShareClick}
+                      variant="ghost"
+                      size="sm"
+                      title="Share"
+                      className="flex items-center gap-1"
+                    >
+                      <Share className="h-4 w-4" />
+                      <span className="text-sm">Share</span>
+                    </Button>
                   </header>
                   <div className="p-4 overflow-y-auto flex-1">
                     <div className="space-y-4">
@@ -817,7 +808,7 @@ compiler_version = ">=0.31.0"
         onOpenChange={setShareDialogOpen}
         code={files["main.nr"]}
         inputs={inputs}
-        toml={files["Nargo.toml"]}
+        // No TOML file needed
         proofData={proofData}
       />
     </main>

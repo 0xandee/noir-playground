@@ -197,7 +197,6 @@ const SharedSnippetPage = () => {
     return (
       <CodePlayground
         initialCode={snippet.code}
-        initialToml={snippet.toml || undefined}
         initialInputs={inputsAsStrings}
         initialProofData={
           snippet.proof || snippet.witness || snippet.publicInputs

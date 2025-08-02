@@ -19,9 +19,6 @@ export interface SharedSnippet {
   /** Input values for the Noir program - matches pattern from NoirExample */
   inputs: Record<string, any>;
   
-  /** Optional TOML configuration */
-  toml: string | null;
-  
   /** Optional binary proof data */
   proof: Uint8Array | null;
   
@@ -49,9 +46,6 @@ export interface CreateSnippetData {
   /** Input values for the Noir program */
   inputs: Record<string, any>;
   
-  /** Optional TOML configuration */
-  toml?: string | null;
-  
   /** Optional binary proof data */
   proof?: Uint8Array | null;
   
@@ -71,7 +65,6 @@ export interface DatabaseSnippetRow {
   title: string;
   code: string;
   inputs: any; // JSON field in database
-  toml: string | null;
   proof: string | null; // hex encoded binary data
   witness: string | null; // hex encoded binary data
   public_inputs: any; // JSON array field in database
@@ -85,7 +78,6 @@ export interface SerializedSnippetData {
   title: string;
   code: string;
   inputs: any;
-  toml: string | null;
   proof: string | null; // hex encoded
   witness: string | null; // hex encoded
   public_inputs: any; // JSON array
