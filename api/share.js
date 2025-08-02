@@ -1,5 +1,5 @@
 // Vercel Serverless Function for dynamic meta tags
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { id } = req.query;
   
   if (!id) {

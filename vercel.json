@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/share.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/share/(.*)",
