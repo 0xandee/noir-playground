@@ -19,6 +19,7 @@ import { Checkbox } from './ui/checkbox';
 import { Copy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { snippetService } from '../services/SnippetService';
+import { previewService } from '../services/PreviewService';
 import type { CreateSnippetData } from '../types/snippet';
 
 interface ShareDialogProps {
@@ -113,6 +114,11 @@ export function ShareDialog({
 
       // Save snippet
       const savedSnippet = await snippetService.saveSnippet(snippetData);
+
+      // Pre-generate preview image for better SEO (fire-and-forget)
+      previewService.preGenerateSharePreview(savedSnippet).catch(error => {
+        console.warn('Failed to pre-generate preview image:', error);
+      });
 
       // Generate share URL
       const url = `${window.location.origin}/share/${savedSnippet.id}`;

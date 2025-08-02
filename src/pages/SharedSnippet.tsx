@@ -12,6 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import { snippetService } from '../services/SnippetService';
 import type { SharedSnippet } from '../types/snippet';
 import CodePlayground from '../components/CodePlayground';
+import MetaTags from '../components/seo/MetaTags';
+import { generateSnippetMetaData } from '../utils/seoUtils';
 
 const SharedSnippetPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -100,10 +102,16 @@ const SharedSnippetPage = () => {
   // Loading state
   if (loading) {
     return (
-      <main className="h-screen bg-background flex flex-col">
-        <header className="sr-only">
-          <h1>Loading Shared Snippet</h1>
-        </header>
+      <>
+        <MetaTags
+          title="Loading Snippet - Noir Playground"
+          description="Loading a shared Noir zero-knowledge proof code snippet. Interactive development environment with Monaco editor."
+          noIndex={true}
+        />
+        <main className="h-screen bg-background flex flex-col">
+          <header className="sr-only">
+            <h1>Loading Shared Snippet</h1>
+          </header>
         
         {/* Loading Header */}
         <div className="border-b border-border bg-muted/30 px-4 py-3">
@@ -150,14 +158,21 @@ const SharedSnippetPage = () => {
             </div>
           </div>
         </div>
-      </main>
+        </main>
+      </>
     );
   }
 
   // Error state
   if (error) {
     return (
-      <main className="h-screen bg-background flex items-center justify-center">
+      <>
+        <MetaTags
+          title="Snippet Not Found - Noir Playground"
+          description="The requested Noir code snippet could not be found or may have been deleted. Try exploring other snippets or create your own."
+          noIndex={true}
+        />
+        <main className="h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md mx-auto">
           <CardHeader>
             <CardTitle>Unable to Load Snippet</CardTitle>
@@ -178,12 +193,16 @@ const SharedSnippetPage = () => {
             </div>
           </CardContent>
         </Card>
-      </main>
+        </main>
+      </>
     );
   }
 
   // Success state - render CodePlayground with snippet data
   if (snippet) {
+    // Generate dynamic meta tags for the snippet
+    const metaData = generateSnippetMetaData(snippet);
+    
     // Convert snippet inputs to the format expected by CodePlayground
     const inputsAsStrings: Record<string, string> = {};
     for (const [key, value] of Object.entries(snippet.inputs)) {
@@ -195,7 +214,17 @@ const SharedSnippetPage = () => {
     }
 
     return (
-      <CodePlayground
+      <>
+        <MetaTags
+          title={metaData.title}
+          description={metaData.description}
+          keywords={metaData.keywords}
+          canonicalUrl={metaData.canonicalUrl}
+          ogImage={metaData.ogImage}
+          ogImageAlt={metaData.ogImageAlt}
+          jsonLd={metaData.jsonLd}
+        />
+        <CodePlayground
         initialCode={snippet.code}
         initialInputs={inputsAsStrings}
         initialProofData={
@@ -211,27 +240,35 @@ const SharedSnippetPage = () => {
         }
         snippetTitle={snippet.title}
         snippetId={snippet.id}
-      />
+        />
+      </>
     );
   }
 
   // Fallback - should not reach here
   return (
-    <main className="h-screen bg-background flex items-center justify-center">
-      <Card className="max-w-md mx-auto">
-        <CardHeader>
-          <CardTitle>Something went wrong</CardTitle>
-          <CardDescription>
-            An unexpected error occurred while loading the snippet.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={handleReturnToPlayground}>
-            Return to Playground
-          </Button>
-        </CardContent>
-      </Card>
-    </main>
+    <>
+      <MetaTags
+        title="Error - Noir Playground"
+        description="An unexpected error occurred while loading the snippet. Please try again or return to the main playground."
+        noIndex={true}
+      />
+      <main className="h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardHeader>
+            <CardTitle>Something went wrong</CardTitle>
+            <CardDescription>
+              An unexpected error occurred while loading the snippet.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={handleReturnToPlayground}>
+              Return to Playground
+            </Button>
+          </CardContent>
+        </Card>
+      </main>
+    </>
   );
 };
 
