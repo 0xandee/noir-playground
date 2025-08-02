@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/share/(.*)",
+      "destination": "/api/share?id=$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

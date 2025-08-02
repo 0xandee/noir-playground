@@ -3,6 +3,11 @@
   command = "npm run build"
 
 [[redirects]]
+  from = "/share/*"
+  to = "/.netlify/functions/share"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
