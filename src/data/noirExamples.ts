@@ -8,6 +8,28 @@ export interface NoirExample {
 
 export const noirExamples: NoirExample[] = [
   {
+    id: "playground",
+    name: "Playground",
+    description: "The default playground with assertions",
+    code: `pub fn main(x: Field, y: pub Field) -> pub Field {
+    // Verify that x and y are both non-zero
+    assert(x != 0);
+    assert(y != 0);
+    
+    // Compute the sum and verify it's greater than both inputs
+    let sum = x + y;
+    assert(sum as u64 > x as u64);
+    assert(sum as u64 > y as u64);
+    
+    // Return the sum as proof output
+    sum
+}`,
+    inputs: {
+      x: "10",
+      y: "25"
+    }
+  },
+  {
     id: "basic-types",
     name: "Basic Types",
     description: "Simple function with Field, u32, and boolean parameters",
@@ -107,28 +129,6 @@ export const noirExamples: NoirExample[] = [
       pub_total: "5000000",
       valid_txs: "[1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1]",
       timestamp: "1640995200"
-    }
-  },
-  {
-    id: "playground",
-    name: "Playground",
-    description: "The default playground with assertions",
-    code: `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
-}`,
-    inputs: {
-      x: "10",
-      y: "25"
     }
   }
 ];

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Copy,
@@ -489,10 +489,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 <SelectValue placeholder="Examples" />
                               </SelectTrigger>
                               <SelectContent>
-                                {noirExamples.map((example) => (
-                                  <SelectItem key={example.id} value={example.id}>
-                                    {example.name}
-                                  </SelectItem>
+                                {noirExamples.map((example, index) => (
+                                  <div key={example.id}>
+                                    <SelectItem value={example.id}>
+                                      {example.name}
+                                    </SelectItem>
+                                    {index === 0 && <SelectSeparator />}
+                                  </div>
                                 ))}
                               </SelectContent>
                             </Select>
