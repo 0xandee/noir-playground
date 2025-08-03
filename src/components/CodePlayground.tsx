@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import {
   Copy,
   Download,
@@ -72,8 +73,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     timestamp: string;
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
-  const [selectedExample, setSelectedExample] = useState<string>("current-example");
+  const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [copiedItem, setCopiedItem] = useState<string | null>(null);
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
@@ -197,9 +199,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     }
   };
 
-  const handleCopy = (content: string, type: string) => {
+  const handleCopy = (content: string, itemId: string) => {
     navigator.clipboard.writeText(content);
-    addConsoleMessage('info', `${type} copied to clipboard`);
+    setCopiedItem(itemId);
+    setTimeout(() => setCopiedItem(null), 1500);
   };
 
   const handleDownloadProof = () => {
@@ -450,7 +453,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   };
 
   return (
-    <main className="h-screen bg-background flex flex-col">
+    <TooltipProvider>
+      <main className="h-screen bg-background flex flex-col">
       <header className="sr-only">
         <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
       </header>
@@ -494,7 +498,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             </Select>
                           )}
                         </div>
-                        {Object.keys(files).map((filename) => (
+                        {Object.keys(files).filter(filename => filename !== 'main.nr').map((filename) => (
                           <button
                             key={filename}
                             onClick={() => setActiveFile(filename)}
@@ -561,7 +565,29 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       <Terminal className="h-4 w-4 text-primary" />
                       <h2 className="text-sm font-medium">Console</h2>
                     </div>
-                    <div className="h-9 w-0" />
+                    <Tooltip open={copiedItem === 'console'}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            const allMessages = [
+                              ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
+                              ...consoleMessages.map(msg => msg.message)
+                            ];
+                            const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
+                            handleCopy(consoleText, "console");
+                          }}
+                          disabled={executionSteps.length === 0 && consoleMessages.length === 0}
+                          title="Copy console output"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copied!</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </header>
                   <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono text-xs space-y-1" role="log" aria-live="polite">
                     {renderConsoleContent()}
@@ -637,14 +663,21 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       <h2 className="text-sm font-medium">Output</h2>
                     </div>
                     <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "Full Proof")}
-                        disabled={!proofData}
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+                      <Tooltip open={copiedItem === 'full-proof'}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
+                            disabled={!proofData}
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copied!</p>
+                        </TooltipContent>
+                      </Tooltip>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -662,14 +695,21 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="text-sm font-medium">Public Inputs</h3>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 py-1"
-                                onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "Public Inputs")}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
+                              <Tooltip open={copiedItem === 'public-inputs'}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 py-1"
+                                    onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Copied!</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                             <div className="bg-muted/50 p-3 rounded text-xs font-mono space-y-1 overflow-x-auto">
                               {proofData.publicInputs.map((input: string, i: number) => (
@@ -683,17 +723,24 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="text-sm font-medium">Witness</h3>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 py-1"
-                                onClick={() => {
-                                  const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-                                  handleCopy(witnessHex, "Witness");
-                                }}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
+                              <Tooltip open={copiedItem === 'witness'}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 py-1"
+                                    onClick={() => {
+                                      const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+                                      handleCopy(witnessHex, "witness");
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Copied!</p>
+                                </TooltipContent>
+                              </Tooltip>
                             </div>
                             <div className="bg-muted/50 p-3 rounded text-xs font-mono overflow-x-auto whitespace-nowrap">
                               {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
@@ -704,19 +751,26 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         <div>
                           <div className="flex items-center justify-between mb-2">
                             <h3 className="text-sm font-medium">Proof</h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 py-1"
-                              onClick={() => {
-                                const proofHex = proofData.proof && proofData.proof.length > 0
-                                  ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                  : '';
-                                handleCopy(proofHex, "Proof");
-                              }}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
+                            <Tooltip open={copiedItem === 'proof'}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 px-2 py-1"
+                                  onClick={() => {
+                                    const proofHex = proofData.proof && proofData.proof.length > 0
+                                      ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                      : '';
+                                    handleCopy(proofHex, "proof");
+                                  }}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Copied!</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                           <div className="bg-muted/50 p-3 rounded text-xs font-mono overflow-x-auto whitespace-nowrap">
                             {proofData.proof && proofData.proof.length > 0
@@ -811,7 +865,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
         // No TOML file needed
         proofData={proofData}
       />
-    </main>
+      </main>
+    </TooltipProvider>
   );
 };
 

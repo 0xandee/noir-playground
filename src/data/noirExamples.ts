@@ -110,9 +110,9 @@ export const noirExamples: NoirExample[] = [
     }
   },
   {
-    id: "current-example",
-    name: "Current Example",
-    description: "The default playground example with assertions",
+    id: "playground",
+    name: "Playground",
+    description: "The default playground with assertions",
     code: `pub fn main(x: Field, y: pub Field) -> pub Field {
     // Verify that x and y are both non-zero
     assert(x != 0);

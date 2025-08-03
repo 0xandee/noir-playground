@@ -46,11 +46,6 @@ const SharedSnippetPage = () => {
           console.log('SharedSnippet: Snippet not found with ID:', id);
           const errorMsg = 'This snippet could not be found or may have been deleted';
           setError(errorMsg);
-          toast({
-            title: "Snippet not found",
-            description: errorMsg,
-            variant: "destructive"
-          });
         }
       } catch (err) {
         console.error('SharedSnippet: Error loading snippet:', err);
