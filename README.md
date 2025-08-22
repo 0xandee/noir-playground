@@ -84,8 +84,11 @@ npm run preview  # Preview production build
 -   [ ] **Real-time circuit complexity metrics and heatmaps**: Performance analysis and optimization insights
 -   [ ] **Runtime witness value probing**: Debug witness generation and constraint satisfaction
 -   [ ] **Side-by-side inspector between code and constraints**: Compare Noir code with generated constraints
+-   [ ] Ensure features compatibility with a future VS Code extension for core developer tools
+
+## Backlog
+
 -   [ ] **Circuit optimization** suggestions and analysis
--   [ ] Ensure compatibility with a future VS Code extension for core developer tools
 -   [ ] **Preload Common Dependencies**: Bundle popular Noir libraries (std, aztec, crypto) locally to enable dependency usage without external fetching. Current issue: https://github.com/noir-lang/noir/issues/7823
 
 ## Contributing
