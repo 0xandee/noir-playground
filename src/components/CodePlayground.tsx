@@ -613,6 +613,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
               <ResizablePanel defaultSize={60} minSize={30}>
                 <CombinedComplexityPanel
                   sourceCode={files["main.nr"]}
+                  cargoToml={files["Nargo.toml"]}
                   onLineClick={(lineNumber) => {
                     // TODO: Implement line jumping in editor
                     console.log(`Jump to line ${lineNumber}`);

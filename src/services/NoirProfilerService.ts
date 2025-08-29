@@ -1,9 +1,10 @@
 import { SVGFlamegraphParser, CompleteProfilerData, ParsedFlamegraphData, ParsedBrilligData } from './SVGFlamegraphParser';
-import { REAL_SVG_DATA } from './RealSVGData';
 import { ParsedFunctionData, LineComplexity } from '@/components/ComplexityAnalysisPanel';
+import { noirWasmCompiler } from './NoirWasmCompiler';
 
 export interface ProfilerRequest {
   sourceCode: string;
+  cargoToml?: string;
 }
 
 export interface ProfilerResponse {
@@ -19,221 +20,156 @@ export interface ProfilerResponse {
 }
 
 export interface ProfilerResult {
-  parsedData: ParsedFunctionData[];
-  lineComplexity: LineComplexity[];
-  completeData: CompleteProfilerData;
-  source: 'noir-profiler' | 'mock-fallback' | 'mock-data';
+  svgContent: string;
+  source: 'noir-profiler'
   error?: string;
   message?: string;
-  recommendations?: string[];
+}
+
+// Server API response types
+interface ServerProfilerResponse {
+  success: boolean;
+  svgs: Array<{
+    content: string;
+    filename: string;
+    function?: string;
+    type: string;
+  }>;
+  tempFileCreated: boolean;
+  error?: string;
 }
 
 export class NoirProfilerService {
   private parser: SVGFlamegraphParser;
   private apiEndpoint: string;
+  private serverBaseUrl: string;
 
   constructor() {
     this.parser = new SVGFlamegraphParser();
-    // API endpoint for future use (currently disabled)
-    this.apiEndpoint = '/profiler';
+    this.apiEndpoint = '/api/profile/opcodes';
+    // Use environment variable for server base URL, fallback to localhost:4000
+    this.serverBaseUrl = import.meta.env.VITE_PROFILER_SERVER_URL || 'http://localhost:4000';
   }
 
   /**
-   * Generate mock SVG data based on source code
+   * Generate a simple hash from bytecode content
    */
-  private generateMockDataFromSource(sourceCode: string) {
-    // Use real SVG data from @target/ folder
-    return {
-      acirSVG: REAL_SVG_DATA.acirSVG,
-      brilligQuotientSVG: REAL_SVG_DATA.brilligQuotientSVG,
-      brilligInvertSVG: REAL_SVG_DATA.brilligInvertSVG,
-      mainGatesSVG: REAL_SVG_DATA.mainGatesSVG
-    };
+  private generateHash(bytecode: string): string {
+    let hash = 0;
+    for (let i = 0; i < bytecode.length; i++) {
+      const char = bytecode.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString();
   }
 
   /**
-   * Profile a Noir circuit and return complexity analysis
+   * Profile a Noir circuit by compiling and calling the server API
    */
   async profileCircuit(request: ProfilerRequest): Promise<ProfilerResult> {
     try {
-      console.log('[NoirProfilerService] Starting circuit profiling...');
+      console.log('[NoirProfilerService] Starting circuit profiling via server API...');
+      console.log('[NoirProfilerService] Server URL:', this.serverBaseUrl);
       
-      // Since API endpoints aren't working in this repo, always use mock data
-      console.log('[NoirProfilerService] Using mock data (API bypassed)');
+      // Step 1: Compile the source code to get real artifacts
+      console.log('[NoirProfilerService] Compiling source code for profiling...');
+      console.log('[NoirProfilerService] Source code length:', request.sourceCode.length);
+      console.log('[NoirProfilerService] Cargo.toml provided:', !!request.cargoToml);
       
-      // Generate mock data based on source code
-      const mockData = this.generateMockDataFromSource(request.sourceCode);
+      const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, request.cargoToml);
       
-      // Parse the mock SVG data
-      const completeData = this.parser.parseCompleteProfilerData(
-        mockData.acirSVG,
-        mockData.brilligQuotientSVG,
-        request.sourceCode
-      );
-
-      // Extract parsed function data
-      const parsedData = completeData.acir.functions;
-      
-      // Extract line-by-line complexity
-      const lineComplexity = this.parser.extractLineComplexity(
-        completeData.acir,
-        request.sourceCode
-      );
-
-      console.log('[NoirProfilerService] Mock data parsing completed:', {
-        functions: parsedData.length,
-        totalConstraints: completeData.acir.totalConstraints,
-        totalBrillig: completeData.brillig.totalBrilligOpcode,
-        lines: lineComplexity.length
+      console.log('[NoirProfilerService] Compilation result:', {
+        success: compilationResult.success,
+        hasProgram: !!compilationResult.program,
+        compilationTime: compilationResult.compilationTime,
+        error: compilationResult.error
       });
-
-      // Store the original SVG content for display
-      completeData.acir.svgContent = mockData.acirSVG;
-      completeData.brillig.quotientSVG = mockData.brilligQuotientSVG;
-      completeData.brillig.invertSVG = mockData.brilligInvertSVG;
-      completeData.mainGatesSVG = mockData.mainGatesSVG;
-
-      console.log('[NoirProfilerService] SVG content stored:', {
-        acirSVGLength: mockData.acirSVG.length,
-        brilligQuotientLength: mockData.brilligQuotientSVG.length,
-        brilligInvertLength: mockData.brilligInvertSVG.length,
-        mainGatesLength: mockData.mainGatesSVG.length,
-        storedAcirSVG: !!completeData.acir.svgContent,
-        storedBrilligQuotient: !!completeData.brillig.quotientSVG,
-        storedBrilligInvert: !!completeData.brillig.invertSVG,
-        storedMainGates: !!completeData.mainGatesSVG
-      });
-
-      return {
-        parsedData,
-        lineComplexity,
-        completeData,
-        source: 'mock-data',
-        message: 'Using mock data for demonstration (API disabled)'
-      };
-
-    } catch (error) {
-      console.error('[NoirProfilerService] Mock data generation failed:', error);
       
-      // Return basic mock data as final fallback
-      return this.getMockProfilerResult(request.sourceCode);
-    }
-  }
+      if (!compilationResult.success) {
+        throw new Error(`Compilation failed: ${compilationResult.error}`);
+      }
+      
+      if (!compilationResult.program) {
+        throw new Error('No compiled program available after successful compilation');
+      }
+      
+      console.log('[NoirProfilerService] Compilation successful, creating artifact...');
+      
+      // Step 2: Create artifact from compilation result
+      const artifact = compilationResult.program.program;
 
-  /**
-   * Get mock profiler result for development/testing
-   */
-  private getMockProfilerResult(sourceCode: string): ProfilerResult {
-    console.log('[NoirProfilerService] Using mock profiler data');
-    
-    // Create mock SVG data
-    const mockAcirSVG = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="1200" height="800" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="800" height="40" fill="#ff6b6b" opacity="0.8">
-    <title>main:1-5: 156 constraints</title>
-  </rect>
-  <text x="10" y="25" font-size="12">main function (156 constraints)</text>
-  
-  <rect x="0" y="50" width="400" height="30" fill="#4ecdc4" opacity="0.8">
-    <title>add:8-12: 89 constraints</title>
-  </rect>
-  <text x="10" y="70" font-size="12">add function (89 constraints)</text>
-  
-  <rect x="0" y="90" width="200" height="25" fill="#45b7d1" opacity="0.8">
-    <title>multiply:15-18: 45 constraints</title>
-  </rect>
-  <text x="10" y="110" font-size="12">multiply function (45 constraints)</text>
-</svg>`;
-
-    const mockBrilligQuotientSVG = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="300" height="30" fill="#ff9ff3" opacity="0.8">
-    <title>integer_quotient: 67 operations</title>
-  </rect>
-  <text x="10" y="20" font-size="12">Integer Quotient Operations (67)</text>
-  
-  <rect x="0" y="40" width="200" height="25" fill="#feca57" opacity="0.8">
-    <title>field_operations: 45 operations</title>
-  </rect>
-  <text x="10" y="55" font-size="12">Field Operations (45)</text>
-</svg>`;
-
-    const mockBrilligInvertSVG = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="800" height="600" xmlns="http://www.w3.org/2000/svg">
-  <rect x="0" y="0" width="250" height="30" fill="#ff6b6b" opacity="0.8">
-    <title>field_invert: 34 operations</title>
-  </rect>
-  <text x="10" y="20" font-size="12">Field Inversion Operations (34)</text>
-  
-  <rect x="0" y="40" width="180" height="25" fill="#48dbfb" opacity="0.8">
-    <title>arithmetic: 28 operations</title>
-  </rect>
-  <text x="10" y="55" font-size="12">Arithmetic Operations (28)</text>
-</svg>`;
-
-    // Parse the mock SVG data
-    const completeData = this.parser.parseCompleteProfilerData(
-      mockAcirSVG,
-      mockBrilligQuotientSVG,
-      sourceCode
-    );
-
-    // Extract parsed function data
-    const parsedData = completeData.acir.functions;
-    
-    // Extract line-by-line complexity
-    const lineComplexity = this.parser.extractLineComplexity(
-      completeData.acir,
-      sourceCode
-    );
-
-    // Store the original SVG content for display
-    completeData.acir.svgContent = mockAcirSVG;
-    completeData.brillig.quotientSVG = mockBrilligQuotientSVG;
-    completeData.brillig.invertSVG = mockBrilligInvertSVG;
-
-    return {
-      parsedData,
-      lineComplexity,
-      completeData,
-      source: 'mock-fallback',
-      message: 'Using fallback mock data',
-      recommendations: [
-        'Consider inlining small functions to reduce ACIR overhead',
-        'Field inversions are expensive - cache results if possible',
-        'Total complexity (290) is acceptable for production use'
-      ]
-    };
-  }
-
-  /**
-   * Check if the profiler service is available
-   * Note: Currently disabled since API endpoints aren't working in this repo
-   */
-  async checkAvailability(): Promise<boolean> {
-    // API endpoints are disabled, always return false
-    console.log('[NoirProfilerService] API endpoints disabled, using mock data only');
-    return false;
-    
-    /* Future implementation when API is working:
-    try {
-      const response = await fetch(this.apiEndpoint, {
+      // Step 3: Make request to server API
+      console.log('[NoirProfilerService] Sending artifact to server for profiling...');
+      const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
-        body: JSON.stringify({
-          sourceCode: 'fn main() -> Field { 1 }'
-        }),
+        body: JSON.stringify({ artifact })
       });
 
-      return response.ok;
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+
+      const serverResponse: ServerProfilerResponse = await response.json();
+      
+      if (!serverResponse.success) {
+        throw new Error(serverResponse.error || 'Server profiling failed');
+      }
+
+      console.log('[NoirProfilerService] Server profiling successful:', {
+        svgsGenerated: serverResponse.svgs.length,
+        tempFileCreated: serverResponse.tempFileCreated
+      });
+
+      // Step 4: Extract SVG content from server response
+      const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
+      
+      console.log('[NoirProfilerService] Main ACIR SVG content extracted:', {
+        mainAcirSVGLength: svgData.mainAcirSVG.length
+      });
+
+      return {
+        svgContent: svgData.mainAcirSVG,
+        source: 'noir-profiler',
+        message: 'Profiling completed via server API with real compilation'
+      };
+
     } catch (error) {
-      console.error('[NoirProfilerService] Availability check failed:', error);
-      return false;
+      console.error('[NoirProfilerService] Profiling failed:', error);
+      throw error; // Re-throw the error - no fallback to mock data
     }
-    */
   }
+
+  /**
+   * Extract SVG data from server response
+   */
+  private extractSVGDataFromResponse(svgs: Array<{ content: string; filename: string; function?: string; type: string }>) {
+    let mainAcirSVG = '';
+
+    svgs.forEach(svg => {
+      console.log(`[NoirProfilerService] Processing SVG: ${svg.filename} (${svg.type})`);
+      
+      // Only extract the main ACIR opcodes SVG
+      if (svg.filename.includes('main_acir_opcodes')) {
+        mainAcirSVG = svg.content;
+        console.log(`[NoirProfilerService] Found main ACIR SVG: ${svg.content.length} chars`);
+      }
+    });
+
+    return {
+      mainAcirSVG
+    };
+  }
+
+
+
+
+    
+
 
   /**
    * Get profiling statistics
@@ -268,8 +204,8 @@ export class NoirProfilerService {
   async exportProfilingData(): Promise<string> {
     return JSON.stringify({
       timestamp: new Date().toISOString(),
-      source: 'mock-data',
-      message: 'Mock profiling data export'
+      source: 'server-api',
+      message: 'Profiling data export from server API'
     }, null, 2);
   }
 }

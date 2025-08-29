@@ -5,23 +5,26 @@ import { Badge } from '@/components/ui/badge';
 import { Download, RefreshCw, Info } from 'lucide-react';
 import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
 import { ComplexityAnalysisPanel } from './ComplexityAnalysisPanel';
-import { ParsedFunctionData, LineComplexity } from './ComplexityAnalysisPanel';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
-import { REAL_SVG_DATA, SVG_METADATA } from '@/services/RealSVGData';
+
 
 interface CombinedComplexityPanelProps {
   sourceCode: string;
+  cargoToml?: string;
   onLineClick?: (lineNumber: number) => void;
   onFunctionClick?: (functionName: string) => void;
+  className?: string;
 }
 
 export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = ({
   sourceCode,
+  cargoToml,
   onLineClick,
-  onFunctionClick
+  onFunctionClick,
+  className
 }) => {
-  const [activeTab, setActiveTab] = useState('svg');
-  const [selectedSVG, setSelectedSVG] = useState<'acir' | 'brilligQuotient' | 'brilligInvert' | 'mainGates'>('acir');
+
+
   const [profilerResult, setProfilerResult] = useState<ProfilerResult | null>(null);
   const [isProfiling, setIsProfiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,18 +43,18 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
     try {
       console.log('[CombinedComplexityPanel] Starting profiling...');
-      
+
       const result = await profilerService.profileCircuit({
-        sourceCode: sourceCode.trim()
+        sourceCode: sourceCode.trim(),
+        cargoToml: cargoToml || undefined
       });
 
       setProfilerResult(result);
       setLastProfiled(new Date());
-      
+
       console.log('[CombinedComplexityPanel] Profiling completed:', {
         source: result.source,
-        functions: result.parsedData.length,
-        totalConstraints: result.completeData.acir.totalConstraints
+        svgContentLength: result.svgContent.length
       });
 
     } catch (err) {
@@ -87,7 +90,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
   const handleFunctionClick = (functionName: string) => {
     onFunctionClick?.(functionName);
-    
+
     // Highlight the function in the SVG viewer
     // This could be enhanced with more sophisticated highlighting
     console.log(`[CombinedComplexityPanel] Function clicked: ${functionName}`);
@@ -95,7 +98,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
   const handleLineClick = (lineNumber: number) => {
     onLineClick?.(lineNumber);
-    
+
     // This could trigger scrolling to the line in the editor
     console.log(`[CombinedComplexityPanel] Line clicked: ${lineNumber}`);
   };
@@ -114,25 +117,13 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   }, [sourceCode]);
 
   // Helper function to get current SVG content based on selection
-  const getCurrentSVGContent = () => {
-    if (!profilerResult) return '';
-    
-    switch (selectedSVG) {
-      case 'acir':
-        return profilerResult.completeData.acir.svgContent || '';
-      case 'brilligQuotient':
-        return profilerResult.completeData.brillig.quotientSVG || '';
-      case 'brilligInvert':
-        return profilerResult.completeData.brillig.invertSVG || '';
-      case 'mainGates':
-        return profilerResult.completeData.mainGatesSVG || '';
-      default:
-        return '';
-    }
-  };
+      const getCurrentSVGContent = () => {
+      if (!profilerResult) return '';
+      return profilerResult.svgContent || '';
+    };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className={`h-full flex flex-col ${className || ''}`}>
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-medium">Complexity Analysis</h2>
@@ -147,7 +138,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
             </Badge>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {profilerResult && (
             <Button
@@ -192,50 +183,14 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {profilerResult && !isProfiling && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
-          <TabsList className="grid w-full grid-cols-2 mx-4 mt-2">
-            <TabsTrigger value="svg">SVG Only</TabsTrigger>
-            <TabsTrigger value="analysis">Analysis Only</TabsTrigger>
-          </TabsList>
-
-
-
-          <TabsContent value="svg" className="flex-1 p-4">
-            {/* SVG Selector */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-2">Select SVG View:</label>
-              <select
-                value={selectedSVG}
-                onChange={(e) => setSelectedSVG(e.target.value as any)}
-                className="w-full p-2 border border-border rounded bg-background text-foreground"
-              >
-                <option value="acir">ACIR Opcodes ({SVG_METADATA.acir.totalSamples} samples)</option>
-                <option value="brilligQuotient">Brillig Integer Quotient ({SVG_METADATA.brilligQuotient.totalSamples} samples)</option>
-                <option value="brilligInvert">Brillig Field Invert ({SVG_METADATA.brilligInvert.totalSamples} samples)</option>
-                <option value="mainGates">Main Gates ({SVG_METADATA.mainGates.totalSamples} samples)</option>
-              </select>
-            </div>
-
-
-
-            <SVGFlamegraphViewer
-              svgContent={getCurrentSVGContent()}
-              onFunctionClick={handleFunctionClick}
-              onLineClick={handleLineClick}
-              className="h-full"
-            />
-          </TabsContent>
-
-          <TabsContent value="analysis" className="flex-1 p-4">
-            <ComplexityAnalysisPanel
-              parsedData={profilerResult.parsedData}
-              lineComplexity={profilerResult.lineComplexity}
-              onLineClick={handleLineClick}
-              onFunctionClick={handleFunctionClick}
-              error={profilerResult.error}
-            />
-          </TabsContent>
-        </Tabs>
+        <div className="flex-1 p-4">
+          <SVGFlamegraphViewer
+            svgContent={getCurrentSVGContent()}
+            onFunctionClick={handleFunctionClick}
+            onLineClick={handleLineClick}
+            className="h-full"
+          />
+        </div>
       )}
 
       {error && (
@@ -245,41 +200,10 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
             <span className="text-sm font-medium">Error:</span>
             <span className="text-sm">{error}</span>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Using mock data for demonstration. Check the console for details.
-          </p>
         </div>
       )}
     </div>
   );
 };
 
-/**
- * Generate SVG content from parsed function data for display
- * This is a fallback when the original SVG is not available
- */
-function generateSVGFromParsedData(functions: ParsedFunctionData[]): string {
-  if (functions.length === 0) return '';
 
-  const width = 1200;
-  const height = Math.max(800, functions.length * 60 + 100);
-  
-  let svgContent = `<?xml version="1.0" encoding="UTF-8"?>
-<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">`;
-
-  functions.forEach((func, index) => {
-    const y = index * 60 + 20;
-    const barWidth = Math.min((func.constraintCount / 200) * width * 0.8, width * 0.8);
-    
-    svgContent += `
-  <rect x="20" y="${y}" width="${barWidth}" height="40" fill="${func.color}" opacity="0.8">
-    <title>${func.functionName}:${func.lineRange}: ${func.constraintCount} constraints</title>
-  </rect>
-  <text x="30" y="${y + 25}" font-size="12">${func.functionName} function (${func.constraintCount} constraints)</text>`;
-  });
-
-  svgContent += `
-</svg>`;
-
-  return svgContent;
-}
