@@ -1,22 +1,8 @@
-import { SVGFlamegraphParser, CompleteProfilerData, ParsedFlamegraphData, ParsedBrilligData } from './SVGFlamegraphParser';
-import { ParsedFunctionData, LineComplexity } from '@/components/ComplexityAnalysisPanel';
 import { noirWasmCompiler } from './NoirWasmCompiler';
 
 export interface ProfilerRequest {
   sourceCode: string;
   cargoToml?: string;
-}
-
-export interface ProfilerResponse {
-  success: boolean;
-  data: {
-    acirSVG: string;
-    brilligQuotientSVG: string;
-    brilligInvertSVG: string;
-    source: string;
-    error?: string;
-    message?: string;
-  };
 }
 
 export interface ProfilerResult {
@@ -40,29 +26,16 @@ interface ServerProfilerResponse {
 }
 
 export class NoirProfilerService {
-  private parser: SVGFlamegraphParser;
   private apiEndpoint: string;
   private serverBaseUrl: string;
 
   constructor() {
-    this.parser = new SVGFlamegraphParser();
     this.apiEndpoint = '/api/profile/opcodes';
     // Use environment variable for server base URL, fallback to localhost:4000
     this.serverBaseUrl = import.meta.env.VITE_PROFILER_SERVER_URL || 'http://localhost:4000';
   }
 
-  /**
-   * Generate a simple hash from bytecode content
-   */
-  private generateHash(bytecode: string): string {
-    let hash = 0;
-    for (let i = 0; i < bytecode.length; i++) {
-      const char = bytecode.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString();
-  }
+
 
   /**
    * Profile a Noir circuit by compiling and calling the server API
@@ -171,41 +144,4 @@ export class NoirProfilerService {
     
 
 
-  /**
-   * Get profiling statistics
-   */
-  async getProfilingStats(): Promise<{
-    totalRequests: number;
-    successRate: number;
-    averageResponseTime: number;
-  }> {
-    return {
-      totalRequests: 0,
-      successRate: 100,
-      averageResponseTime: 0
-    };
-  }
-
-  /**
-   * Get optimization recommendations
-   */
-  async getOptimizationRecommendations(): Promise<string[]> {
-    return [
-      'Consider inlining small functions to reduce ACIR overhead',
-      'Field inversions are expensive - cache results if possible',
-      'Use range checks sparingly as they generate many constraints',
-      'Consider using lookup tables for repeated calculations'
-    ];
-  }
-
-  /**
-   * Export profiling data
-   */
-  async exportProfilingData(): Promise<string> {
-    return JSON.stringify({
-      timestamp: new Date().toISOString(),
-      source: 'server-api',
-      message: 'Profiling data export from server API'
-    }, null, 2);
-  }
 }

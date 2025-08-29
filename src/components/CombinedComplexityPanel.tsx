@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, RefreshCw, Info } from 'lucide-react';
+import { RefreshCw, Info } from 'lucide-react';
 import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
-import { ComplexityAnalysisPanel } from './ComplexityAnalysisPanel';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
 
 
@@ -65,22 +63,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     }
   };
 
-  const handleExportData = async () => {
-    if (!profilerResult) return;
 
-    try {
-      const exportData = await profilerService.exportProfilingData();
-      const blob = new Blob([exportData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `noir-complexity-analysis-${new Date().toISOString().split('T')[0]}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Failed to export data:', error);
-    }
-  };
 
   const handleRefresh = () => {
     if (sourceCode.trim()) {
@@ -140,16 +123,6 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
         </div>
 
         <div className="flex items-center gap-2">
-          {profilerResult && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleExportData}
-              title="Export analysis data"
-            >
-              <Download className="h-3 w-3" />
-            </Button>
-          )}
           <Button
             variant="outline"
             size="sm"
