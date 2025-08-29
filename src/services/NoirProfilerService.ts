@@ -132,18 +132,12 @@ export class NoirProfilerService {
       
       // Extract ACIR opcodes SVG
       if (svg.filename.includes('main_acir_opcodes')) {
-        console.log(`[NoirProfilerService] Found main ACIR SVG: ${svg.content.length} chars`);
-        console.log(`[NoirProfilerService] ACIR SVG preview:`, svg.content.substring(0, 500));
         mainAcirSVG = this.cleanSVGContent(svg.content);
-        console.log(`[NoirProfilerService] ACIR SVG after cleaning: ${mainAcirSVG.length} chars`);
       }
       
       // Extract proving backend gates SVG
       if (svg.filename.includes('main_gates')) {
-        console.log(`[NoirProfilerService] Found main Gates SVG: ${svg.content.length} chars`);
-        console.log(`[NoirProfilerService] Gates SVG preview:`, svg.content.substring(0, 500));
         mainGatesSVG = this.cleanSVGContent(svg.content);
-        console.log(`[NoirProfilerService] Gates SVG after cleaning: ${mainGatesSVG.length} chars`);
       }
     });
 
