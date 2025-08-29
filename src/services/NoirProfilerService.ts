@@ -132,14 +132,18 @@ export class NoirProfilerService {
       
       // Extract ACIR opcodes SVG
       if (svg.filename.includes('main_acir_opcodes')) {
-        mainAcirSVG = svg.content;
         console.log(`[NoirProfilerService] Found main ACIR SVG: ${svg.content.length} chars`);
+        console.log(`[NoirProfilerService] ACIR SVG preview:`, svg.content.substring(0, 500));
+        mainAcirSVG = this.cleanSVGContent(svg.content);
+        console.log(`[NoirProfilerService] ACIR SVG after cleaning: ${mainAcirSVG.length} chars`);
       }
       
       // Extract proving backend gates SVG
       if (svg.filename.includes('main_gates')) {
-        mainGatesSVG = svg.content;
         console.log(`[NoirProfilerService] Found main Gates SVG: ${svg.content.length} chars`);
+        console.log(`[NoirProfilerService] Gates SVG preview:`, svg.content.substring(0, 500));
+        mainGatesSVG = this.cleanSVGContent(svg.content);
+        console.log(`[NoirProfilerService] Gates SVG after cleaning: ${mainGatesSVG.length} chars`);
       }
     });
 
@@ -147,6 +151,54 @@ export class NoirProfilerService {
       mainAcirSVG,
       mainGatesSVG
     };
+  }
+
+  /**
+   * Clean SVG content by removing the file path header
+   */
+  private cleanSVGContent(svgContent: string): string {
+    // Remove the file path header that noir-profiler adds
+    // This header contains UUIDs and file paths like: "47fbed73-ce64-42c2-b7f1-d2e0bb01c797"
+    
+    // Pattern 1: Remove text elements containing UUIDs (8-4-4-4-12 format)
+    let cleanedSVG = svgContent.replace(
+      /<text[^>]*>[^<]*[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}[^<]*<\/text>/gi,
+      ''
+    );
+    
+    // Pattern 1.5: Remove text elements containing the specific UUID format you mentioned
+    cleanedSVG = cleanedSVG.replace(
+      /<text[^>]*>[^<]*47fbed73-ce64-42c2-b7f1-d2e0bb01c797[^<]*<\/text>/gi,
+      ''
+    );
+    
+    // Pattern 2: Remove text elements containing long file paths
+    cleanedSVG = cleanedSVG.replace(
+      /<text[^>]*>[^<]*\/data\/[^<]*<\/text>/gi,
+      ''
+    );
+    
+    // Pattern 3: Remove text elements containing "noir-playground-server"
+    cleanedSVG = cleanedSVG.replace(
+      /<text[^>]*>[^<]*noir-playground-server[^<]*<\/text>/gi,
+      ''
+    );
+    
+    // Pattern 4: Remove any remaining text elements that look like file paths
+    cleanedSVG = cleanedSVG.replace(
+      /<text[^>]*>[^<]*\/[^<]*\/[^<]*\/[^<]*\/[^<]*<\/text>/gi,
+      ''
+    );
+    
+    // Also remove any empty text elements that might be left
+    const finalSVG = cleanedSVG.replace(
+      /<text[^>]*><\/text>/g,
+      ''
+    );
+    
+    console.log('[NoirProfilerService] SVG cleaned, removed headers');
+    
+    return finalSVG;
   }
 
 
