@@ -17,6 +17,7 @@ import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
+import { CombinedComplexityPanel } from "./CombinedComplexityPanel";
 
 interface CodePlaygroundProps {
   initialCode?: string;
@@ -468,7 +469,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
           <ResizablePanel defaultSize={50} minSize={30}>
             <ResizablePanelGroup direction="vertical" className="h-full">
               {/* Code Editor Panel */}
-              <ResizablePanel defaultSize={60} minSize={40}>
+              <ResizablePanel defaultSize={70} minSize={50}>
                 <section className="h-full flex flex-col" aria-label="Code Editor">
                   {/* Code Editor Header with File Tabs */}
                   <header className="border-b border-border bg-muted/30">
@@ -561,7 +562,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
               />
 
               {/* Console Panel */}
-              <ResizablePanel defaultSize={40} minSize={15}>
+              <ResizablePanel defaultSize={30} minSize={20}>
                 <section className="h-full flex flex-col border-t border-border bg-muted/20" aria-label="Console Output">
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
@@ -605,11 +606,31 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
           />
 
-          {/* Right Panel - Execution Details */}
+          {/* Right Panel - Complexity Analysis and Execution Details */}
           <ResizablePanel defaultSize={50} minSize={30}>
             <ResizablePanelGroup direction="vertical" className="h-full">
+              {/* 🆕 NEW: Complexity Analysis Panel (Top) */}
+              <ResizablePanel defaultSize={60} minSize={30}>
+                <CombinedComplexityPanel
+                  sourceCode={files["main.nr"]}
+                  onLineClick={(lineNumber) => {
+                    // TODO: Implement line jumping in editor
+                    console.log(`Jump to line ${lineNumber}`);
+                  }}
+                  onFunctionClick={(functionName) => {
+                    // TODO: Implement function highlighting
+                    console.log(`Highlight function ${functionName}`);
+                  }}
+                />
+              </ResizablePanel>
+
+              {/* Resizable Handle between Complexity and Execution */}
+              <ResizableHandle
+                className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+              />
+
               {/* Circuit Inputs Panel */}
-              <ResizablePanel defaultSize={50} minSize={20}>
+              <ResizablePanel defaultSize={40} minSize={20}>
                 <section className="h-full flex flex-col" aria-label="Circuit Inputs">
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
@@ -658,7 +679,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
               />
 
               {/* Proof Output Panel */}
-              <ResizablePanel defaultSize={50} minSize={20}>
+              <ResizablePanel defaultSize={40} minSize={20}>
                 <section className="h-full flex flex-col" aria-label="Proof Output">
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
