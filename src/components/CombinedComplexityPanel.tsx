@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Info } from 'lucide-react';
+import { RefreshCw, Info, BarChart3 } from 'lucide-react';
 import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
 
@@ -21,7 +21,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   onFunctionClick,
   className
 }) => {
-
+  const [selectedView, setSelectedView] = useState<'acir' | 'gates'>('acir');
 
   const [profilerResult, setProfilerResult] = useState<ProfilerResult | null>(null);
   const [isProfiling, setIsProfiling] = useState(false);
@@ -52,7 +52,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
       console.log('[CombinedComplexityPanel] Profiling completed:', {
         source: result.source,
-        svgContentLength: result.svgContent.length
+        acirSVGLength: result.acirSVG.length,
+        gatesSVGLength: result.gatesSVG.length
       });
 
     } catch (err) {
@@ -102,24 +103,23 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   // Helper function to get current SVG content based on selection
       const getCurrentSVGContent = () => {
       if (!profilerResult) return '';
-      return profilerResult.svgContent || '';
+      
+      switch (selectedView) {
+        case 'acir':
+          return profilerResult.acirSVG || '';
+        case 'gates':
+          return profilerResult.gatesSVG || '';
+        default:
+          return profilerResult.acirSVG || '';
+      }
     };
 
   return (
     <div className={`h-full flex flex-col ${className || ''}`}>
       <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
+          <BarChart3 className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-medium">Complexity Analysis</h2>
-          {profilerResult && (
-            <Badge variant={profilerResult.source === 'noir-profiler' ? 'default' : 'secondary'}>
-              {profilerResult.source === 'noir-profiler' ? 'Live Data' : 'Mock Data'}
-            </Badge>
-          )}
-          {lastProfiled && (
-            <Badge variant="outline" className="text-xs">
-              {lastProfiled.toLocaleTimeString()}
-            </Badge>
-          )}
         </div>
 
         <div className="flex items-center gap-2">
@@ -157,6 +157,26 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
       {profilerResult && !isProfiling && (
         <div className="flex-1 p-4">
+          {/* View Toggle Buttons */}
+          <div className="flex gap-2 mb-4 justify-center">
+            <Button
+              variant={selectedView === 'acir' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedView('acir')}
+              className="text-xs px-4"
+            >
+              ACIR Opcodes
+            </Button>
+            <Button
+              variant={selectedView === 'gates' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedView('gates')}
+              className="text-xs px-4"
+            >
+              Proving Gates
+            </Button>
+          </div>
+          
           <SVGFlamegraphViewer
             svgContent={getCurrentSVGContent()}
             onFunctionClick={handleFunctionClick}

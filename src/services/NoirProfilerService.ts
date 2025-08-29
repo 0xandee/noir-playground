@@ -6,7 +6,8 @@ export interface ProfilerRequest {
 }
 
 export interface ProfilerResult {
-  svgContent: string;
+  acirSVG: string;
+  gatesSVG: string;
   source: 'noir-profiler'
   error?: string;
   message?: string;
@@ -101,12 +102,14 @@ export class NoirProfilerService {
       // Step 4: Extract SVG content from server response
       const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
       
-      console.log('[NoirProfilerService] Main ACIR SVG content extracted:', {
-        mainAcirSVGLength: svgData.mainAcirSVG.length
+      console.log('[NoirProfilerService] SVG content extracted:', {
+        mainAcirSVGLength: svgData.mainAcirSVG.length,
+        mainGatesSVGLength: svgData.mainGatesSVG.length
       });
 
       return {
-        svgContent: svgData.mainAcirSVG,
+        acirSVG: svgData.mainAcirSVG,
+        gatesSVG: svgData.mainGatesSVG,
         source: 'noir-profiler',
         message: 'Profiling completed via server API with real compilation'
       };
@@ -122,19 +125,27 @@ export class NoirProfilerService {
    */
   private extractSVGDataFromResponse(svgs: Array<{ content: string; filename: string; function?: string; type: string }>) {
     let mainAcirSVG = '';
+    let mainGatesSVG = '';
 
     svgs.forEach(svg => {
       console.log(`[NoirProfilerService] Processing SVG: ${svg.filename} (${svg.type})`);
       
-      // Only extract the main ACIR opcodes SVG
+      // Extract ACIR opcodes SVG
       if (svg.filename.includes('main_acir_opcodes')) {
         mainAcirSVG = svg.content;
         console.log(`[NoirProfilerService] Found main ACIR SVG: ${svg.content.length} chars`);
       }
+      
+      // Extract proving backend gates SVG
+      if (svg.filename.includes('main_gates')) {
+        mainGatesSVG = svg.content;
+        console.log(`[NoirProfilerService] Found main Gates SVG: ${svg.content.length} chars`);
+      }
     });
 
     return {
-      mainAcirSVG
+      mainAcirSVG,
+      mainGatesSVG
     };
   }
 
