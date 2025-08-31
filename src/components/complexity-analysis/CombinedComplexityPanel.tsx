@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Info, BarChart3 } from 'lucide-react';
 import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
+import { CircuitMetrics } from './CircuitMetrics';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
 
 
@@ -35,13 +36,9 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       setError('No source code to profile');
       return;
     }
-
     setIsProfiling(true);
     setError(null);
-
     try {
-      console.log('[CombinedComplexityPanel] Starting profiling...');
-
       const result = await profilerService.profileCircuit({
         sourceCode: sourceCode.trim(),
         cargoToml: cargoToml || undefined
@@ -49,15 +46,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
       setProfilerResult(result);
       setLastProfiled(new Date());
-
-      console.log('[CombinedComplexityPanel] Profiling completed:', {
-        source: result.source,
-        acirSVGLength: result.acirSVG.length,
-        gatesSVGLength: result.gatesSVG.length
-      });
-
     } catch (err) {
-      console.error('[CombinedComplexityPanel] Profiling failed:', err);
       setError(err instanceof Error ? err.message : 'Profiling failed');
     } finally {
       setIsProfiling(false);
@@ -77,14 +66,12 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
     // Highlight the function in the SVG viewer
     // This could be enhanced with more sophisticated highlighting
-    console.log(`[CombinedComplexityPanel] Function clicked: ${functionName}`);
   };
 
   const handleLineClick = (lineNumber: number) => {
     onLineClick?.(lineNumber);
 
     // This could trigger scrolling to the line in the editor
-    console.log(`[CombinedComplexityPanel] Line clicked: ${lineNumber}`);
   };
 
   // Auto-profile when source code changes (with debouncing)
@@ -92,27 +79,29 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     if (!sourceCode.trim()) return;
 
     const timeoutId = setTimeout(() => {
-      if (sourceCode.trim().length > 50) { // Only profile substantial code
+      if (sourceCode.trim().length > 50) {
         handleProfiling();
       }
-    }, 2000); // Wait 2 seconds after user stops typing
+    }, 4000);
 
     return () => clearTimeout(timeoutId);
-  }, [sourceCode]);
+  }, [sourceCode, handleProfiling]);
 
   // Helper function to get current SVG content based on selection
-      const getCurrentSVGContent = () => {
-      if (!profilerResult) return '';
-      
-      switch (selectedView) {
-        case 'acir':
-          return profilerResult.acirSVG || '';
-        case 'gates':
-          return profilerResult.gatesSVG || '';
-        default:
-          return profilerResult.acirSVG || '';
-      }
-    };
+  const getCurrentSVGContent = () => {
+    if (!profilerResult) return '';
+    
+    switch (selectedView) {
+      case 'acir':
+        return profilerResult.acirSVG || '';
+      case 'gates':
+        return profilerResult.gatesSVG || '';
+      default:
+        return profilerResult.acirSVG || '';
+    }
+  };
+
+
 
   return (
     <div className={`h-full flex flex-col ${className || ''}`}>
@@ -156,7 +145,17 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {profilerResult && !isProfiling && (
-        <div className="flex-1 p-4">
+        <div className="flex-1 p-4 overflow-hidden">
+          {/* Circuit Metrics - Show at the top if available */}
+          {profilerResult.circuitMetrics && (
+            <div className="mb-4">
+              <CircuitMetrics 
+                metrics={profilerResult.circuitMetrics} 
+                className="w-full"
+              />
+            </div>
+          )}
+
           {/* View Toggle Buttons */}
           <div className="flex gap-2 mb-4 justify-center">
             <Button
@@ -177,6 +176,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
             </Button>
           </div>
           
+          {/* SVG Viewer */}
           <SVGFlamegraphViewer
             svgContent={getCurrentSVGContent()}
             onFunctionClick={handleFunctionClick}

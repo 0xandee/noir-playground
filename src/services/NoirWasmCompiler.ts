@@ -16,18 +16,25 @@ export class NoirWasmCompiler {
     this.fileManager = createFileManager('.');
   }
 
-  async compileProgram(sourceCode: string, cargoToml?: string): Promise<WasmCompilationResult> {
-    const startTime = performance.now();
-    
-    try {
-      // Create default Nargo.toml if not provided
-      const defaultCargoToml = cargoToml || `[package]
+  /**
+   * Get the default Nargo.toml template
+   */
+  static getDefaultCargoToml(): string {
+    return `[package]
 name = "playground"
 type = "bin"
 authors = [""]
 compiler_version = ">=0.31.0"
 
 [dependencies]`;
+  }
+
+  async compileProgram(sourceCode: string, cargoToml?: string): Promise<WasmCompilationResult> {
+    const startTime = performance.now();
+    
+    try {
+      // Create default Nargo.toml if not provided
+      const defaultCargoToml = cargoToml || NoirWasmCompiler.getDefaultCargoToml();
 
       // Write files using file manager
       const projectPath = '/noir_project';
@@ -85,13 +92,7 @@ compiler_version = ">=0.31.0"
   }
 
   async compileContract(sourceCode: string): Promise<WasmCompilationResult> {
-    const contractToml = `[package]
-name = "playground_contract"
-type = "contract"
-authors = [""]
-compiler_version = ">=0.31.0"
-
-[dependencies]`;
+    const contractToml = NoirWasmCompiler.getDefaultCargoToml();
 
     return this.compileProgram(sourceCode, contractToml);
   }

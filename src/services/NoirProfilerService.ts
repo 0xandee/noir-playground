@@ -1,4 +1,4 @@
-import { noirWasmCompiler } from './NoirWasmCompiler';
+import { noirWasmCompiler, NoirWasmCompiler } from './NoirWasmCompiler';
 
 export interface ProfilerRequest {
   sourceCode: string;
@@ -11,6 +11,11 @@ export interface ProfilerResult {
   source: 'noir-profiler'
   error?: string;
   message?: string;
+  circuitMetrics?: {
+    totalAcirOpcodes: number;
+    totalBrilligOpcodes: number;
+    totalGates: number;
+  };
 }
 
 // Server API response types
@@ -22,6 +27,11 @@ interface ServerProfilerResponse {
     function?: string;
     type: string;
   }>;
+  circuitMetrics?: {
+    totalAcirOpcodes: number;
+    totalBrilligOpcodes: number;
+    totalGates: number;
+  };
   tempFileCreated: boolean;
   error?: string;
 }
@@ -43,22 +53,12 @@ export class NoirProfilerService {
    */
   async profileCircuit(request: ProfilerRequest): Promise<ProfilerResult> {
     try {
-      console.log('[NoirProfilerService] Starting circuit profiling via server API...');
-      console.log('[NoirProfilerService] Server URL:', this.serverBaseUrl);
-      
       // Step 1: Compile the source code to get real artifacts
-      console.log('[NoirProfilerService] Compiling source code for profiling...');
-      console.log('[NoirProfilerService] Source code length:', request.sourceCode.length);
-      console.log('[NoirProfilerService] Cargo.toml provided:', !!request.cargoToml);
       
-      const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, request.cargoToml);
+      // Use provided cargoToml or default from NoirWasmCompiler
+      const cargoTomlToUse = request.cargoToml || NoirWasmCompiler.getDefaultCargoToml();
       
-      console.log('[NoirProfilerService] Compilation result:', {
-        success: compilationResult.success,
-        hasProgram: !!compilationResult.program,
-        compilationTime: compilationResult.compilationTime,
-        error: compilationResult.error
-      });
+      const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, cargoTomlToUse);
       
       if (!compilationResult.success) {
         throw new Error(`Compilation failed: ${compilationResult.error}`);
@@ -68,20 +68,23 @@ export class NoirProfilerService {
         throw new Error('No compiled program available after successful compilation');
       }
       
-      console.log('[NoirProfilerService] Compilation successful, creating artifact...');
-      
       // Step 2: Create artifact from compilation result
       const artifact = compilationResult.program.program;
 
       // Step 3: Make request to server API
-      console.log('[NoirProfilerService] Sending artifact to server for profiling...');
+      const requestBody = {
+        artifact,
+        sourceCode: request.sourceCode,
+        cargoToml: cargoTomlToUse // Always include cargoToml (either user-provided or default)
+      };
+      
       const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        body: JSON.stringify({ artifact })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -94,24 +97,15 @@ export class NoirProfilerService {
         throw new Error(serverResponse.error || 'Server profiling failed');
       }
 
-      console.log('[NoirProfilerService] Server profiling successful:', {
-        svgsGenerated: serverResponse.svgs.length,
-        tempFileCreated: serverResponse.tempFileCreated
-      });
-
       // Step 4: Extract SVG content from server response
       const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
-      
-      console.log('[NoirProfilerService] SVG content extracted:', {
-        mainAcirSVGLength: svgData.mainAcirSVG.length,
-        mainGatesSVGLength: svgData.mainGatesSVG.length
-      });
 
       return {
         acirSVG: svgData.mainAcirSVG,
         gatesSVG: svgData.mainGatesSVG,
         source: 'noir-profiler',
-        message: 'Profiling completed via server API with real compilation'
+        message: `Profiling completed via server API with real compilation using ${request.cargoToml ? 'user-provided' : 'default'} Nargo.toml`,
+        circuitMetrics: serverResponse.circuitMetrics
       };
 
     } catch (error) {
@@ -128,8 +122,6 @@ export class NoirProfilerService {
     let mainGatesSVG = '';
 
     svgs.forEach(svg => {
-      console.log(`[NoirProfilerService] Processing SVG: ${svg.filename} (${svg.type})`);
-      
       // Extract ACIR opcodes SVG
       if (svg.filename.includes('main_acir_opcodes')) {
         mainAcirSVG = this.cleanSVGContent(svg.content);
@@ -189,8 +181,6 @@ export class NoirProfilerService {
       /<text[^>]*><\/text>/g,
       ''
     );
-    
-    console.log('[NoirProfilerService] SVG cleaned, removed headers');
     
     return finalSVG;
   }

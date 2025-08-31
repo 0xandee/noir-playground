@@ -17,7 +17,7 @@ import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
-import { CombinedComplexityPanel } from "./CombinedComplexityPanel";
+import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
 
 interface CodePlaygroundProps {
   initialCode?: string;
