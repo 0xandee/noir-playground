@@ -78,14 +78,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   React.useEffect(() => {
     if (!sourceCode.trim()) return;
 
-    const timeoutId = setTimeout(() => {
-      if (sourceCode.trim().length > 50) {
-        handleProfiling();
-      }
-    }, 4000);
-
-    return () => clearTimeout(timeoutId);
-  }, [sourceCode, handleProfiling]);
+    handleProfiling();
+  }, [sourceCode]);
 
   // Helper function to get current SVG content based on selection
   const getCurrentSVGContent = () => {
