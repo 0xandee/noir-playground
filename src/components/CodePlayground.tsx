@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
+import { NoirEditorWithHover } from "./NoirEditorWithHover";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
@@ -223,6 +224,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const handleShareClick = () => {
     setShareDialogOpen(true);
   };
+
+
 
   const handleInputChange = (key: string, value: string) => {
     setInputs(prev => ({ ...prev, [key]: value }));
@@ -540,18 +543,38 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                   {/* Code Editor */}
                   <div className="flex-1">
-                    <NoirEditor
-                      value={files[activeFile]}
-                      onChange={(content) => {
-                        if (activeFile === 'main.nr') {
+                    {activeFile === 'main.nr' ? (
+                      <NoirEditorWithHover
+                        value={files[activeFile] || `pub fn main(x: Field, y: pub Field) -> pub Field {
+    // Verify that x and y are both non-zero
+    assert(x != 0);
+    assert(y != 0);
+    
+    // Compute the sum and verify it's greater than both inputs
+    let sum = x + y;
+    assert(sum as u64 > x as u64);
+    assert(sum as u64 > y as u64);
+    
+    // Return the sum as proof output
+    sum
+}`}
+                        onChange={(content) => {
                           handleMainFileChange(content);
-                        } else {
+                        }}
+                        disabled={isRunning}
+                        language={getFileLanguage(activeFile)}
+                        cargoToml={files["Nargo.toml"]}
+                      />
+                    ) : (
+                      <NoirEditor
+                        value={files[activeFile] || ''}
+                        onChange={(content) => {
                           handleFileChange(activeFile, content);
-                        }
-                      }}
-                      disabled={isRunning}
-                      language={getFileLanguage(activeFile)}
-                    />
+                        }}
+                        disabled={isRunning}
+                        language={getFileLanguage(activeFile)}
+                      />
+                    )}
                   </div>
                 </section>
               </ResizablePanel>
@@ -609,7 +632,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
           {/* Right Panel - Complexity Analysis and Execution Details */}
           <ResizablePanel defaultSize={50} minSize={30}>
             <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* 🆕 NEW: Complexity Analysis Panel (Top) */}
+
+
+              {/* Complexity Analysis Panel */}
               <ResizablePanel defaultSize={60} minSize={30}>
                 <CombinedComplexityPanel
                   sourceCode={files["main.nr"]}
