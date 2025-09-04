@@ -80,6 +80,57 @@ export const noirExamples: NoirExample[] = [
     }
   },
   {
+    id: "simple-arithmetic",
+    name: "Simple Arithmetic",
+    description: "Basic arithmetic operations with multiple lines",
+    code: `pub fn main(x: Field, y: Field) -> pub Field {
+    // Simple arithmetic operations
+    let sum = x + y;
+    let product = x * y;
+    let difference = x - y;
+    
+    // Conditional logic
+    if (sum > 10) {
+        assert(product > 5);
+        return sum * 2;
+    } else {
+        assert(difference >= 0);
+        return difference;
+    }
+}`,
+    inputs: {
+      x: "5",
+      y: "3"
+    }
+  },
+  {
+    id: "array-operations",
+    name: "Array Operations",
+    description: "Working with arrays and loops",
+    code: `pub fn main(data: [Field; 4], threshold: Field) -> pub Field {
+    let mut sum = 0;
+    let mut count = 0;
+    
+    // Process array elements
+    for i in 0..4 {
+        if (data[i] > threshold) {
+            sum += data[i];
+            count += 1;
+        }
+    }
+    
+    // Assertions
+    assert(count > 0);
+    assert(sum > threshold * count);
+    
+    sum
+}`,
+    inputs: {
+      data: "[10, 5, 15, 8]",
+      threshold: "7"
+    }
+  },
+  {
     id: "cryptographic",
     name: "Cryptographic Example",
     description: "Pedersen hash and merkle path verification",

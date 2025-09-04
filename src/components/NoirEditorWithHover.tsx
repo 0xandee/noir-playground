@@ -149,35 +149,29 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   onLineAnalysis
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  const lineAnalysisService = useRef<LineAnalysisService>(new LineAnalysisService());
+  // Create new service instance for each analysis to avoid state persistence
   const [hoverContent, setHoverContent] = useState<LineAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const hoverProviderRegistered = useRef<boolean>(false);
-  const analysisCache = useRef<Map<string, LineAnalysisResult>>(new Map());
+  // Caching removed - will be implemented later
   const decorationIds = useRef<string[]>([]);
 
-  // Debug: Log the value prop
-  useEffect(() => {
-    console.log('NoirEditorWithHover received value:', value?.length || 0, 'characters');
-  }, [value]);
+  // Value prop logging removed
+
+  // Function to clear caches (for debugging)
+  // Clear caches function removed - will be implemented later
 
   // Function to create hover content - simplified to focus only on ACIR opcodes
   const createHoverContent = (lineNumber: number, lineText: string, analysis: LineAnalysisResult) => {
-    console.log(`[HOVER] Step 6.1: createHoverContent called for line ${lineNumber}`);
-    console.log(`[HOVER] Step 6.2: Analysis data:`, analysis);
-    
     const contents: monaco.IMarkdownString[] = [];
 
     if (analysis.error) {
-      console.log(`[HOVER] Step 6.3: Error case - ${analysis.error}`);
       contents.push({
         value: `❌ **Error:** ${analysis.error}`
       });
     } else {
-      console.log(`[HOVER] Step 6.3: Success case - opcodes length: ${analysis.opcodes.length}`);
       // Only show ACIR opcodes - clean and focused
       if (analysis.opcodes.length > 0) {
-        console.log(`[HOVER] Step 6.4: Adding opcodes:`, analysis.opcodes);
         contents.push({
           value: `**🔧 ACIR Opcodes:**`
         });
@@ -185,14 +179,11 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           value: `\`${analysis.opcodes.join('`, `')}\``
         });
       } else {
-        console.log(`[HOVER] Step 6.4: No opcodes, showing "No opcodes generated"`);
         contents.push({
           value: `**🔧 ACIR Opcodes:** No opcodes generated`
         });
       }
     }
-
-    console.log(`[HOVER] Step 6.5: Final hover contents:`, contents);
 
     return {
       range: new monaco.Range(lineNumber, 1, lineNumber, lineText.length),
@@ -257,13 +248,8 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     `;
     document.head.appendChild(style);
     
-    // Debug: Log editor state
-    console.log('Editor mounted, current value:', editor.getValue().length, 'characters');
-    console.log('Expected value:', value?.length || 0, 'characters');
-    
     // Ensure the editor has the correct value
     if (value && editor.getValue() !== value) {
-      console.log('Setting editor value...');
       editor.setValue(value);
     }
 
@@ -274,40 +260,26 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           const lineNumber = position.lineNumber;
           const lineText = model.getLineContent(lineNumber);
           
-          console.log(`[HOVER] Step 1: User hovered over line ${lineNumber}: "${lineText.trim()}"`);
-          
           // Skip empty lines or comments
           if (!lineText.trim() || lineText.trim().startsWith('//') || lineText.trim().startsWith('/*')) {
-            console.log(`[HOVER] Step 2: Skipping line ${lineNumber} (empty or comment)`);
             return null;
           }
 
-          // Create cache key
-          const cacheKey = `${lineNumber}_${lineText.trim()}`;
-          console.log(`[HOVER] Step 3: Cache key: "${cacheKey}"`);
-          
-          // Check cache first
-          if (analysisCache.current.has(cacheKey)) {
-            console.log(`[HOVER] Step 4: Found cached analysis for line ${lineNumber}`);
-            const cachedAnalysis = analysisCache.current.get(cacheKey)!;
-            return createHoverContent(lineNumber, lineText, cachedAnalysis);
-          }
-
-          console.log(`[HOVER] Step 4: No cache found, starting analysis for line ${lineNumber}`);
           setIsAnalyzing(true);
           
           try {
-            console.log(`[HOVER] Step 5: Calling LineAnalysisService.analyzeLine()`);
-            const analysis = await lineAnalysisService.current.analyzeLine({
-              sourceCode: value,
+            // Create fresh service instance for each analysis
+            const lineAnalysisService = new LineAnalysisService();
+            
+            // Use model content instead of value prop to ensure we get the actual editor content
+            const actualSourceCode = model.getValue();
+            
+            const analysis = await lineAnalysisService.analyzeLine({
+              sourceCode: actualSourceCode,
               lineNumber,
               cargoToml
             });
 
-            console.log(`[HOVER] Step 6: Analysis completed:`, analysis);
-
-            // Cache the result
-            analysisCache.current.set(cacheKey, analysis);
             setHoverContent(analysis);
 
             // Add inline decoration to show opcode/constraint count
@@ -339,7 +311,8 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         
         if (lineText.trim() && !lineText.trim().startsWith('//')) {
           // Trigger line analysis on click
-          lineAnalysisService.current.analyzeLine({
+          const lineAnalysisService = new LineAnalysisService();
+          lineAnalysisService.analyzeLine({
             sourceCode: value,
             lineNumber,
             cargoToml
@@ -356,11 +329,8 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
       onChange(value);
-      // Clear cache when code changes
-      lineAnalysisService.current.clearCache();
-      analysisCache.current.clear();
       
-      // Clear all decorations
+      // Clear all decorations when code changes
       if (editorRef.current) {
         const model = editorRef.current.getModel();
         if (model && decorationIds.current.length > 0) {

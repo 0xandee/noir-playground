@@ -18,8 +18,6 @@ export class SvgOpcodesParser {
    * Works with any Noir source file, not just main.nr
    */
   parseLineOpcodes(svgContent: string): LineOpcodesData[] {
-    console.log(`[SvgOpcodesParser] Step 4.1: parseLineOpcodes called with ${svgContent.length} chars`);
-    
     const lineData: LineOpcodesData[] = [];
     
     // Pattern to match line-specific opcode data from SVG title elements
@@ -30,20 +28,14 @@ export class SvgOpcodesParser {
     // - <title>src/main.nr:8:12::sum as u64 > x as u64 (4 opcodes, 8.70%)</title>
     const titlePattern = /<title>([^:]+\.nr):(\d+):(\d+)::(.+?) \((\d+) opcodes, ([\d.]+)%\)<\/title>/g;
     
-    console.log(`[SvgOpcodesParser] Step 4.2: Using regex pattern:`, titlePattern);
-    
     let match;
-    let matchCount = 0;
     while ((match = titlePattern.exec(svgContent)) !== null) {
-      matchCount++;
       const fileName = match[1].trim();           // main.nr, lib.nr, src/main.nr, etc.
       const lineNumber = parseInt(match[2]);
       const column = parseInt(match[3]);
       const expression = match[4].trim();
       const opcodes = parseInt(match[5]);
       const percentage = parseFloat(match[6]);
-      
-      console.log(`[SvgOpcodesParser] Step 4.3: Match ${matchCount}: Line ${lineNumber}, "${expression}", ${opcodes} opcodes`);
       
       lineData.push({
         lineNumber,
@@ -54,9 +46,6 @@ export class SvgOpcodesParser {
         fileName // Add fileName to track which file the opcodes come from
       });
     }
-    
-    console.log(`[SvgOpcodesParser] Step 4.4: Total matches found: ${matchCount}`);
-    console.log(`[SvgOpcodesParser] Step 4.5: Parsed data:`, lineData);
     
     // Sort by line number, then by column for easier lookup
     return lineData.sort((a, b) => {
@@ -117,60 +106,5 @@ export class SvgOpcodesParser {
     return allLineData.filter(data => data.fileName === fileName);
   }
 
-  /**
-   * Debug: Print all parsed line data
-   */
-  debugPrintLineData(svgContent: string): void {
-    const lineData = this.parseLineOpcodes(svgContent);
-    console.log('=== SVG Line Opcodes Data ===');
-    lineData.forEach(data => {
-      const fileInfo = data.fileName ? `[${data.fileName}] ` : '';
-      console.log(`${fileInfo}Line ${data.lineNumber}:${data.column} - "${data.expression}" (${data.opcodes} opcodes, ${data.percentage}%)`);
-    });
-    console.log('=============================');
-  }
-
-  /**
-   * Debug: Print line totals by file
-   */
-  debugPrintLineTotals(svgContent: string): void {
-    const lineData = this.parseLineOpcodes(svgContent);
-    const fileTotals = new Map<string, Map<number, number>>();
-    
-    lineData.forEach(data => {
-      const fileName = data.fileName || 'unknown';
-      if (!fileTotals.has(fileName)) {
-        fileTotals.set(fileName, new Map());
-      }
-      const lineTotals = fileTotals.get(fileName)!;
-      const current = lineTotals.get(data.lineNumber) || 0;
-      lineTotals.set(data.lineNumber, current + data.opcodes);
-    });
-    
-    console.log('=== Line Totals by File ===');
-    fileTotals.forEach((lineTotals, fileName) => {
-      console.log(`File: ${fileName}`);
-      lineTotals.forEach((total, lineNumber) => {
-        console.log(`  Line ${lineNumber}: ${total} total opcodes`);
-      });
-    });
-    console.log('===========================');
-  }
-
-  /**
-   * Debug: Print all available line numbers in the SVG
-   */
-  debugPrintAvailableLines(svgContent: string): void {
-    const lineData = this.parseLineOpcodes(svgContent);
-    const lineNumbers = new Set<number>();
-    
-    lineData.forEach(data => {
-      lineNumbers.add(data.lineNumber);
-    });
-    
-    console.log('=== Available Line Numbers ===');
-    const sortedLines = Array.from(lineNumbers).sort((a, b) => a - b);
-    console.log('Lines with opcode data:', sortedLines.join(', '));
-    console.log('==============================');
-  }
+  // Debug methods removed
 }

@@ -17,7 +17,6 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
   onLineClick,
   className = ''
 }) => {
-  console.log("🚀 ~ SVGFlamegraphViewer ~ svgContent:", svgContent)
   const svgRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
