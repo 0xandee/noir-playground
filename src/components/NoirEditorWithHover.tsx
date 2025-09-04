@@ -170,7 +170,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         value: `❌ **Error:** ${analysis.error}`
       });
     } else {
-      // Only show ACIR opcodes - clean and focused
+      // Show ACIR opcodes
       if (analysis.opcodes.length > 0) {
         contents.push({
           value: `**🔧 ACIR Opcodes:**`
@@ -183,6 +183,11 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           value: `**🔧 ACIR Opcodes:** No opcodes generated`
         });
       }
+
+      // Add constraints section with "Coming Soon" message
+      contents.push({
+        value: `**🛡️ Constraints:** Coming Soon`
+      });
     }
 
     return {
