@@ -149,11 +149,10 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   onLineAnalysis
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  // Create new service instance for each analysis to avoid state persistence
+  const lineAnalysisService = useRef<LineAnalysisService>(new LineAnalysisService());
   const [hoverContent, setHoverContent] = useState<LineAnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const hoverProviderRegistered = useRef<boolean>(false);
-  // Caching removed - will be implemented later
   const decorationIds = useRef<string[]>([]);
 
   // Value prop logging removed
@@ -273,13 +272,10 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           setIsAnalyzing(true);
           
           try {
-            // Create fresh service instance for each analysis
-            const lineAnalysisService = new LineAnalysisService();
-            
             // Use model content instead of value prop to ensure we get the actual editor content
             const actualSourceCode = model.getValue();
             
-            const analysis = await lineAnalysisService.analyzeLine({
+            const analysis = await lineAnalysisService.current.analyzeLine({
               sourceCode: actualSourceCode,
               lineNumber,
               cargoToml
@@ -316,8 +312,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         
         if (lineText.trim() && !lineText.trim().startsWith('//')) {
           // Trigger line analysis on click
-          const lineAnalysisService = new LineAnalysisService();
-          lineAnalysisService.analyzeLine({
+          lineAnalysisService.current.analyzeLine({
             sourceCode: value,
             lineNumber,
             cargoToml
@@ -335,12 +330,18 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     if (value !== undefined) {
       onChange(value);
       
-      // Clear all decorations when code changes
+      // Clear cache for the old source code when code changes
       if (editorRef.current) {
         const model = editorRef.current.getModel();
-        if (model && decorationIds.current.length > 0) {
-          model.deltaDecorations(decorationIds.current, []);
-          decorationIds.current = [];
+        if (model) {
+          const oldSourceCode = model.getValue();
+          lineAnalysisService.current.clearCacheForSource(oldSourceCode, cargoToml);
+          
+          // Clear all decorations when code changes
+          if (decorationIds.current.length > 0) {
+            model.deltaDecorations(decorationIds.current, []);
+            decorationIds.current = [];
+          }
         }
       }
     }
@@ -351,10 +352,20 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     if (editorRef.current && value !== undefined) {
       const currentValue = editorRef.current.getValue();
       if (currentValue !== value) {
+        // Clear cache for the old source code when switching examples
+        lineAnalysisService.current.clearCacheForSource(currentValue, cargoToml);
+        
         editorRef.current.setValue(value);
       }
     }
-  }, [value]);
+  }, [value, cargoToml]);
+
+  // Cleanup caches when component unmounts
+  useEffect(() => {
+    return () => {
+      lineAnalysisService.current.clearCaches();
+    };
+  }, []);
 
   return (
     <div className="relative h-full">

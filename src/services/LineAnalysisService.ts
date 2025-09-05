@@ -24,18 +24,27 @@ export interface LineAnalysisRequest {
   cargoToml?: string;
 }
 
+interface CachedSvgData {
+  data: string;
+  _cachedAt: number;
+}
+
 export class LineAnalysisService {
   private svgParser: SvgOpcodesParser;
   private profilerService: NoirProfilerService;
-  // Caching removed - will be implemented later
+  private analysisCache: Map<string, LineAnalysisResult & { _cachedAt: number }>;
+  private svgCache: Map<string, CachedSvgData>;
+  private readonly CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
   constructor() {
     this.svgParser = new SvgOpcodesParser();
     this.profilerService = new NoirProfilerService();
+    this.analysisCache = new Map();
+    this.svgCache = new Map();
   }
 
   /**
-   * Analyze a specific line of Noir code - Real SVG opcode parsing
+   * Analyze a specific line of Noir code - Real SVG opcode parsing with caching
    */
   async analyzeLine(request: LineAnalysisRequest): Promise<LineAnalysisResult> {
     const { sourceCode, lineNumber, cargoToml } = request;
@@ -54,6 +63,15 @@ export class LineAnalysisService {
       };
     }
     
+    // Generate cache key for this specific analysis
+    const cacheKey = this.generateCacheKey(sourceCode, lineNumber, cargoToml);
+    
+    // Check if we have a valid cached result
+    const cachedResult = this.getCachedAnalysis(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+    
     try {
       // Get real opcode data from SVG parsing
       const realOpcodes = await this.getRealOpcodesForLine(sourceCode, lineNumber, cargoToml);
@@ -61,23 +79,33 @@ export class LineAnalysisService {
       // For now, use simple mock constraints (we'll implement real constraints later)
       const mockConstraints = this.getMockConstraintsForLine(lineNumber, lineText);
       
-      return {
+      const result = {
         lineNumber,
         lineText,
         opcodes: realOpcodes,
         constraints: mockConstraints
       };
+      
+      // Cache the result
+      this.setCachedAnalysis(cacheKey, result);
+      
+      return result;
     } catch (error) {
       console.error('Real opcode analysis failed, falling back to mock data:', error);
       
       // Fallback to mock data if real analysis fails
       const mockData = this.getMockDataForLine(lineNumber, lineText);
-      return {
+      const result = {
         lineNumber,
         lineText,
         opcodes: mockData.opcodes,
         constraints: mockData.constraints
       };
+      
+      // Cache the fallback result too
+      this.setCachedAnalysis(cacheKey, result);
+      
+      return result;
     }
   }
 
@@ -151,21 +179,34 @@ export class LineAnalysisService {
 
 
   /**
-   * Get real opcodes for a specific line using SVG parsing
+   * Get real opcodes for a specific line using SVG parsing with caching
    */
   private async getRealOpcodesForLine(sourceCode: string, lineNumber: number, cargoToml?: string): Promise<string[]> {
-    // Get SVG data from profiler service (no caching)
-    const profilerResult = await this.profilerService.profileCircuit({
-      sourceCode,
-      cargoToml
-    });
+    // Generate SVG cache key
+    const svgCacheKey = this.generateSvgCacheKey(sourceCode, cargoToml);
     
-    if (!profilerResult.acirSVG) {
-      throw new Error('No SVG data available from profiler');
+    // Check if we have cached SVG data
+    let svgData = this.getCachedSvg(svgCacheKey);
+    
+    if (!svgData) {
+      // Get SVG data from profiler service
+      const profilerResult = await this.profilerService.profileCircuit({
+        sourceCode,
+        cargoToml
+      });
+      
+      if (!profilerResult.acirSVG) {
+        throw new Error('No SVG data available from profiler');
+      }
+      
+      svgData = profilerResult.acirSVG;
+      
+      // Cache the SVG data
+      this.setCachedSvg(svgCacheKey, svgData);
     }
     
     // Parse SVG to get line-specific opcode data
-    const allLineData = this.svgParser.parseLineOpcodes(profilerResult.acirSVG);
+    const allLineData = this.svgParser.parseLineOpcodes(svgData);
     
     // Get data for the specific line with exact matching
     const lineData = this.getExactLineData(allLineData, lineNumber, sourceCode);
@@ -244,5 +285,136 @@ export class LineAnalysisService {
     return constraints;
   }
 
-  // Caching methods removed - will be implemented later
+  /**
+   * Generate cache key for analysis results
+   */
+  private generateCacheKey(sourceCode: string, lineNumber: number, cargoToml?: string): string {
+    const sourceHash = this.simpleHash(sourceCode);
+    const cargoHash = cargoToml ? this.simpleHash(cargoToml) : 'no-cargo';
+    return `analysis:${sourceHash}:${lineNumber}:${cargoHash}`;
+  }
+
+  /**
+   * Generate cache key for SVG data
+   */
+  private generateSvgCacheKey(sourceCode: string, cargoToml?: string): string {
+    const sourceHash = this.simpleHash(sourceCode);
+    const cargoHash = cargoToml ? this.simpleHash(cargoToml) : 'no-cargo';
+    return `svg:${sourceHash}:${cargoHash}`;
+  }
+
+  /**
+   * Simple hash function for cache keys
+   */
+  private simpleHash(str: string): string {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+    return Math.abs(hash).toString(36);
+  }
+
+  /**
+   * Get cached analysis result
+   */
+  private getCachedAnalysis(cacheKey: string): LineAnalysisResult | null {
+    const cached = this.analysisCache.get(cacheKey);
+    if (cached && this.isCacheValid(cached)) {
+      return cached;
+    }
+    if (cached) {
+      this.analysisCache.delete(cacheKey);
+    }
+    return null;
+  }
+
+  /**
+   * Set cached analysis result
+   */
+  private setCachedAnalysis(cacheKey: string, result: LineAnalysisResult): void {
+    const cachedResult = {
+      ...result,
+      _cachedAt: Date.now()
+    };
+    this.analysisCache.set(cacheKey, cachedResult);
+  }
+
+  /**
+   * Get cached SVG data
+   */
+  private getCachedSvg(cacheKey: string): string | null {
+    const cached = this.svgCache.get(cacheKey);
+    if (cached && this.isSvgCacheValid(cached)) {
+      return cached.data;
+    }
+    if (cached) {
+      this.svgCache.delete(cacheKey);
+    }
+    return null;
+  }
+
+  /**
+   * Set cached SVG data
+   */
+  private setCachedSvg(cacheKey: string, svgData: string): void {
+    const cachedSvg = {
+      data: svgData,
+      _cachedAt: Date.now()
+    };
+    this.svgCache.set(cacheKey, cachedSvg);
+  }
+
+  /**
+   * Check if analysis cache entry is valid
+   */
+  private isCacheValid(cached: LineAnalysisResult & { _cachedAt: number }): boolean {
+    return cached._cachedAt && (Date.now() - cached._cachedAt) < this.CACHE_TTL;
+  }
+
+  /**
+   * Check if SVG cache entry is valid
+   */
+  private isSvgCacheValid(cached: CachedSvgData): boolean {
+    return cached._cachedAt && (Date.now() - cached._cachedAt) < this.CACHE_TTL;
+  }
+
+  /**
+   * Clear all caches
+   */
+  public clearCaches(): void {
+    this.analysisCache.clear();
+    this.svgCache.clear();
+  }
+
+  /**
+   * Clear cache for specific source code
+   */
+  public clearCacheForSource(sourceCode: string, cargoToml?: string): void {
+    const sourceHash = this.simpleHash(sourceCode);
+    const cargoHash = cargoToml ? this.simpleHash(cargoToml) : 'no-cargo';
+    
+    // Clear analysis cache entries for this source
+    for (const [key, value] of this.analysisCache.entries()) {
+      if (key.includes(sourceHash) && key.includes(cargoHash)) {
+        this.analysisCache.delete(key);
+      }
+    }
+    
+    // Clear SVG cache entry for this source
+    const svgKey = `svg:${sourceHash}:${cargoHash}`;
+    this.svgCache.delete(svgKey);
+  }
+
+  /**
+   * Get cache statistics
+   */
+  public getCacheStats(): { analysisEntries: number; svgEntries: number; totalSize: number } {
+    return {
+      analysisEntries: this.analysisCache.size,
+      svgEntries: this.svgCache.size,
+      totalSize: this.analysisCache.size + this.svgCache.size
+    };
+  }
 }
