@@ -1,13 +1,17 @@
 import { noirWasmCompiler, NoirWasmCompiler } from './NoirWasmCompiler';
+import { MetricsAggregationService, AggregationInput } from './MetricsAggregationService';
+import { CircuitComplexityReport } from '@/types/circuitMetrics';
 
 export interface ProfilerRequest {
   sourceCode: string;
   cargoToml?: string;
+  fileName?: string;
 }
 
 export interface ProfilerResult {
   acirSVG: string;
   gatesSVG: string;
+  brilligSVG?: string; // Added for Brillig opcodes
   source: 'noir-profiler'
   error?: string;
   message?: string;
@@ -16,6 +20,8 @@ export interface ProfilerResult {
     totalBrilligOpcodes: number;
     totalGates: number;
   };
+  // New enhanced metrics
+  complexityReport?: CircuitComplexityReport;
 }
 
 // Server API response types
@@ -39,11 +45,13 @@ interface ServerProfilerResponse {
 export class NoirProfilerService {
   private apiEndpoint: string;
   private serverBaseUrl: string;
+  private metricsService: MetricsAggregationService;
 
   constructor() {
     this.apiEndpoint = '/api/profile/opcodes';
     // Use environment variable for server base URL, fallback to localhost:4000
     this.serverBaseUrl = import.meta.env.VITE_PROFILER_SERVER_URL || 'http://localhost:4000';
+    this.metricsService = new MetricsAggregationService();
   }
 
 
@@ -100,12 +108,23 @@ export class NoirProfilerService {
       // Step 4: Extract SVG content from server response
       const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
 
+      // Step 5: Generate enhanced complexity report
+      const complexityReport = await this.generateComplexityReport({
+        acirSvg: svgData.mainAcirSVG,
+        gatesSvg: svgData.mainGatesSVG,
+        brilligSvg: svgData.brilligSVG,
+        sourceCode: request.sourceCode,
+        fileName: request.fileName
+      });
+
       return {
         acirSVG: svgData.mainAcirSVG,
         gatesSVG: svgData.mainGatesSVG,
+        brilligSVG: svgData.brilligSVG,
         source: 'noir-profiler',
         message: `Profiling completed via server API with real compilation using ${request.cargoToml ? 'user-provided' : 'default'} Nargo.toml`,
-        circuitMetrics: serverResponse.circuitMetrics
+        circuitMetrics: serverResponse.circuitMetrics,
+        complexityReport
       };
 
     } catch (error) {
@@ -115,11 +134,19 @@ export class NoirProfilerService {
   }
 
   /**
+   * Generate comprehensive complexity report from SVG data
+   */
+  private async generateComplexityReport(input: AggregationInput): Promise<CircuitComplexityReport> {
+    return await this.metricsService.generateComplexityReport(input);
+  }
+
+  /**
    * Extract SVG data from server response
    */
   private extractSVGDataFromResponse(svgs: Array<{ content: string; filename: string; function?: string; type: string }>) {
     let mainAcirSVG = '';
     let mainGatesSVG = '';
+    let brilligSVG = '';
 
     svgs.forEach(svg => {
       // Extract ACIR opcodes SVG
@@ -131,11 +158,17 @@ export class NoirProfilerService {
       if (svg.filename.includes('main_gates')) {
         mainGatesSVG = this.cleanSVGContent(svg.content);
       }
+
+      // Extract Brillig opcodes SVG (if available)
+      if (svg.filename.includes('brillig_opcodes')) {
+        brilligSVG = this.cleanSVGContent(svg.content);
+      }
     });
 
     return {
       mainAcirSVG,
-      mainGatesSVG
+      mainGatesSVG,
+      brilligSVG
     };
   }
 
@@ -185,10 +218,40 @@ export class NoirProfilerService {
     return finalSVG;
   }
 
+  /**
+   * Get current complexity report for source code (cached if available)
+   */
+  public async getComplexityReport(sourceCode: string, cargoToml?: string, fileName?: string): Promise<CircuitComplexityReport | null> {
+    try {
+      const result = await this.profileCircuit({ sourceCode, cargoToml, fileName });
+      return result.complexityReport || null;
+    } catch (error) {
+      console.error('[NoirProfilerService] Failed to get complexity report:', error);
+      return null;
+    }
+  }
 
+  /**
+   * Get metrics comparison between current and previous runs
+   */
+  public getMetricsComparison(currentReport: CircuitComplexityReport, metricType: 'acir' | 'brillig' | 'gates' = 'acir') {
+    return this.metricsService.compareWithPrevious(
+      currentReport,
+      metricType
+    );
+  }
 
+  /**
+   * Clear all cached metrics and reports
+   */
+  public clearCache(): void {
+    this.metricsService.clearCache();
+  }
 
-    
-
-
+  /**
+   * Update metrics configuration
+   */
+  public updateMetricsConfig(config: Partial<import('@/types/circuitMetrics').MetricsConfiguration>): void {
+    this.metricsService.updateConfiguration(config);
+  }
 }

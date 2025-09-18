@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { LineAnalysisService, LineAnalysisResult } from '@/services/LineAnalysisService';
+import { HeatmapDecorationService, DecorationOptions } from '@/services/HeatmapDecorationService';
+import { NoirProfilerService } from '@/services/NoirProfilerService';
+import { CircuitComplexityReport, MetricType, MetricsDelta } from '@/types/circuitMetrics';
 
 interface NoirEditorWithHoverProps {
   value: string;
@@ -10,6 +13,13 @@ interface NoirEditorWithHoverProps {
   language?: string;
   cargoToml?: string;
   onLineAnalysis?: (analysis: LineAnalysisResult) => void;
+  // New heatmap props
+  enableHeatmap?: boolean;
+  heatmapMetricType?: MetricType;
+  heatmapThreshold?: number;
+  showInlineMetrics?: boolean;
+  showGutterHeat?: boolean;
+  onComplexityReport?: (report: CircuitComplexityReport) => void;
 }
 
 const registerNoirLanguage = (monaco: Monaco) => {
@@ -146,7 +156,14 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   disabled = false, 
   language = 'noir',
   cargoToml,
-  onLineAnalysis
+  onLineAnalysis,
+  // New heatmap props with defaults
+  enableHeatmap = false,
+  heatmapMetricType = 'acir',
+  heatmapThreshold = 0.05, // 5% threshold
+  showInlineMetrics = true,
+  showGutterHeat = true,
+  onComplexityReport
 }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const lineAnalysisService = useRef<LineAnalysisService>(new LineAnalysisService());
@@ -154,8 +171,61 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const hoverProviderRegistered = useRef<boolean>(false);
   const decorationIds = useRef<string[]>([]);
+  
+  // New heatmap-related state and services
+  const heatmapService = useRef<HeatmapDecorationService>(new HeatmapDecorationService());
+  const profilerService = useRef<NoirProfilerService>(new NoirProfilerService());
+  const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
+  const [isGeneratingHeatmap, setIsGeneratingHeatmap] = useState(false);
+  const updateHeatmapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Value prop logging removed
+
+  // Function to generate and apply heatmap
+  const generateHeatmap = async (sourceCode: string): Promise<void> => {
+    if (!enableHeatmap || !sourceCode.trim()) return;
+    
+    setIsGeneratingHeatmap(true);
+    
+    try {
+      const report = await profilerService.current.getComplexityReport(
+        sourceCode, 
+        cargoToml, 
+        'main.nr'
+      );
+      
+      if (report) {
+        setComplexityReport(report);
+        onComplexityReport?.(report);
+        
+        // Apply heatmap decorations
+        const decorationOptions: DecorationOptions = {
+          showGutterHeat,
+          showInlineMetrics,
+          showDeltaIndicators: false, // TODO: implement delta tracking
+          metricType: heatmapMetricType,
+          threshold: heatmapThreshold
+        };
+        
+        heatmapService.current.applyHeatmapDecorations(report, decorationOptions);
+      }
+    } catch (error) {
+      console.error('Failed to generate heatmap:', error);
+    } finally {
+      setIsGeneratingHeatmap(false);
+    }
+  };
+
+  // Debounced heatmap update
+  const scheduleHeatmapUpdate = (sourceCode: string): void => {
+    if (updateHeatmapTimeoutRef.current) {
+      clearTimeout(updateHeatmapTimeoutRef.current);
+    }
+    
+    updateHeatmapTimeoutRef.current = setTimeout(() => {
+      generateHeatmap(sourceCode);
+    }, 1000); // 1 second debounce
+  };
 
   // Function to clear caches (for debugging)
   // Clear caches function removed - will be implemented later
@@ -238,6 +308,9 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     editorRef.current = editor;
     registerNoirLanguage(monaco);
     
+    // Initialize heatmap service
+    heatmapService.current.initialize(editor);
+    
     // Force set the enhanced theme
     monaco.editor.setTheme(language === 'noir' ? 'noir-enhanced' : 'vs-dark');
     
@@ -255,6 +328,11 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     // Ensure the editor has the correct value
     if (value && editor.getValue() !== value) {
       editor.setValue(value);
+    }
+
+    // Generate initial heatmap if enabled
+    if (enableHeatmap && value.trim()) {
+      generateHeatmap(value);
     }
 
     // Register hover provider for line-by-line analysis (only once)
@@ -342,6 +420,12 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
             model.deltaDecorations(decorationIds.current, []);
             decorationIds.current = [];
           }
+          
+          // Clear heatmap decorations and schedule update
+          if (enableHeatmap) {
+            heatmapService.current.clearDecorations();
+            scheduleHeatmapUpdate(value);
+          }
         }
       }
     }
@@ -360,10 +444,38 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     }
   }, [value, cargoToml]);
 
+  // Effect to handle heatmap configuration changes
+  useEffect(() => {
+    if (enableHeatmap && complexityReport && editorRef.current) {
+      const decorationOptions: DecorationOptions = {
+        showGutterHeat,
+        showInlineMetrics,
+        showDeltaIndicators: false,
+        metricType: heatmapMetricType,
+        threshold: heatmapThreshold
+      };
+      
+      heatmapService.current.applyHeatmapDecorations(complexityReport, decorationOptions);
+    } else if (!enableHeatmap) {
+      heatmapService.current.clearDecorations();
+    }
+  }, [enableHeatmap, heatmapMetricType, heatmapThreshold, showInlineMetrics, showGutterHeat, complexityReport]);
+
+  // Effect to regenerate heatmap when cargoToml changes
+  useEffect(() => {
+    if (enableHeatmap && value.trim()) {
+      scheduleHeatmapUpdate(value);
+    }
+  }, [cargoToml, enableHeatmap]);
+
   // Cleanup caches when component unmounts
   useEffect(() => {
     return () => {
       lineAnalysisService.current.clearCaches();
+      heatmapService.current.destroy();
+      if (updateHeatmapTimeoutRef.current) {
+        clearTimeout(updateHeatmapTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -404,10 +516,23 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         }}
       />
       
-      {/* Analysis indicator */}
+      {/* Analysis and heatmap indicators */}
       {isAnalyzing && (
         <div className="absolute top-2 right-2 bg-primary/20 text-primary text-xs px-2 py-1 rounded">
           Analyzing...
+        </div>
+      )}
+      
+      {isGeneratingHeatmap && (
+        <div className="absolute top-8 right-2 bg-orange-500/20 text-orange-500 text-xs px-2 py-1 rounded flex items-center gap-1">
+          <div className="animate-spin rounded-full h-3 w-3 border border-orange-500 border-t-transparent"></div>
+          Generating heatmap...
+        </div>
+      )}
+
+      {enableHeatmap && complexityReport && !isGeneratingHeatmap && (
+        <div className="absolute top-8 right-2 bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded">
+          Heatmap: {heatmapMetricType.toUpperCase()}
         </div>
       )}
     </div>

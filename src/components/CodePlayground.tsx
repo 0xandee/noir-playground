@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Copy,
   Download,
@@ -12,6 +14,8 @@ import {
   Terminal,
   Cpu,
   Share,
+  Flame,
+  Target,
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
@@ -19,6 +23,8 @@ import { NoirEditorWithHover } from "./NoirEditorWithHover";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
+import { HotspotNavigator } from "./complexity-analysis/HotspotNavigator";
+import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 
 interface CodePlaygroundProps {
   initialCode?: string;
@@ -81,6 +87,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
+  
+  // Heatmap-related state
+  const [enableHeatmap, setEnableHeatmap] = useState<boolean>(false);
+  const [heatmapMetricType, setHeatmapMetricType] = useState<MetricType>('acir');
+  const [showHotspotNavigator, setShowHotspotNavigator] = useState<boolean>(false);
+  const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
+  const [selectedHotspotLine, setSelectedHotspotLine] = useState<number | undefined>(undefined);
 
   // Extract input types when initial code is provided
   useEffect(() => {
@@ -264,8 +277,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   };
 
   // Convert array inputs to proper format for Noir
-  const processInputsForNoir = (inputs: Record<string, string>): Record<string, any> => {
-    const processedInputs: Record<string, any> = {};
+  const processInputsForNoir = (inputs: Record<string, string>): Record<string, string | number | string[]> => {
+    const processedInputs: Record<string, string | number | string[]> = {};
 
     for (const [key, value] of Object.entries(inputs)) {
       const typeInfo = inputTypes[key];
@@ -520,23 +533,61 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                       </div>
                       <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 text-sm select-none">
-                          <input
-                            type="checkbox"
-                            checked={proveAndVerify}
-                            onChange={(e) => setProveAndVerify(e.target.checked)}
-                            className="rounded"
-                          />
-                          Prove & Verify
-                        </label>
-                        <Button
-                          onClick={handleRun}
-                          disabled={isRunning}
-                          variant="default"
-                          size="sm"
-                        >
-                          Run
-                        </Button>
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-2 text-sm select-none">
+                            <Switch 
+                              checked={enableHeatmap}
+                              onCheckedChange={setEnableHeatmap}
+                              size="sm"
+                            />
+                            <Flame className="h-4 w-4" />
+                            Heatmap
+                          </label>
+                          
+                          {enableHeatmap && (
+                            <>
+                              <Select value={heatmapMetricType} onValueChange={(value: MetricType) => setHeatmapMetricType(value)}>
+                                <SelectTrigger className="w-20 h-7 text-xs">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="acir">ACIR</SelectItem>
+                                  <SelectItem value="brillig">Brillig</SelectItem>
+                                  <SelectItem value="gates">Gates</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setShowHotspotNavigator(!showHotspotNavigator)}
+                                className={`h-7 px-2 ${showHotspotNavigator ? 'bg-primary/10' : ''}`}
+                              >
+                                <Target className="h-3 w-3" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <label className="flex items-center gap-2 text-sm select-none">
+                            <input
+                              type="checkbox"
+                              checked={proveAndVerify}
+                              onChange={(e) => setProveAndVerify(e.target.checked)}
+                              className="rounded"
+                            />
+                            Prove & Verify
+                          </label>
+                          <Button
+                            onClick={handleRun}
+                            disabled={isRunning}
+                            variant="default"
+                            size="sm"
+                          >
+                            Run
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </header>
@@ -564,6 +615,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         disabled={isRunning}
                         language={getFileLanguage(activeFile)}
                         cargoToml={files["Nargo.toml"]}
+                        enableHeatmap={enableHeatmap}
+                        heatmapMetricType={heatmapMetricType}
+                        onComplexityReport={setComplexityReport}
                       />
                     ) : (
                       <NoirEditor
@@ -636,18 +690,34 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
               {/* Complexity Analysis Panel */}
               <ResizablePanel defaultSize={60} minSize={30}>
-                <CombinedComplexityPanel
-                  sourceCode={files["main.nr"]}
-                  cargoToml={files["Nargo.toml"]}
-                  onLineClick={(lineNumber) => {
-                    // TODO: Implement line jumping in editor
-                    console.log(`Jump to line ${lineNumber}`);
-                  }}
-                  onFunctionClick={(functionName) => {
-                    // TODO: Implement function highlighting
-                    console.log(`Highlight function ${functionName}`);
-                  }}
-                />
+                {showHotspotNavigator && complexityReport ? (
+                  <HotspotNavigator
+                    report={complexityReport}
+                    metricType={heatmapMetricType}
+                    selectedLine={selectedHotspotLine}
+                    onLineClick={(lineNumber) => {
+                      setSelectedHotspotLine(lineNumber);
+                      // TODO: Implement line jumping in editor
+                      console.log(`Jump to line ${lineNumber}`);
+                    }}
+                    onFunctionClick={(functionName, startLine) => {
+                      setSelectedHotspotLine(startLine);
+                      console.log(`Highlight function ${functionName} at line ${startLine}`);
+                    }}
+                  />
+                ) : (
+                  <CombinedComplexityPanel
+                    sourceCode={files["main.nr"]}
+                    cargoToml={files["Nargo.toml"]}
+                    onLineClick={(lineNumber) => {
+                      setSelectedHotspotLine(lineNumber);
+                      console.log(`Jump to line ${lineNumber}`);
+                    }}
+                    onFunctionClick={(functionName) => {
+                      console.log(`Highlight function ${functionName}`);
+                    }}
+                  />
+                )}
               </ResizablePanel>
 
               {/* Resizable Handle between Complexity and Execution */}
