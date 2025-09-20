@@ -266,7 +266,7 @@ export class LineAnalysisService {
    */
   private formatOpcodesForLine(lineData: LineOpcodesData[]): string[] {
     if (lineData.length === 0) {
-      return ['No opcodes (line not in circuit)'];
+      return [];
     }
     
     const totalOpcodes = lineData.reduce((sum, data) => sum + data.opcodes, 0);

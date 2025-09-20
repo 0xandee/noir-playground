@@ -404,11 +404,19 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
             });
           }
         } else if (totalOpcodes > 0) {
-          // Fallback to analysis data
+          // Fallback to analysis data (only when opcodes actually exist)
           contents.push({
             value: `  • **Total:** ${totalOpcodes} opcodes analyzed`
           });
         }
+      } else {
+        // No opcodes or constraints - show summary for consistency
+        contents.push({
+          value: `\n📊 **Circuit Cost Summary**`
+        });
+        contents.push({
+          value: `  • **Total:** 0 opcodes analyzed`
+        });
       }
 
       // ACIR Breakdown with percentages
@@ -457,6 +465,14 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         });
         contents.push({
           value: `  \`${analysis.opcodes.join('`, `')}\``
+        });
+      } else {
+        // No opcodes detected
+        contents.push({
+          value: `\n⚡ **ACIR Operations**`
+        });
+        contents.push({
+          value: `  No opcodes (line not in circuit)`
         });
       }
 
