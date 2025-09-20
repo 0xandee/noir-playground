@@ -96,9 +96,9 @@ export interface MetricsConfiguration {
   updateDebounceMs: number;
   cacheTimeoutMs: number;
   gradientColors: {
-    low: string;    // Green
-    medium: string; // Yellow
-    high: string;   // Red
+    baseColor: string;    // Base red color (rgb values)
+    minOpacity: number;   // Minimum opacity for lowest complexity
+    maxOpacity: number;   // Maximum opacity for highest complexity
   };
   badgeFormat: 'compact' | 'detailed';
   showInlineMetrics: boolean;
@@ -110,9 +110,9 @@ export const DEFAULT_METRICS_CONFIG: MetricsConfiguration = {
   updateDebounceMs: 500,
   cacheTimeoutMs: 5 * 60 * 1000, // 5 minutes
   gradientColors: {
-    low: '#22c55e',    // Green-500
-    medium: '#eab308', // Yellow-500
-    high: '#ef4444'    // Red-500
+    baseColor: '239, 68, 68',    // Red-500 RGB values
+    minOpacity: 0.1,             // 10% opacity for lowest complexity
+    maxOpacity: 0.9              // 90% opacity for highest complexity
   },
   badgeFormat: 'compact',
   showInlineMetrics: true,

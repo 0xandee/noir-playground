@@ -36,6 +36,7 @@ export class HeatmapDecorationService {
     lineHighlights: []
   };
   private styleElement: HTMLStyleElement | null = null;
+  private currentHeatmapData: HeatmapData[] = [];
 
   constructor(config?: Partial<MetricsConfiguration>) {
     this.config = { ...DEFAULT_METRICS_CONFIG, ...config };
@@ -61,6 +62,10 @@ export class HeatmapDecorationService {
 
     const fileMetrics = report.files[0]; // Assuming single file for now
     const heatmapData = this.generateHeatmapData(fileMetrics, options);
+
+    // Store current heatmap data and update styles
+    this.currentHeatmapData = heatmapData;
+    this.updateStyles();
 
     // Clear existing decorations
     this.clearDecorations();
@@ -329,28 +334,18 @@ export class HeatmapDecorationService {
   }
 
   private getHeatColor(heatValue: number): string {
-    const { low, medium, high } = this.config.gradientColors;
-    
-    if (heatValue <= 0.33) {
-      // Green to Yellow
-      const ratio = heatValue / 0.33;
-      return this.interpolateColor(low, medium, ratio);
-    } else {
-      // Yellow to Red
-      const ratio = (heatValue - 0.33) / 0.67;
-      return this.interpolateColor(medium, high, ratio);
-    }
+    const { baseColor, minOpacity, maxOpacity } = this.config.gradientColors;
+
+    // Calculate linear opacity based on heat value
+    const opacity = minOpacity + (heatValue * (maxOpacity - minOpacity));
+
+    return `rgba(${baseColor}, ${opacity})`;
   }
 
-  private getHeatLevel(heatValue: number): 'low' | 'medium' | 'high' {
-    if (heatValue <= 0.33) return 'low';
-    if (heatValue <= 0.66) return 'medium';
-    return 'high';
-  }
-
-  private interpolateColor(color1: string, color2: string, ratio: number): string {
-    // Simple color interpolation - could be enhanced with a proper color library
-    return ratio < 0.5 ? color1 : color2;
+  private getHeatLevel(heatValue: number): string {
+    // Generate a heat level identifier based on the heat value
+    // This creates unique identifiers for different heat levels
+    return `heat-${Math.round(heatValue * 100)}`;
   }
 
   /**
@@ -366,60 +361,12 @@ export class HeatmapDecorationService {
   private updateStyles(): void {
     if (!this.styleElement) return;
 
-    const { gradientColors } = this.config;
+    // Generate dynamic styles based on current heatmap data
+    const uniqueHeatLevels = this.getUniqueHeatLevels();
+    const dynamicStyles = this.generateDynamicStyles(uniqueHeatLevels);
 
     this.styleElement.textContent = `
-      /* Gutter heat indicators */
-      .heatmap-gutter-low::before {
-        content: "▌";
-        color: ${gradientColors.low};
-        font-weight: bold;
-        font-size: 14px;
-      }
-      .heatmap-gutter-medium::before {
-        content: "▌";
-        color: ${gradientColors.medium};
-        font-weight: bold;
-        font-size: 14px;
-      }
-      .heatmap-gutter-high::before {
-        content: "▌";
-        color: ${gradientColors.high};
-        font-weight: bold;
-        font-size: 14px;
-      }
-
-      /* Inline metric badges */
-      .heatmap-inline-low {
-        color: ${gradientColors.low} !important;
-        font-style: italic !important;
-        font-size: 0.85em !important;
-        opacity: 0.8;
-      }
-      .heatmap-inline-medium {
-        color: ${gradientColors.medium} !important;
-        font-style: italic !important;
-        font-size: 0.85em !important;
-        opacity: 0.9;
-      }
-      .heatmap-inline-high {
-        color: ${gradientColors.high} !important;
-        font-style: italic !important;
-        font-size: 0.85em !important;
-        font-weight: bold !important;
-        opacity: 1;
-      }
-
-      /* Hotspot highlights */
-      .heatmap-hotspot-highlight-low {
-        background-color: ${gradientColors.low}10 !important;
-      }
-      .heatmap-hotspot-highlight-medium {
-        background-color: ${gradientColors.medium}15 !important;
-      }
-      .heatmap-hotspot-highlight-high {
-        background-color: ${gradientColors.high}20 !important;
-      }
+      ${dynamicStyles}
 
       /* Delta indicators */
       .heatmap-delta-improvement {
@@ -431,5 +378,62 @@ export class HeatmapDecorationService {
         font-weight: bold !important;
       }
     `;
+  }
+
+  /**
+   * Get unique heat levels from current heatmap data
+   */
+  private getUniqueHeatLevels(): Array<{ level: string; heatValue: number }> {
+    if (!this.currentHeatmapData.length) return [];
+
+    const uniqueLevels = new Map<string, number>();
+
+    this.currentHeatmapData.forEach(data => {
+      const level = this.getHeatLevel(data.heatValue);
+      uniqueLevels.set(level, data.heatValue);
+    });
+
+    return Array.from(uniqueLevels.entries()).map(([level, heatValue]) => ({
+      level,
+      heatValue
+    }));
+  }
+
+  /**
+   * Generate dynamic CSS styles for each unique heat level
+   */
+  private generateDynamicStyles(uniqueHeatLevels: Array<{ level: string; heatValue: number }>): string {
+    const { baseColor, minOpacity, maxOpacity } = this.config.gradientColors;
+
+    return uniqueHeatLevels.map(({ level, heatValue }) => {
+      const opacity = minOpacity + (heatValue * (maxOpacity - minOpacity));
+      const colorWithOpacity = `rgba(${baseColor}, ${opacity})`;
+      const backgroundOpacity = Math.max(0.05, opacity * 0.3); // Lighter background
+      const backgroundColorWithOpacity = `rgba(${baseColor}, ${backgroundOpacity})`;
+
+      return `
+        /* Gutter heat indicators for ${level} */
+        .heatmap-gutter-${level}::before {
+          content: "▌";
+          color: ${colorWithOpacity};
+          font-weight: bold;
+          font-size: 14px;
+        }
+
+        /* Inline metric badges for ${level} */
+        .heatmap-inline-${level} {
+          color: ${colorWithOpacity} !important;
+          font-style: italic !important;
+          font-size: 0.85em !important;
+          font-weight: ${opacity > 0.6 ? 'bold' : 'normal'} !important;
+          opacity: 1;
+        }
+
+        /* Hotspot highlights for ${level} */
+        .heatmap-hotspot-highlight-${level} {
+          background-color: ${backgroundColorWithOpacity} !important;
+        }
+      `;
+    }).join('\n');
   }
 }
