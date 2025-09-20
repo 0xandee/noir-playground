@@ -116,6 +116,18 @@ export const HotspotNavigator: React.FC<HotspotNavigatorProps> = ({
     }
   };
 
+  // Clean expression text by removing HTML entities
+  const cleanExpression = (expression: string): string => {
+    return expression
+      .replace(/&gt;/g, '>')
+      .replace(/&lt;/g, '<')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/<[^>]*>/g, '') // Remove any remaining HTML tags
+      .trim();
+  };
+
   // Render line hotspot item
   const renderLineHotspot = (line: LineMetrics, index: number) => {
     const metricValue = getMetricValue(line);
@@ -158,9 +170,10 @@ export const HotspotNavigator: React.FC<HotspotNavigatorProps> = ({
           <div className="text-xs">
             <span className="text-muted-foreground">Expressions: </span>
             <span className="font-mono">
-              {line.expressions.slice(0, 2).map(expr => 
-                expr.expression.substring(0, 30) + (expr.expression.length > 30 ? '...' : '')
-              ).join(', ')}
+              {line.expressions.slice(0, 2).map(expr => {
+                const cleanExpr = cleanExpression(expr.expression);
+                return cleanExpr.substring(0, 30) + (cleanExpr.length > 30 ? '...' : '');
+              }).join(', ')}
               {line.expressions.length > 2 && ` +${line.expressions.length - 2} more`}
             </span>
           </div>

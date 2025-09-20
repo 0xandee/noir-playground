@@ -546,16 +546,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           
                           {enableHeatmap && (
                             <>
-                              <Select value={heatmapMetricType} onValueChange={(value: MetricType) => setHeatmapMetricType(value)}>
+                              {/* <Select value={heatmapMetricType} onValueChange={(value: MetricType) => setHeatmapMetricType(value)}>
                                 <SelectTrigger className="w-20 h-7 text-xs">
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                   <SelectItem value="acir">ACIR</SelectItem>
-                                  <SelectItem value="brillig">Brillig</SelectItem>
-                                  <SelectItem value="gates">Gates</SelectItem>
                                 </SelectContent>
-                              </Select>
+                              </Select> */}
                               
                               <Button
                                 variant="outline"

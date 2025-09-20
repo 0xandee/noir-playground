@@ -378,8 +378,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         value: `❌ **Error:** ${analysis.error}`
       });
     } else {
-      // Calculate total opcodes and prepare breakdown
-      const totalOpcodes = analysis.opcodes.length;
+      // Calculate total opcodes for breakdown
       const totalConstraintOpcodes = analysis.constraints.reduce((sum, c) => sum + c.cost, 0);
 
       // Get complexity report data if available
@@ -391,43 +390,17 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       //   value: `**Line ${lineNumber} Complexity**`
       // });
 
-      // Circuit Cost Summary (most important info first)
-      if (lineMetrics || totalOpcodes > 0 || totalConstraintOpcodes > 0) {
-        contents.push({
-          value: `\n📊 **Circuit Cost Summary**`
-        });
-
-        if (lineMetrics) {
-          // Use actual metrics from complexity report
-          contents.push({
-            value: `  • **Total:** ${lineMetrics.acirOpcodes} opcodes (${lineMetrics.percentage.toFixed(2)}% of circuit)`
-          });
-
-          if (hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
-            contents.push({
-              value: `  • **Hotspot Rank:** #${hotspotRank + 1} of ${Math.min(5, complexityReport?.hotspots.length || 0)}`
-            });
-          }
-        } else if (totalOpcodes > 0) {
-          // Fallback to analysis data (only when opcodes actually exist)
-          contents.push({
-            value: `  • **Total:** ${totalOpcodes} opcodes analyzed`
-          });
-        }
-      } else {
-        // No opcodes or constraints - show summary for consistency
-        contents.push({
-          value: `\n📊 **Circuit Cost Summary**`
-        });
-        contents.push({
-          value: `  • **Total:** 0 opcodes analyzed`
-        });
-      }
-
       // ACIR Breakdown with percentages
       if (analysis.constraints.length > 0) {
+        let breakdownHeader = `\n⚡ **ACIR Breakdown** (${totalConstraintOpcodes} opcodes)`;
+
+        // Add hotspot ranking if available
+        if (lineMetrics && hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
+          breakdownHeader += ` - Hotspot #${hotspotRank + 1}`;
+        }
+
         contents.push({
-          value: `\n⚡ **ACIR Breakdown** (${totalConstraintOpcodes} opcodes)`
+          value: breakdownHeader
         });
 
         // Group constraints by type and calculate percentages
@@ -481,31 +454,6 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         });
       }
 
-      // Optimization hints based on detected patterns
-      const hints = [];
-
-      // Check for expensive patterns
-      const typeConversions = analysis.constraints.filter(c => c.type === 'type_conversion');
-      const comparisons = analysis.constraints.filter(c => c.type === 'comparison');
-
-      if (typeConversions.length > 0 && typeConversions.reduce((sum, c) => sum + c.cost, 0) > totalConstraintOpcodes * 0.5) {
-        hints.push('Type conversions are expensive. Consider using consistent types to reduce casting operations.');
-      }
-
-      if (comparisons.length > 2) {
-        hints.push('Multiple comparisons detected. Consider combining conditions where possible.');
-      }
-
-      if (hints.length > 0) {
-        contents.push({
-          value: `\n💡 **Optimization Hints**`
-        });
-        hints.forEach(hint => {
-          contents.push({
-            value: `  ${hint}`
-          });
-        });
-      }
 
       // Resource Usage details
       if (lineMetrics) {
