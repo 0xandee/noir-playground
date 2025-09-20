@@ -698,11 +698,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     onLineClick={(lineNumber) => {
                       setSelectedHotspotLine(lineNumber);
                       // TODO: Implement line jumping in editor
-                      console.log(`Jump to line ${lineNumber}`);
                     }}
                     onFunctionClick={(functionName, startLine) => {
                       setSelectedHotspotLine(startLine);
-                      console.log(`Highlight function ${functionName} at line ${startLine}`);
                     }}
                   />
                 ) : (
@@ -711,10 +709,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     cargoToml={files["Nargo.toml"]}
                     onLineClick={(lineNumber) => {
                       setSelectedHotspotLine(lineNumber);
-                      console.log(`Jump to line ${lineNumber}`);
                     }}
                     onFunctionClick={(functionName) => {
-                      console.log(`Highlight function ${functionName}`);
+                      // Highlight function
                     }}
                   />
                 )}

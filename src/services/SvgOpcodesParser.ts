@@ -18,16 +18,9 @@ export class SvgOpcodesParser {
    * Works with any Noir source file, not just main.nr
    */
   parseLineOpcodes(svgContent: string): LineOpcodesData[] {
-    console.log('[SvgOpcodesParser Debug] Parsing SVG content length:', svgContent.length);
 
     const lineData: LineOpcodesData[] = [];
 
-    // First, let's see all title elements in the SVG
-    const allTitles = svgContent.match(/<title>[^<]*<\/title>/g) || [];
-    console.log('[SvgOpcodesParser Debug] Found title elements:', allTitles.length);
-    if (allTitles.length > 0) {
-      console.log('[SvgOpcodesParser Debug] Sample titles:', allTitles.slice(0, 10));
-    }
 
     // Pattern to match line-specific opcode data from SVG title elements
     // Flexible pattern that works with any .nr file (main.nr, lib.nr, etc.)
@@ -58,8 +51,6 @@ export class SvgOpcodesParser {
       });
     }
 
-    console.log('[SvgOpcodesParser Debug] Pattern matched count:', matchCount);
-    console.log('[SvgOpcodesParser Debug] Final line data count:', lineData.length);
 
     // Sort by line number, then by column for easier lookup
     return lineData.sort((a, b) => {

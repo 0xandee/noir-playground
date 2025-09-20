@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
         snippet = data[0] || null;
       }
     } catch (error) {
-      console.error('Error fetching snippet:', error);
+      // Error fetching snippet
     }
     
     // Generate meta tags

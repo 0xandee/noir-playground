@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
         snippet = data[0] || null;
       }
     } catch (error) {
-      console.error('Error fetching snippet:', error);
+      // Error fetching snippet
     }
     
     // Generate meta tags
@@ -127,7 +127,6 @@ module.exports = async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=0');
     return res.status(200).send(indexHtml);
   } catch (error) {
-    console.error('Error serving index.html:', error);
     // Fallback to redirect if we can't read the file
     return res.redirect(302, '/');
   }

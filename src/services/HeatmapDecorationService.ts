@@ -57,18 +57,10 @@ export class HeatmapDecorationService {
     options: DecorationOptions,
     deltas?: Map<number, MetricsDelta>
   ): void {
-    console.log('[HeatmapDecoration Debug] applyHeatmapDecorations called');
-    console.log('[HeatmapDecoration Debug] Editor exists:', !!this.editor);
-    console.log('[HeatmapDecoration Debug] Files count:', report.files.length);
-
     if (!this.editor || !report.files.length) return;
 
     const fileMetrics = report.files[0]; // Assuming single file for now
-    console.log('[HeatmapDecoration Debug] File metrics lines:', fileMetrics.lines.length);
-
     const heatmapData = this.generateHeatmapData(fileMetrics, options);
-    console.log('[HeatmapDecoration Debug] Generated heatmap data items:', heatmapData.length);
-    console.log('[HeatmapDecoration Debug] Heatmap data:', heatmapData);
 
     // Clear existing decorations
     this.clearDecorations();

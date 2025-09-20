@@ -210,7 +210,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         heatmapService.current.applyHeatmapDecorations(report, decorationOptions);
       }
     } catch (error) {
-      console.error('Failed to generate heatmap:', error);
+      // Failed to generate heatmap
     } finally {
       setIsGeneratingHeatmap(false);
     }
@@ -535,7 +535,6 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
             return createHoverContent(lineNumber, lineText, analysis);
 
           } catch (error) {
-            console.error('Hover analysis failed:', error);
             return {
               range: new monaco.Range(lineNumber, 1, lineNumber, lineText.length),
               contents: [{
@@ -565,7 +564,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           }).then(analysis => {
             onLineAnalysis?.(analysis);
           }).catch(error => {
-            console.error('Click analysis failed:', error);
+            // Click analysis failed
           });
         }
       }

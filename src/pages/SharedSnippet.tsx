@@ -36,19 +36,15 @@ const SharedSnippetPage = () => {
         setLoading(true);
         setError(null);
         
-        console.log('SharedSnippet: Loading snippet with ID:', id);
         const snippetData = await snippetService.getSnippet(id);
-        
+
         if (snippetData) {
-          console.log('SharedSnippet: Snippet loaded successfully:', snippetData.title);
           setSnippet(snippetData);
         } else {
-          console.log('SharedSnippet: Snippet not found with ID:', id);
           const errorMsg = 'This snippet could not be found or may have been deleted';
           setError(errorMsg);
         }
       } catch (err) {
-        console.error('SharedSnippet: Error loading snippet:', err);
         const errorMsg = 'Failed to load snippet. Please check your connection and try again.';
         setError(errorMsg);
         toast({
@@ -83,7 +79,6 @@ const SharedSnippetPage = () => {
             setError(errorMsg);
           }
         } catch (err) {
-          console.error('SharedSnippet: Error loading snippet on retry:', err);
           const errorMsg = 'Failed to load snippet. Please check your connection and try again.';
           setError(errorMsg);
         } finally {

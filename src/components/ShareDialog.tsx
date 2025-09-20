@@ -110,7 +110,7 @@ export function ShareDialog({
 
       // Pre-generate preview image for better SEO (fire-and-forget)
       previewService.preGenerateSharePreview(savedSnippet).catch(error => {
-        console.warn('Failed to pre-generate preview image:', error);
+        // Failed to pre-generate preview image
       });
 
       // Generate share URL
@@ -121,9 +121,7 @@ export function ShareDialog({
       // Automatically copy to clipboard
       await navigator.clipboard.writeText(url);
 
-      console.log('Snippet shared successfully with ID:', savedSnippet.id);
     } catch (err) {
-      console.error('Error sharing snippet:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to share snippet';
       
       
@@ -154,7 +152,7 @@ export function ShareDialog({
       setTimeout(() => setCopyFeedback(false), 1500);
       
     } catch (err) {
-      console.error('Failed to copy URL:', err);
+      // Failed to copy URL
     }
   };
 

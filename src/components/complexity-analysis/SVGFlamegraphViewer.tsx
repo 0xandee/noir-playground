@@ -140,11 +140,9 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
             className="w-full h-auto cursor-pointer block mx-auto min-w-full max-w-full"
             onLoad={(e) => {
               // SVG loaded successfully
-              console.log('[SVGFlamegraphViewer] SVG loaded with full functionality');
             }}
             onError={(e) => {
               // Fallback to iframe if object fails
-              console.warn('[SVGFlamegraphViewer] Object tag failed, using iframe fallback');
             }}
           >
             {/* Fallback: iframe for better SVG support */}

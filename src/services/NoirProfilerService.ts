@@ -86,11 +86,6 @@ export class NoirProfilerService {
         cargoToml: cargoTomlToUse // Always include cargoToml (either user-provided or default)
       };
       
-      console.log('[NoirProfilerService Debug] Sending request to server:', {
-        url: `${this.serverBaseUrl}${this.apiEndpoint}`,
-        sourceCodeLength: request.sourceCode.length,
-        hasCargoToml: !!request.cargoToml
-      });
 
       const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
         method: 'POST',
@@ -101,50 +96,21 @@ export class NoirProfilerService {
         body: JSON.stringify(requestBody)
       });
 
-      console.log('[NoirProfilerService Debug] Server response status:', response.status);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('[NoirProfilerService Debug] Server error response:', errorText);
         throw new Error(`Server responded with status: ${response.status}`);
       }
 
       const serverResponse: ServerProfilerResponse = await response.json();
-      console.log('[NoirProfilerService Debug] Server response received:', {
-        success: serverResponse.success,
-        svgCount: serverResponse.svgs?.length || 0,
-        tempFileCreated: serverResponse.tempFileCreated,
-        circuitMetrics: serverResponse.circuitMetrics,
-        hasError: !!serverResponse.error
-      });
 
       if (!serverResponse.success) {
-        console.error('[NoirProfilerService Debug] Server profiling failed:', serverResponse.error);
         throw new Error(serverResponse.error || 'Server profiling failed');
       }
 
-      // Log details about each SVG
-      if (serverResponse.svgs) {
-        serverResponse.svgs.forEach((svg, index) => {
-          console.log(`[NoirProfilerService Debug] SVG ${index}:`, {
-            filename: svg.filename,
-            type: svg.type,
-            function: svg.function,
-            contentLength: svg.content?.length || 0,
-            contentPreview: svg.content?.substring(0, 200) + '...'
-          });
-        });
-      }
 
       // Step 4: Extract SVG content from server response
       const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
-      console.log('[NoirProfilerService Debug] Extracted SVG data:', {
-        mainAcirSVGLength: svgData.mainAcirSVG?.length || 0,
-        mainGatesSVGLength: svgData.mainGatesSVG?.length || 0,
-        brilligSVGLength: svgData.brilligSVG?.length || 0,
-        acirPreview: svgData.mainAcirSVG?.substring(0, 100) + '...',
-        gatesPreview: svgData.mainGatesSVG?.substring(0, 100) + '...'
-      });
 
       // Step 5: Generate enhanced complexity report
       const complexityReport = await this.generateComplexityReport({
@@ -155,13 +121,6 @@ export class NoirProfilerService {
         fileName: request.fileName
       });
 
-      console.log('[NoirProfilerService Debug] Generated complexity report:', {
-        filesCount: complexityReport.files.length,
-        totalAcirOpcodes: complexityReport.totalAcirOpcodes,
-        totalBrilligOpcodes: complexityReport.totalBrilligOpcodes,
-        totalGates: complexityReport.totalGates,
-        hotspotsCount: complexityReport.hotspots.length
-      });
 
       return {
         acirSVG: svgData.mainAcirSVG,
@@ -174,7 +133,6 @@ export class NoirProfilerService {
       };
 
     } catch (error) {
-      console.error('[NoirProfilerService] Profiling failed:', error);
       throw error; // Re-throw the error
     }
   }
@@ -272,7 +230,6 @@ export class NoirProfilerService {
       const result = await this.profileCircuit({ sourceCode, cargoToml, fileName });
       return result.complexityReport || null;
     } catch (error) {
-      console.error('[NoirProfilerService] Failed to get complexity report:', error);
       return null;
     }
   }

@@ -91,7 +91,6 @@ export class LineAnalysisService {
       
       return result;
     } catch (error) {
-      console.error('Real opcode analysis failed:', error);
       throw new Error(`Line analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -173,7 +172,6 @@ export class LineAnalysisService {
       return this.analyzeExpressionsForConstraints(lineData);
 
     } catch (error) {
-      console.error('Constraint extraction failed:', error);
       return [];
     }
   }
