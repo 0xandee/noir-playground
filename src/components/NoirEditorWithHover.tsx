@@ -160,7 +160,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   // New heatmap props with defaults
   enableHeatmap = false,
   heatmapMetricType = 'acir',
-  heatmapThreshold = 0.05, // 5% threshold
+  heatmapThreshold = 0, // Show all lines with any opcodes
   showInlineMetrics = true,
   showGutterHeat = true,
   onComplexityReport
@@ -180,6 +180,96 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const updateHeatmapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Value prop logging removed
+
+  // Function to apply fallback highlighting for lines not in complexity report
+  const applyFallbackHighlighting = async (sourceCode: string, report: CircuitComplexityReport): Promise<void> => {
+    if (!editorRef.current) return;
+
+    const model = editorRef.current.getModel();
+    if (!model) return;
+
+    // Get lines that are already highlighted by the main complexity report
+    const highlightedLines = new Set<number>();
+    if (report.files.length > 0) {
+      report.files[0].lines.forEach(line => {
+        highlightedLines.add(line.lineNumber);
+      });
+    }
+
+    // Analyze lines that aren't highlighted to see if they have opcodes
+    const sourceLines = sourceCode.split('\n');
+    const fallbackDecorations: monaco.editor.IModelDeltaDecoration[] = [];
+
+    for (let i = 0; i < sourceLines.length; i++) {
+      const lineNumber = i + 1;
+      const lineText = sourceLines[i].trim();
+
+      // Skip empty lines, comments, and already highlighted lines
+      if (!lineText || lineText.startsWith('//') || lineText.startsWith('/*') || highlightedLines.has(lineNumber)) {
+        continue;
+      }
+
+      try {
+        const analysis = await lineAnalysisService.current.analyzeLine({
+          sourceCode,
+          lineNumber,
+          cargoToml
+        });
+
+        // If this line has opcodes but isn't highlighted, add minimal highlighting
+        if (analysis.opcodes.length > 0) {
+          // Add very subtle red background highlighting
+          fallbackDecorations.push({
+            range: new monaco.Range(lineNumber, 1, lineNumber, Number.MAX_SAFE_INTEGER),
+            options: {
+              isWholeLine: true,
+              className: 'heatmap-fallback-highlight'
+            }
+          });
+
+          // Add minimal gutter indicator
+          fallbackDecorations.push({
+            range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+            options: {
+              isWholeLine: false,
+              glyphMarginClassName: 'heatmap-fallback-gutter'
+            }
+          });
+        }
+      } catch (error) {
+        // Skip lines that can't be analyzed
+      }
+    }
+
+    // Apply fallback decorations if any were found
+    if (fallbackDecorations.length > 0) {
+      model.deltaDecorations([], fallbackDecorations);
+
+      // Add CSS for fallback highlighting
+      addFallbackHighlightStyles();
+    }
+  };
+
+  // Function to add CSS styles for fallback highlighting
+  const addFallbackHighlightStyles = (): void => {
+    const existingStyle = document.getElementById('heatmap-fallback-styles');
+    if (existingStyle) return; // Already added
+
+    const style = document.createElement('style');
+    style.id = 'heatmap-fallback-styles';
+    style.textContent = `
+      .heatmap-fallback-highlight {
+        background-color: rgba(239, 68, 68, 0.08) !important;
+      }
+      .heatmap-fallback-gutter::before {
+        content: "▌";
+        color: rgba(239, 68, 68, 0.15);
+        font-weight: bold;
+        font-size: 14px;
+      }
+    `;
+    document.head.appendChild(style);
+  };
 
   // Function to generate and apply heatmap
   const generateHeatmap = async (sourceCode: string): Promise<void> => {
@@ -208,6 +298,9 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         };
         
         heatmapService.current.applyHeatmapDecorations(report, decorationOptions);
+
+        // Apply fallback highlighting for lines with opcodes not in complexity report
+        await applyFallbackHighlighting(sourceCode, report);
       }
     } catch (error) {
       // Failed to generate heatmap
