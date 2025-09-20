@@ -171,7 +171,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const hoverProviderRegistered = useRef<boolean>(false);
   const decorationIds = useRef<string[]>([]);
-  
+
   // New heatmap-related state and services
   const heatmapService = useRef<HeatmapDecorationService>(new HeatmapDecorationService());
   const profilerService = useRef<NoirProfilerService>(new NoirProfilerService());
@@ -274,20 +274,20 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   // Function to generate and apply heatmap
   const generateHeatmap = async (sourceCode: string): Promise<void> => {
     if (!enableHeatmap || !sourceCode.trim()) return;
-    
+
     setIsGeneratingHeatmap(true);
-    
+
     try {
       const report = await profilerService.current.getComplexityReport(
-        sourceCode, 
-        cargoToml, 
+        sourceCode,
+        cargoToml,
         'main.nr'
       );
-      
+
       if (report) {
         setComplexityReport(report);
         onComplexityReport?.(report);
-        
+
         // Apply heatmap decorations
         try {
           const decorationOptions: DecorationOptions = {
@@ -298,7 +298,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
             threshold: heatmapThreshold
           };
 
-          heatmapService.current.applyHeatmapDecorations(report, decorationOptions);
+          heatmapService.current.applyHeatmapDecorations(report, decorationOptions, undefined, 'main.nr');
 
           // Apply fallback highlighting for lines with opcodes not in complexity report
           await applyFallbackHighlighting(sourceCode, report);
@@ -319,7 +319,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     if (updateHeatmapTimeoutRef.current) {
       clearTimeout(updateHeatmapTimeoutRef.current);
     }
-    
+
     updateHeatmapTimeoutRef.current = setTimeout(() => {
       generateHeatmap(sourceCode);
     }, 1000); // 1 second debounce
@@ -667,7 +667,18 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       if (currentValue !== value) {
         // Clear cache for the old source code when switching examples
         lineAnalysisService.current.clearCacheForSource(currentValue, cargoToml);
-        
+
+        // Clear complexity report and heatmap decorations when switching examples
+        setComplexityReport(null);
+        heatmapService.current.clearDecorations();
+
+        // Cancel any pending heatmap generation
+        if (updateHeatmapTimeoutRef.current) {
+          clearTimeout(updateHeatmapTimeoutRef.current);
+          updateHeatmapTimeoutRef.current = null;
+        }
+        setIsGeneratingHeatmap(false);
+
         editorRef.current.setValue(value);
       }
     }
@@ -685,7 +696,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           threshold: heatmapThreshold
         };
 
-        heatmapService.current.applyHeatmapDecorations(complexityReport, decorationOptions);
+        heatmapService.current.applyHeatmapDecorations(complexityReport, decorationOptions, undefined, 'main.nr');
       } else if (!enableHeatmap) {
         heatmapService.current.clearDecorations();
       }

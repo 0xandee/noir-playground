@@ -3,11 +3,12 @@
  */
 
 import * as monaco from 'monaco-editor';
-import { 
-  HeatmapData, 
-  MetricType, 
-  MetricsConfiguration, 
+import {
+  HeatmapData,
+  MetricType,
+  MetricsConfiguration,
   DEFAULT_METRICS_CONFIG,
+  FileMetrics,
   CircuitComplexityReport,
   LineMetrics,
   MetricsDelta 
@@ -56,14 +57,21 @@ export class HeatmapDecorationService {
   public applyHeatmapDecorations(
     report: CircuitComplexityReport,
     options: DecorationOptions,
-    deltas?: Map<number, MetricsDelta>
+    deltas?: Map<number, MetricsDelta>,
+    currentFileName: string = 'main.nr'
   ): void {
     if (!this.editor || !report || !report.files || !report.files.length) return;
 
-    const fileMetrics = report.files[0]; // Assuming single file for now
+    // Find the file metrics that match the current editor file
+    const fileMetrics = this.findMatchingFileMetrics(report.files, currentFileName);
+
+    if (!fileMetrics) {
+      console.warn(`No metrics found for file: ${currentFileName}, skipping heatmap decorations`);
+      return;
+    }
 
     // Validate file metrics structure
-    if (!fileMetrics || !fileMetrics.lines || !Array.isArray(fileMetrics.lines)) {
+    if (!fileMetrics.lines || !Array.isArray(fileMetrics.lines)) {
       console.warn('Invalid file metrics structure, skipping heatmap decorations');
       return;
     }
@@ -92,6 +100,36 @@ export class HeatmapDecorationService {
 
     // Apply line highlights for top hotspots
     this.applyHotspotHighlights(heatmapData.slice(0, 5)); // Top 5 hotspots
+  }
+
+  /**
+   * Find file metrics that match the current editor file
+   */
+  private findMatchingFileMetrics(files: FileMetrics[], currentFileName: string): FileMetrics | null {
+    // First try exact match
+    let match = files.find(file => file.fileName === currentFileName);
+
+    if (match) return match;
+
+    // Try basename match (e.g., main.nr matches src/main.nr or ./main.nr)
+    const baseName = currentFileName.split('/').pop();
+    match = files.find(file => {
+      const fileBaseName = file.fileName.split('/').pop();
+      return fileBaseName === baseName;
+    });
+
+    if (match) return match;
+
+    // Fallback: try to find main.nr if currentFileName is not found
+    if (currentFileName !== 'main.nr') {
+      match = files.find(file => file.fileName === 'main.nr' || file.fileName.endsWith('/main.nr'));
+      if (match) {
+        console.warn(`File ${currentFileName} not found, using main.nr as fallback`);
+        return match;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -127,7 +165,7 @@ export class HeatmapDecorationService {
     const tooltipContent = this.formatTooltipContent(line);
 
     return {
-      lineNumber: line.lineNumber || 0,
+      lineNumber: line.lineNumber || 1,
       heatValue: line.normalizedHeat || 0,
       primaryMetric,
       metricType,
@@ -142,26 +180,34 @@ export class HeatmapDecorationService {
   private applyGutterHeatDecorations(heatmapData: HeatmapData[]): void {
     if (!this.editor) return;
 
-    const decorations: monaco.editor.IModelDeltaDecoration[] = heatmapData.map(data => {
-      const heatColor = this.getHeatColor(data.heatValue);
-      const intensity = Math.round(data.heatValue * 100);
-
-      return {
-        range: new monaco.Range(data.lineNumber, 1, data.lineNumber, 1),
-        options: {
-          isWholeLine: false,
-          glyphMarginClassName: `heatmap-gutter-${this.getHeatLevel(data.heatValue)}`
-        }
-      };
-    });
-
     const model = this.editor.getModel();
-    if (model) {
-      this.currentDecorations.gutterDecorations = model.deltaDecorations(
-        this.currentDecorations.gutterDecorations,
-        decorations
-      );
-    }
+    if (!model) return;
+
+    const lineCount = model.getLineCount();
+
+    const decorations: monaco.editor.IModelDeltaDecoration[] = heatmapData
+      .filter(data => {
+        // Validate line number is within bounds
+        if (data.lineNumber < 1 || data.lineNumber > lineCount) {
+          console.warn(`Invalid line number ${data.lineNumber} for gutter decoration. Valid range: 1-${lineCount}`);
+          return false;
+        }
+        return true;
+      })
+      .map(data => {
+        return {
+          range: new monaco.Range(data.lineNumber, 1, data.lineNumber, 1),
+          options: {
+            isWholeLine: false,
+            glyphMarginClassName: `heatmap-gutter-${this.getHeatLevel(data.heatValue)}`
+          }
+        };
+      });
+
+    this.currentDecorations.gutterDecorations = model.deltaDecorations(
+      this.currentDecorations.gutterDecorations,
+      decorations
+    );
   }
 
   /**
@@ -170,32 +216,40 @@ export class HeatmapDecorationService {
   private applyInlineMetricDecorations(heatmapData: HeatmapData[], metricType: MetricType): void {
     if (!this.editor) return;
 
-    const decorations: monaco.editor.IModelDeltaDecoration[] = heatmapData.map(data => {
-      const model = this.editor!.getModel();
-      if (!model) return null;
-
-      const lineLength = model.getLineLength(data.lineNumber);
-      const heatLevel = this.getHeatLevel(data.heatValue);
-
-      return {
-        range: new monaco.Range(data.lineNumber, lineLength + 1, data.lineNumber, lineLength + 1),
-        options: {
-          after: {
-            content: ` // ${data.badgeText} (${Math.round(data.heatValue * 100)}%)`,
-            inlineClassName: `heatmap-inline-${heatLevel}`,
-            inlineClassNameAffectsLetterSpacing: false
-          }
-        }
-      };
-    }).filter(Boolean) as monaco.editor.IModelDeltaDecoration[];
-
     const model = this.editor.getModel();
-    if (model) {
-      this.currentDecorations.inlineDecorations = model.deltaDecorations(
-        this.currentDecorations.inlineDecorations,
-        decorations
-      );
-    }
+    if (!model) return;
+
+    const lineCount = model.getLineCount();
+
+    const decorations: monaco.editor.IModelDeltaDecoration[] = heatmapData
+      .filter(data => {
+        // Validate line number is within bounds
+        if (data.lineNumber < 1 || data.lineNumber > lineCount) {
+          console.warn(`Invalid line number ${data.lineNumber} for heatmap decoration. Valid range: 1-${lineCount}`);
+          return false;
+        }
+        return true;
+      })
+      .map(data => {
+        const lineLength = model.getLineLength(data.lineNumber);
+        const heatLevel = this.getHeatLevel(data.heatValue);
+
+        return {
+          range: new monaco.Range(data.lineNumber, lineLength + 1, data.lineNumber, lineLength + 1),
+          options: {
+            after: {
+              content: ` // ${data.badgeText} (${Math.round(data.heatValue * 100)}%)`,
+              inlineClassName: `heatmap-inline-${heatLevel}`,
+              inlineClassNameAffectsLetterSpacing: false
+            }
+          }
+        };
+      });
+
+    this.currentDecorations.inlineDecorations = model.deltaDecorations(
+      this.currentDecorations.inlineDecorations,
+      decorations
+    );
   }
 
   /**

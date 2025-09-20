@@ -209,24 +209,39 @@ export class MetricsAggregationService {
   ): LineMetrics[] {
     const lineMap = new Map<number, LineMetrics>();
 
-    // Process ACIR data
-    acirData.forEach(data => {
+    // Helper function to check if data belongs to the target file
+    const isMatchingFile = (data: LineOpcodesData): boolean => {
+      if (!data.fileName) return true; // Include if no filename specified (fallback)
+
+      // Exact match
+      if (data.fileName === fileName) return true;
+
+      // Basename match (main.nr matches src/main.nr, ./main.nr, etc.)
+      const dataBaseName = data.fileName.split('/').pop();
+      const targetBaseName = fileName.split('/').pop();
+      if (dataBaseName === targetBaseName) return true;
+
+      return false;
+    };
+
+    // Filter and process ACIR data
+    acirData.filter(isMatchingFile).forEach(data => {
       const existing = lineMap.get(data.lineNumber) || this.createEmptyLineMetrics(data.lineNumber, fileName);
       existing.acirOpcodes += data.opcodes;
       existing.expressions.push(this.createExpressionMetrics(data, 'acir'));
       lineMap.set(data.lineNumber, existing);
     });
 
-    // Process Brillig data (if available)
-    brilligData.forEach(data => {
+    // Filter and process Brillig data (if available)
+    brilligData.filter(isMatchingFile).forEach(data => {
       const existing = lineMap.get(data.lineNumber) || this.createEmptyLineMetrics(data.lineNumber, fileName);
       existing.brilligOpcodes += data.opcodes;
       existing.expressions.push(this.createExpressionMetrics(data, 'brillig'));
       lineMap.set(data.lineNumber, existing);
     });
 
-    // Process Gates data (if available)
-    gatesData.forEach(data => {
+    // Filter and process Gates data (if available)
+    gatesData.filter(isMatchingFile).forEach(data => {
       const existing = lineMap.get(data.lineNumber) || this.createEmptyLineMetrics(data.lineNumber, fileName);
       existing.gates += data.opcodes; // Assuming opcodes represent gates in this context
       existing.expressions.push(this.createExpressionMetrics(data, 'gates'));
