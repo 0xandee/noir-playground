@@ -230,7 +230,48 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   // Function to clear caches (for debugging)
   // Clear caches function removed - will be implemented later
 
-  // Function to create hover content - simplified to focus only on ACIR opcodes
+  // Helper function to get constraint type icon
+  const getConstraintIcon = (type: string): string => {
+    switch (type) {
+      case 'assert':
+      case 'constrain':
+        return '⚡';
+      case 'comparison':
+        return '⚖️';
+      case 'arithmetic':
+        return '🧮';
+      case 'type_conversion':
+        return '🔄';
+      default:
+        return '🛡️';
+    }
+  };
+
+  // Helper function to get emoji for constraint type
+  const getConstraintTypeEmoji = (type: string): string => {
+    const emojiMap: Record<string, string> = {
+      'assert': '⚠️',
+      'constrain': '🔒',
+      'comparison': '⚖️',
+      'arithmetic': '🧮',
+      'type_conversion': '🔄'
+    };
+    return emojiMap[type] || '🔧';
+  };
+
+  // Helper function to get human-readable name for constraint type
+  const getConstraintTypeName = (type: string): string => {
+    const nameMap: Record<string, string> = {
+      'assert': 'Assertions',
+      'constrain': 'Constraints',
+      'comparison': 'Comparisons',
+      'arithmetic': 'Arithmetic',
+      'type_conversion': 'Type Conversions'
+    };
+    return nameMap[type] || 'Unknown';
+  };
+
+  // Function to create hover content - enhanced with better structure and clarity
   const createHoverContent = (lineNumber: number, lineText: string, analysis: LineAnalysisResult) => {
     const contents: monaco.IMarkdownString[] = [];
 
@@ -239,24 +280,134 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         value: `❌ **Error:** ${analysis.error}`
       });
     } else {
-      // Show ACIR opcodes
-      if (analysis.opcodes.length > 0) {
+      // Calculate total opcodes and prepare breakdown
+      const totalOpcodes = analysis.opcodes.length;
+      const totalConstraintOpcodes = analysis.constraints.reduce((sum, c) => sum + c.cost, 0);
+
+      // Get complexity report data if available
+      const lineMetrics = complexityReport?.files[0]?.lines.find(l => l.lineNumber === lineNumber);
+      const hotspotRank = complexityReport?.hotspots.findIndex(h => h.lineNumber === lineNumber);
+
+      // Add line indicator
+      // contents.push({
+      //   value: `**Line ${lineNumber} Complexity**`
+      // });
+
+      // Circuit Cost Summary (most important info first)
+      if (lineMetrics || totalOpcodes > 0 || totalConstraintOpcodes > 0) {
         contents.push({
-          value: `**🔧 ACIR Opcodes:**`
+          value: `\n📊 **Circuit Cost Summary**`
+        });
+
+        if (lineMetrics) {
+          // Use actual metrics from complexity report
+          contents.push({
+            value: `  • **Total:** ${lineMetrics.acirOpcodes} opcodes (${lineMetrics.percentage.toFixed(2)}% of circuit)`
+          });
+
+          if (hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
+            contents.push({
+              value: `  • **Hotspot Rank:** #${hotspotRank + 1} of ${Math.min(5, complexityReport?.hotspots.length || 0)}`
+            });
+          }
+        } else if (totalOpcodes > 0) {
+          // Fallback to analysis data
+          contents.push({
+            value: `  • **Total:** ${totalOpcodes} opcodes analyzed`
+          });
+        }
+      }
+
+      // ACIR Breakdown with percentages
+      if (analysis.constraints.length > 0) {
+        contents.push({
+          value: `\n⚡ **ACIR Breakdown** (${totalConstraintOpcodes} opcodes)`
+        });
+
+        // Group constraints by type and calculate percentages
+        const constraintsByType = analysis.constraints.reduce((acc, constraint) => {
+          if (!acc[constraint.type]) {
+            acc[constraint.type] = { constraints: [], totalCost: 0 };
+          }
+          acc[constraint.type].constraints.push(constraint);
+          acc[constraint.type].totalCost += constraint.cost;
+          return acc;
+        }, {} as Record<string, { constraints: typeof analysis.constraints, totalCost: number }>);
+
+        // Sort by total cost (highest first)
+        const sortedTypes = Object.entries(constraintsByType)
+          .sort(([, a], [, b]) => b.totalCost - a.totalCost);
+
+        // Display constraints grouped by type with percentages
+        sortedTypes.forEach(([type, data]) => {
+          const typeEmoji = getConstraintTypeEmoji(type);
+          const typeName = getConstraintTypeName(type);
+          const percentage = totalConstraintOpcodes > 0
+            ? ((data.totalCost / totalConstraintOpcodes) * 100).toFixed(1)
+            : '0';
+
+          contents.push({
+            value: `  • **${typeName}:** ${data.totalCost} ops (${percentage}%)`
+          });
+
+          // Show individual expressions indented
+          data.constraints.forEach(constraint => {
+            contents.push({
+              value: `    └─ \`${constraint.expression}\`: ${constraint.cost} ops`
+            });
+          });
+        });
+      } else if (analysis.opcodes.length > 0) {
+        // Show raw opcodes if no constraints detected
+        contents.push({
+          value: `\n⚡ **ACIR Operations**`
         });
         contents.push({
-          value: `\`${analysis.opcodes.join('`, `')}\``
-        });
-      } else {
-        contents.push({
-          value: `**🔧 ACIR Opcodes:** No opcodes generated`
+          value: `  \`${analysis.opcodes.join('`, `')}\``
         });
       }
 
-      // Add constraints section with "Coming Soon" message
-      contents.push({
-        value: `**🛡️ Constraints:** Coming Soon`
-      });
+      // Optimization hints based on detected patterns
+      const hints = [];
+
+      // Check for expensive patterns
+      const typeConversions = analysis.constraints.filter(c => c.type === 'type_conversion');
+      const comparisons = analysis.constraints.filter(c => c.type === 'comparison');
+
+      if (typeConversions.length > 0 && typeConversions.reduce((sum, c) => sum + c.cost, 0) > totalConstraintOpcodes * 0.5) {
+        hints.push('Type conversions are expensive. Consider using consistent types to reduce casting operations.');
+      }
+
+      if (comparisons.length > 2) {
+        hints.push('Multiple comparisons detected. Consider combining conditions where possible.');
+      }
+
+      if (hints.length > 0) {
+        contents.push({
+          value: `\n💡 **Optimization Hints**`
+        });
+        hints.forEach(hint => {
+          contents.push({
+            value: `  ${hint}`
+          });
+        });
+      }
+
+      // Resource Usage details
+      if (lineMetrics) {
+        contents.push({
+          value: `\n📈 **Resource Usage**`
+        });
+        contents.push({
+          value: `  • **ACIR Opcodes:** ${lineMetrics.acirOpcodes}`
+        });
+        contents.push({
+          value: `  • **Brillig Opcodes:** ${lineMetrics.brilligOpcodes}`
+        });
+        contents.push({
+          value: `  • **Proving Gates:** ${lineMetrics.gates}`
+        });
+      }
     }
 
     return {
@@ -292,9 +443,6 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           content: ` // ${analysis.opcodes.length} opcodes, ${analysis.constraints.length} constraints`,
           inlineClassName: 'acir-analysis-inline',
           inlineClassNameAffectsLetterSpacing: true
-        },
-        hoverMessage: {
-          value: `**ACIR Analysis:** ${analysis.opcodes.length} opcodes, ${analysis.constraints.length} constraints`
         }
       }
     };
@@ -314,13 +462,33 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     // Force set the enhanced theme
     monaco.editor.setTheme(language === 'noir' ? 'noir-enhanced' : 'vs-dark');
     
-    // Add CSS for inline analysis decorations
+    // Add CSS for inline analysis decorations and Monaco hover fixes
     const style = document.createElement('style');
     style.textContent = `
       .acir-analysis-inline {
         color: #888 !important;
         font-style: italic !important;
         font-size: 0.9em !important;
+      }
+
+      /* Monaco hover widget full height fixes */
+      .monaco-hover {
+        max-height: 80vh !important;
+        overflow: visible !important;
+      }
+
+      .monaco-hover .monaco-hover-content {
+        max-height: 80vh !important;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+
+      .monaco-hover .monaco-scrollable-element {
+        max-height: none !important;
+      }
+
+      .monaco-hover .monaco-scrollable-element > .scrollbar {
+        display: none !important;
       }
     `;
     document.head.appendChild(style);
