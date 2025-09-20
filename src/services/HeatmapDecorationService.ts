@@ -58,9 +58,16 @@ export class HeatmapDecorationService {
     options: DecorationOptions,
     deltas?: Map<number, MetricsDelta>
   ): void {
-    if (!this.editor || !report.files.length) return;
+    if (!this.editor || !report || !report.files || !report.files.length) return;
 
     const fileMetrics = report.files[0]; // Assuming single file for now
+
+    // Validate file metrics structure
+    if (!fileMetrics || !fileMetrics.lines || !Array.isArray(fileMetrics.lines)) {
+      console.warn('Invalid file metrics structure, skipping heatmap decorations');
+      return;
+    }
+
     const heatmapData = this.generateHeatmapData(fileMetrics, options);
 
     // Store current heatmap data and update styles
@@ -94,8 +101,19 @@ export class HeatmapDecorationService {
     fileMetrics: { lines: LineMetrics[] },
     options: DecorationOptions
   ): HeatmapData[] {
+    if (!fileMetrics.lines || !Array.isArray(fileMetrics.lines)) {
+      return [];
+    }
+
     return fileMetrics.lines
-      .filter((line: LineMetrics) => line.normalizedHeat >= options.threshold)
+      .filter((line: LineMetrics) => {
+        // Ensure line has required properties
+        if (!line || typeof line.normalizedHeat !== 'number') {
+          console.warn('Line metrics missing normalizedHeat property:', line);
+          return false;
+        }
+        return line.normalizedHeat >= options.threshold;
+      })
       .map((line: LineMetrics) => this.createHeatmapData(line, options.metricType))
       .sort((a: HeatmapData, b: HeatmapData) => b.heatValue - a.heatValue);
   }
@@ -109,8 +127,8 @@ export class HeatmapDecorationService {
     const tooltipContent = this.formatTooltipContent(line);
 
     return {
-      lineNumber: line.lineNumber,
-      heatValue: line.normalizedHeat,
+      lineNumber: line.lineNumber || 0,
+      heatValue: line.normalizedHeat || 0,
       primaryMetric,
       metricType,
       badgeText,
@@ -291,11 +309,13 @@ export class HeatmapDecorationService {
    * Helper methods
    */
   private getMetricValue(line: LineMetrics, metricType: MetricType): number {
+    if (!line) return 0;
+
     switch (metricType) {
-      case 'acir': return line.acirOpcodes;
-      case 'brillig': return line.brilligOpcodes;
-      case 'gates': return line.gates;
-      default: return line.totalCost;
+      case 'acir': return line.acirOpcodes || 0;
+      case 'brillig': return line.brilligOpcodes || 0;
+      case 'gates': return line.gates || 0;
+      default: return line.totalCost || 0;
     }
   }
 

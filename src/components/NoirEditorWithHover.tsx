@@ -289,18 +289,23 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         onComplexityReport?.(report);
         
         // Apply heatmap decorations
-        const decorationOptions: DecorationOptions = {
-          showGutterHeat,
-          showInlineMetrics,
-          showDeltaIndicators: false, // TODO: implement delta tracking
-          metricType: heatmapMetricType,
-          threshold: heatmapThreshold
-        };
-        
-        heatmapService.current.applyHeatmapDecorations(report, decorationOptions);
+        try {
+          const decorationOptions: DecorationOptions = {
+            showGutterHeat,
+            showInlineMetrics,
+            showDeltaIndicators: false, // TODO: implement delta tracking
+            metricType: heatmapMetricType,
+            threshold: heatmapThreshold
+          };
 
-        // Apply fallback highlighting for lines with opcodes not in complexity report
-        await applyFallbackHighlighting(sourceCode, report);
+          heatmapService.current.applyHeatmapDecorations(report, decorationOptions);
+
+          // Apply fallback highlighting for lines with opcodes not in complexity report
+          await applyFallbackHighlighting(sourceCode, report);
+        } catch (decorationError) {
+          console.warn('Failed to apply heatmap decorations:', decorationError);
+          // Continue without heatmap decorations
+        }
       }
     } catch (error) {
       // Failed to generate heatmap
@@ -722,18 +727,22 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
 
   // Effect to handle heatmap configuration changes
   useEffect(() => {
-    if (enableHeatmap && complexityReport && editorRef.current) {
-      const decorationOptions: DecorationOptions = {
-        showGutterHeat,
-        showInlineMetrics,
-        showDeltaIndicators: false,
-        metricType: heatmapMetricType,
-        threshold: heatmapThreshold
-      };
-      
-      heatmapService.current.applyHeatmapDecorations(complexityReport, decorationOptions);
-    } else if (!enableHeatmap) {
-      heatmapService.current.clearDecorations();
+    try {
+      if (enableHeatmap && complexityReport && editorRef.current) {
+        const decorationOptions: DecorationOptions = {
+          showGutterHeat,
+          showInlineMetrics,
+          showDeltaIndicators: false,
+          metricType: heatmapMetricType,
+          threshold: heatmapThreshold
+        };
+
+        heatmapService.current.applyHeatmapDecorations(complexityReport, decorationOptions);
+      } else if (!enableHeatmap) {
+        heatmapService.current.clearDecorations();
+      }
+    } catch (error) {
+      console.warn('Failed to apply heatmap configuration changes:', error);
     }
   }, [enableHeatmap, heatmapMetricType, heatmapThreshold, showInlineMetrics, showGutterHeat, complexityReport]);
 

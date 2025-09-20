@@ -245,17 +245,27 @@ export class MetricsAggregationService {
    * Normalize heat values for visualization (0-1 scale)
    */
   private normalizeHeatValues(
-    lines: LineMetrics[], 
-    totalAcir: number, 
-    totalBrillig: number, 
+    lines: LineMetrics[],
+    totalAcir: number,
+    totalBrillig: number,
     totalGates: number
   ): void {
-    const maxCost = Math.max(...lines.map(line => line.totalCost));
-    
+    if (!lines || lines.length === 0) {
+      return;
+    }
+
+    const maxCost = Math.max(...lines.map(line => line.totalCost || 0));
+    const grandTotal = totalAcir + totalBrillig + totalGates;
+
     lines.forEach(line => {
+      // Ensure all required properties exist
+      if (!line) return;
+
+      line.totalCost = line.totalCost || 0;
+
       if (maxCost > 0) {
         line.normalizedHeat = line.totalCost / maxCost;
-        line.percentage = (line.totalCost / (totalAcir + totalBrillig + totalGates)) * 100;
+        line.percentage = grandTotal > 0 ? (line.totalCost / grandTotal) * 100 : 0;
       } else {
         line.normalizedHeat = 0;
         line.percentage = 0;
