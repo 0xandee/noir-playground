@@ -75,15 +75,15 @@ export class LineAnalysisService {
     try {
       // Get real opcode data from SVG parsing
       const realOpcodes = await this.getRealOpcodesForLine(sourceCode, lineNumber, cargoToml);
-      
-      // For now, use simple mock constraints (we'll implement real constraints later)
-      const mockConstraints = this.getMockConstraintsForLine(lineNumber, lineText);
-      
+
+      // Extract constraints from line expressions
+      const constraints = await this.extractConstraintsFromLine(sourceCode, lineNumber, cargoToml);
+
       const result = {
         lineNumber,
         lineText,
         opcodes: realOpcodes,
-        constraints: mockConstraints
+        constraints
       };
       
       // Cache the result
@@ -91,90 +91,11 @@ export class LineAnalysisService {
       
       return result;
     } catch (error) {
-      console.error('Real opcode analysis failed, falling back to mock data:', error);
-      
-      // Fallback to mock data if real analysis fails
-      const mockData = this.getMockDataForLine(lineNumber, lineText);
-      const result = {
-        lineNumber,
-        lineText,
-        opcodes: mockData.opcodes,
-        constraints: mockData.constraints
-      };
-      
-      // Cache the fallback result too
-      this.setCachedAnalysis(cacheKey, result);
-      
-      return result;
+      console.error('Real opcode analysis failed:', error);
+      throw new Error(`Line analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  /**
-   * Get simple mock data for a line
-   */
-  private getMockDataForLine(lineNumber: number, lineText: string): { opcodes: string[]; constraints: ConstraintInfo[] } {
-    // Skip empty lines and comments
-    if (!lineText.trim() || lineText.trim().startsWith('//')) {
-      return { opcodes: [], constraints: [] };
-    }
-
-    // Simple mock data based on line content
-    const opcodes: string[] = [];
-    const constraints: ConstraintInfo[] = [];
-
-    // Mock opcodes
-    if (lineText.includes('assert')) {
-      opcodes.push('ASSERT');
-    }
-    if (lineText.includes('+')) {
-      opcodes.push('ADD');
-    }
-    if (lineText.includes('>')) {
-      opcodes.push('GT');
-    }
-    if (lineText.includes('as')) {
-      opcodes.push('CAST');
-    }
-    if (lineText.includes('let')) {
-      opcodes.push('STORE');
-    }
-
-    // Mock constraints
-    if (lineText.includes('assert')) {
-      constraints.push({
-        type: 'assert',
-        expression: lineText.trim(),
-        complexity: 0,
-        cost: 0
-      });
-    }
-    if (lineText.includes('+')) {
-      constraints.push({
-        type: 'arithmetic',
-        expression: 'addition operation',
-        complexity: 0,
-        cost: 0
-      });
-    }
-    if (lineText.includes('>')) {
-      constraints.push({
-        type: 'comparison',
-        expression: 'greater than comparison',
-        complexity: 0,
-        cost: 0
-      });
-    }
-    if (lineText.includes('as')) {
-      constraints.push({
-        type: 'type_conversion',
-        expression: 'type conversion',
-        complexity: 0,
-        cost: 0
-      });
-    }
-
-    return { opcodes, constraints };
-  }
 
 
 
@@ -215,12 +136,130 @@ export class LineAnalysisService {
   }
 
   /**
+   * Extract constraint information from line expressions
+   */
+  private async extractConstraintsFromLine(sourceCode: string, lineNumber: number, cargoToml?: string): Promise<ConstraintInfo[]> {
+    try {
+      // Generate SVG cache key
+      const svgCacheKey = this.generateSvgCacheKey(sourceCode, cargoToml);
+
+      // Check if we have cached SVG data
+      let svgData = this.getCachedSvg(svgCacheKey);
+
+      if (!svgData) {
+        // Get SVG data from profiler service
+        const profilerResult = await this.profilerService.profileCircuit({
+          sourceCode,
+          cargoToml
+        });
+
+        if (!profilerResult.acirSVG) {
+          return [];
+        }
+
+        svgData = profilerResult.acirSVG;
+
+        // Cache the SVG data
+        this.setCachedSvg(svgCacheKey, svgData);
+      }
+
+      // Parse SVG to get line-specific expression data
+      const allLineData = this.svgParser.parseLineOpcodes(svgData);
+
+      // Get data for the specific line
+      const lineData = this.getExactLineData(allLineData, lineNumber, sourceCode);
+
+      // Extract constraints from expressions
+      return this.analyzeExpressionsForConstraints(lineData);
+
+    } catch (error) {
+      console.error('Constraint extraction failed:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Analyze expressions to extract constraint information
+   */
+  private analyzeExpressionsForConstraints(lineData: LineOpcodesData[]): ConstraintInfo[] {
+    const constraints: ConstraintInfo[] = [];
+
+    for (const data of lineData) {
+      const expression = this.cleanExpression(data.expression);
+      const constraintType = this.determineConstraintType(expression);
+
+      if (constraintType) {
+        constraints.push({
+          type: constraintType,
+          expression: expression,
+          complexity: this.calculateConstraintComplexity(constraintType, data.opcodes),
+          cost: data.opcodes
+        });
+      }
+    }
+
+    return constraints;
+  }
+
+  /**
+   * Determine the type of constraint from an expression
+   */
+  private determineConstraintType(expression: string): ConstraintInfo['type'] | null {
+    // Clean the expression and make it lowercase for pattern matching
+    const expr = expression.toLowerCase().trim();
+
+    // Detect assert statements
+    if (expr.includes('assert') || expr.includes('constrain')) {
+      return 'assert';
+    }
+
+    // Detect comparison operations
+    if (expr.includes('==') || expr.includes('!=') ||
+        expr.includes('>=') || expr.includes('<=') ||
+        expr.includes('>') || expr.includes('<')) {
+      return 'comparison';
+    }
+
+    // Detect type conversions (as operations)
+    if (expr.includes(' as ')) {
+      return 'type_conversion';
+    }
+
+    // Detect arithmetic operations that might be constraints
+    if (expr.includes('+') || expr.includes('-') ||
+        expr.includes('*') || expr.includes('/') ||
+        expr.includes('%')) {
+      return 'arithmetic';
+    }
+
+    // If none of the above, but has opcodes, it might be a constraint
+    return null;
+  }
+
+  /**
+   * Calculate constraint complexity based on type and opcode count
+   */
+  private calculateConstraintComplexity(type: ConstraintInfo['type'], opcodeCount: number): number {
+    // Base complexity score based on constraint type
+    const baseComplexity: Record<ConstraintInfo['type'], number> = {
+      'assert': 3,
+      'constrain': 3,
+      'comparison': 2,
+      'arithmetic': 1,
+      'type_conversion': 1
+    };
+
+    // Scale by opcode count (more opcodes = higher complexity)
+    return baseComplexity[type] * Math.max(1, opcodeCount);
+  }
+
+  /**
    * Get exact line data by matching line number and determining the correct file
    */
   private getExactLineData(allLineData: LineOpcodesData[], lineNumber: number, sourceCode: string): LineOpcodesData[] {
     // Find data for the exact line number only
     const lineData = allLineData.filter(data => data.lineNumber === lineNumber);
-    
+
     return lineData;
   }
 
@@ -267,23 +306,6 @@ export class LineAnalysisService {
       .trim();
   }
 
-  /**
-   * Get mock constraints for a line (temporary until we implement real constraint parsing)
-   */
-  private getMockConstraintsForLine(lineNumber: number, lineText: string): ConstraintInfo[] {
-    const constraints: ConstraintInfo[] = [];
-    
-    if (lineText.includes('assert')) {
-      constraints.push({
-        type: 'assert',
-        expression: lineText.trim(),
-        complexity: 0,
-        cost: 0
-      });
-    }
-    
-    return constraints;
-  }
 
   /**
    * Generate cache key for analysis results

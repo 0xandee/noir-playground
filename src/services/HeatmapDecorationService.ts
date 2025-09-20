@@ -57,10 +57,18 @@ export class HeatmapDecorationService {
     options: DecorationOptions,
     deltas?: Map<number, MetricsDelta>
   ): void {
+    console.log('[HeatmapDecoration Debug] applyHeatmapDecorations called');
+    console.log('[HeatmapDecoration Debug] Editor exists:', !!this.editor);
+    console.log('[HeatmapDecoration Debug] Files count:', report.files.length);
+
     if (!this.editor || !report.files.length) return;
 
     const fileMetrics = report.files[0]; // Assuming single file for now
+    console.log('[HeatmapDecoration Debug] File metrics lines:', fileMetrics.lines.length);
+
     const heatmapData = this.generateHeatmapData(fileMetrics, options);
+    console.log('[HeatmapDecoration Debug] Generated heatmap data items:', heatmapData.length);
+    console.log('[HeatmapDecoration Debug] Heatmap data:', heatmapData);
 
     // Clear existing decorations
     this.clearDecorations();
@@ -127,10 +135,7 @@ export class HeatmapDecorationService {
         range: new monaco.Range(data.lineNumber, 1, data.lineNumber, 1),
         options: {
           isWholeLine: false,
-          glyphMarginClassName: `heatmap-gutter-${this.getHeatLevel(data.heatValue)}`,
-          glyphMarginHoverMessage: {
-            value: `**Circuit Complexity Heatmap**\n\n${data.tooltipContent}\n\nHeat Level: ${intensity}%`
-          }
+          glyphMarginClassName: `heatmap-gutter-${this.getHeatLevel(data.heatValue)}`
         }
       };
     });
@@ -164,9 +169,6 @@ export class HeatmapDecorationService {
             content: ` // ${data.badgeText} (${Math.round(data.heatValue * 100)}%)`,
             inlineClassName: `heatmap-inline-${heatLevel}`,
             inlineClassNameAffectsLetterSpacing: false
-          },
-          hoverMessage: {
-            value: data.tooltipContent
           }
         }
       };
@@ -204,9 +206,6 @@ export class HeatmapDecorationService {
           after: {
             content: ` ${symbol}${Math.abs(delta.delta)}`,
             inlineClassName: className
-          },
-          hoverMessage: {
-            value: `**Performance Change**\n\n${isImprovement ? 'Improvement' : 'Regression'}: ${delta.delta > 0 ? '+' : ''}${delta.delta} (${delta.deltaPercentage.toFixed(1)}%)\n\nPrevious: ${delta.previousValue}\nCurrent: ${delta.currentValue}`
           }
         }
       });
@@ -236,10 +235,7 @@ export class HeatmapDecorationService {
         range: new monaco.Range(data.lineNumber, 1, data.lineNumber, Number.MAX_SAFE_INTEGER),
         options: {
           isWholeLine: true,
-          className: `heatmap-hotspot-highlight-${this.getHeatLevel(data.heatValue)}`,
-          hoverMessage: {
-            value: `**Top Hotspot #${index + 1}**\n\n${data.tooltipContent}`
-          }
+          className: `heatmap-hotspot-highlight-${this.getHeatLevel(data.heatValue)}`
         }
       };
     });
@@ -318,12 +314,26 @@ export class HeatmapDecorationService {
   }
 
   private formatTooltipContent(line: LineMetrics): string {
-    return `**Line ${line.lineNumber} Complexity**\n\n` +
-           `ACIR Opcodes: ${line.acirOpcodes}\n` +
-           `Brillig Opcodes: ${line.brilligOpcodes}\n` +
-           `Proving Gates: ${line.gates}\n` +
-           `Total Cost: ${line.totalCost}\n` +
-           `Circuit Percentage: ${line.percentage.toFixed(2)}%`;
+    // Determine hotspot rank if available (assuming hotspots are sorted by impact)
+    let hotspotInfo = '';
+    if (line.percentage >= 5) { // Significant lines
+      hotspotInfo = `\n  • **Hotspot:** Top contributor to circuit complexity`;
+    }
+
+    // Build optimization hints based on line metrics
+    let hints = '';
+    if (line.acirOpcodes > 20) {
+      hints = `\n\n💡 **Optimization Hint**\n  High ACIR opcode count detected. Consider optimizing this line.`;
+    }
+
+    return `**Line ${line.lineNumber} Complexity**\n` +
+           `═══════════════════════════════════\n\n` +
+           `📊 **Circuit Cost Summary**\n` +
+           `  • **Total:** ${line.acirOpcodes} opcodes (${line.percentage.toFixed(2)}% of circuit)${hotspotInfo}\n\n` +
+           `📈 **Resource Usage**\n` +
+           `  • **ACIR Opcodes:** ${line.acirOpcodes}\n` +
+           `  • **Brillig Opcodes:** ${line.brilligOpcodes}\n` +
+           `  • **Proving Gates:** ${line.gates}${hints}`;
   }
 
   private getHeatColor(heatValue: number): string {

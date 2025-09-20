@@ -63,12 +63,35 @@ export class MetricsAggregationService {
     const fileName = input.fileName || 'main.nr';
     
     // Parse SVG data to extract line-level metrics
+    console.log('[MetricsAggregation Debug] Parsing SVG data:', {
+      hasAcirSvg: !!input.acirSvg,
+      hasBrilligSvg: !!input.brilligSvg,
+      hasGatesSvg: !!input.gatesSvg,
+      acirSvgLength: input.acirSvg?.length || 0,
+      brilligSvgLength: input.brilligSvg?.length || 0,
+      gatesSvgLength: input.gatesSvg?.length || 0
+    });
+
     const acirData = input.acirSvg ? this.svgParser.parseLineOpcodes(input.acirSvg) : [];
     const brilligData = input.brilligSvg ? this.svgParser.parseLineOpcodes(input.brilligSvg) : [];
     const gatesData = input.gatesSvg ? this.svgParser.parseLineOpcodes(input.gatesSvg) : [];
 
+    console.log('[MetricsAggregation Debug] Parsed line data:', {
+      acirDataCount: acirData.length,
+      brilligDataCount: brilligData.length,
+      gatesDataCount: gatesData.length
+    });
+
+    if (acirData.length > 0) {
+      console.log('[MetricsAggregation Debug] ACIR data sample:', acirData.slice(0, 3));
+    }
+
     // Aggregate metrics by line
     const lineMetrics = this.aggregateLineMetrics(acirData, brilligData, gatesData, fileName);
+    console.log('[MetricsAggregation Debug] Aggregated line metrics:', {
+      lineMetricsCount: lineMetrics.length,
+      sampleMetrics: lineMetrics.slice(0, 3)
+    });
     
     // Calculate totals
     const totalAcirOpcodes = lineMetrics.reduce((sum, line) => sum + line.acirOpcodes, 0);

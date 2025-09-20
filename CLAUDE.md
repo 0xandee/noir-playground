@@ -129,7 +129,7 @@ The build process automatically generates `sitemap.xml` via `scripts/generateSit
 Uses path aliases (`@/` maps to `src/`) and ES2022 target for modern browser features required by WASM modules.
 
 ### Package Manager
-This project uses Yarn 4.8.1+ with Plug'n'Play (PnP) enabled. Files `.pnp.cjs`, `.pnp.loader.mjs`, and `.yarn/` directory are part of the PnP system.
+This project uses Yarn 4.8.1+ with Plug'n'Play (PnP) enabled. Files `.pnp.cjs`, `.pnp.loader.mjs`, and `.yarn/` directory are part of the PnP system. Use `yarn` instead of `npm` for all package operations.
 
 ### Key Service Classes
 
