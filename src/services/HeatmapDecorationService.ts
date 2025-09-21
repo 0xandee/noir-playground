@@ -341,19 +341,22 @@ export class HeatmapDecorationService {
   private addLineSpecificCSS(lineNumber: number, badgeText: string): void {
     if (!this.styleElement) return;
 
-    // Add CSS for this specific line with better positioning
+    // Add CSS for this specific line matching Monaco editor exactly
     const lineCSS = `
       .line-${lineNumber}::after {
         content: " // ${badgeText}";
         color: #9ca3af !important;
-        font-style: italic !important;
-        font-size: 0.85em !important;
+        font-family: Consolas, Monaco, "Courier New", monospace !important;
+        font-style: normal !important;
+        font-size: 14px !important;
         font-weight: normal !important;
         opacity: 0.8 !important;
         margin-left: 12px;
-        padding-left: 8px;
+        padding-left: 4px;
         display: inline-block;
         white-space: nowrap;
+        line-height: 1.4 !important;
+        letter-spacing: normal !important;
       }
     `;
 
@@ -490,10 +493,13 @@ export class HeatmapDecorationService {
       /* Neutral inline decorations for opcode annotations */
       .heatmap-inline-neutral {
         color: #9ca3af !important;
-        font-style: italic !important;
-        font-size: 0.85em !important;
+        font-family: Consolas, Monaco, "Courier New", monospace !important;
+        font-style: normal !important;
+        font-size: 14px !important;
         font-weight: normal !important;
         opacity: 0.8 !important;
+        line-height: 1.4 !important;
+        letter-spacing: normal !important;
       }
 
       /* Delta indicators */
