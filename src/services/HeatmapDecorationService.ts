@@ -38,6 +38,7 @@ export class HeatmapDecorationService {
   };
   private styleElement: HTMLStyleElement | null = null;
   private currentHeatmapData: HeatmapData[] = [];
+  private currentReport: CircuitComplexityReport | null = null;
 
   constructor(config?: Partial<MetricsConfiguration>) {
     this.config = { ...DEFAULT_METRICS_CONFIG, ...config };
@@ -62,6 +63,9 @@ export class HeatmapDecorationService {
   ): void {
     if (!this.editor || !report || !report.files || !report.files.length) return;
 
+    // Store the current report for percentage calculations
+    this.currentReport = report;
+
     // Find the file metrics that match the current editor file
     const fileMetrics = this.findMatchingFileMetrics(report.files, currentFileName);
 
@@ -76,7 +80,7 @@ export class HeatmapDecorationService {
       return;
     }
 
-    const heatmapData = this.generateHeatmapData(fileMetrics, options);
+    const heatmapData = this.generateHeatmapData(fileMetrics, options, report);
 
     // Store current heatmap data and update styles
     this.currentHeatmapData = heatmapData;
@@ -137,39 +141,53 @@ export class HeatmapDecorationService {
    */
   private generateHeatmapData(
     fileMetrics: { lines: LineMetrics[] },
-    options: DecorationOptions
+    options: DecorationOptions,
+    report: CircuitComplexityReport
   ): HeatmapData[] {
     if (!fileMetrics.lines || !Array.isArray(fileMetrics.lines)) {
       return [];
     }
 
-    return fileMetrics.lines
+    const filteredLines = fileMetrics.lines
       .filter((line: LineMetrics) => {
         // Ensure line has required properties
         if (!line || typeof line.normalizedHeat !== 'number') {
           console.warn('Line metrics missing normalizedHeat property:', line);
           return false;
         }
-        return line.normalizedHeat >= options.threshold;
+        // For inline decorations, show lines with any opcodes regardless of threshold
+        const totalOpcodes = line.acirOpcodes + line.brilligOpcodes;
+        return totalOpcodes > 0;
       })
-      .map((line: LineMetrics) => this.createHeatmapData(line, options.metricType))
+      .map((line: LineMetrics) => this.createHeatmapData(line, options.metricType, report))
       .sort((a: HeatmapData, b: HeatmapData) => b.heatValue - a.heatValue);
+
+    return filteredLines;
   }
 
   /**
    * Create heatmap data for a single line
    */
-  private createHeatmapData(line: LineMetrics, metricType: MetricType): HeatmapData {
+  private createHeatmapData(line: LineMetrics, metricType: MetricType, report: CircuitComplexityReport): HeatmapData {
     const primaryMetric = this.getMetricValue(line, metricType);
-    const badgeText = this.formatBadgeText(primaryMetric, metricType);
+
+    // Calculate total opcodes for this line (ACIR + Brillig)
+    const totalOpcodes = line.acirOpcodes + line.brilligOpcodes;
+
+    // Calculate percentage based on total circuit opcodes
+    const totalCircuitOpcodes = report.totalAcirOpcodes + report.totalBrilligOpcodes;
+    const percentage = totalCircuitOpcodes > 0 ? (totalOpcodes / totalCircuitOpcodes) * 100 : 0;
+
+    // Format badge text as "X opcodes, Y%"
+    const badgeText = `${totalOpcodes} opcodes`;
     const tooltipContent = this.formatTooltipContent(line);
 
     return {
       lineNumber: line.lineNumber || 1,
       heatValue: line.normalizedHeat || 0,
-      primaryMetric,
+      primaryMetric: totalOpcodes, // Use total opcodes as primary metric
       metricType,
-      badgeText,
+      badgeText: `${badgeText}, ${percentage.toFixed(2)}%`,
       tooltipContent
     };
   }
@@ -232,16 +250,15 @@ export class HeatmapDecorationService {
       })
       .map(data => {
         const lineLength = model.getLineLength(data.lineNumber);
-        const heatLevel = this.getHeatLevel(data.heatValue);
+        const className = `heatmap-line-decoration line-${data.lineNumber}`;
+
+        // Add CSS for this specific line with the content
+        this.addLineSpecificCSS(data.lineNumber, data.badgeText);
 
         return {
           range: new monaco.Range(data.lineNumber, lineLength + 1, data.lineNumber, lineLength + 1),
           options: {
-            after: {
-              content: ` // ${data.badgeText} (${Math.round(data.heatValue * 100)}%)`,
-              inlineClassName: `heatmap-inline-${heatLevel}`,
-              inlineClassNameAffectsLetterSpacing: false
-            }
+            className: className
           }
         };
       });
@@ -319,6 +336,31 @@ export class HeatmapDecorationService {
   }
 
   /**
+   * Add CSS for a specific line's opcode annotation
+   */
+  private addLineSpecificCSS(lineNumber: number, badgeText: string): void {
+    if (!this.styleElement) return;
+
+    // Add CSS for this specific line with better positioning
+    const lineCSS = `
+      .line-${lineNumber}::after {
+        content: " // ${badgeText}";
+        color: #9ca3af !important;
+        font-style: italic !important;
+        font-size: 0.85em !important;
+        font-weight: normal !important;
+        opacity: 0.8 !important;
+        margin-left: 12px;
+        padding-left: 8px;
+        display: inline-block;
+        white-space: nowrap;
+      }
+    `;
+
+    this.styleElement.textContent += lineCSS;
+  }
+
+  /**
    * Clear all decorations
    */
   public clearDecorations(): void {
@@ -338,6 +380,9 @@ export class HeatmapDecorationService {
         lineHighlights: []
       };
     }
+
+    // Reset the style element to clear line-specific CSS
+    this.updateStyles();
   }
 
   /**
@@ -441,6 +486,15 @@ export class HeatmapDecorationService {
 
     this.styleElement.textContent = `
       ${dynamicStyles}
+
+      /* Neutral inline decorations for opcode annotations */
+      .heatmap-inline-neutral {
+        color: #9ca3af !important;
+        font-style: italic !important;
+        font-size: 0.85em !important;
+        font-weight: normal !important;
+        opacity: 0.8 !important;
+      }
 
       /* Delta indicators */
       .heatmap-delta-improvement {

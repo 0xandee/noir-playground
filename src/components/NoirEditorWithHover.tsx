@@ -318,6 +318,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
             threshold: heatmapThreshold
           };
 
+
           heatmapService.current.applyHeatmapDecorations(report, decorationOptions, undefined, 'main.nr');
 
           // Apply fallback highlighting for lines with opcodes not in complexity report
