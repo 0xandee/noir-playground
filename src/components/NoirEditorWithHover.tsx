@@ -453,24 +453,26 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     const lineTotalOpcodes = lineMetrics.acirOpcodes + lineMetrics.brilligOpcodes + lineMetrics.gates;
     const linePercentage = lineMetrics.percentage?.toFixed(2) || '0';
 
-    let markdown = `\`\`\`\nTotal : ${lineTotalOpcodes} opcodes (${linePercentage}%)`;
-    markdown += `\n\n`;
+    let markdown = `**Total: ${lineTotalOpcodes} opcodes (${linePercentage}%)**\n\n`;
 
     // // Only show hotspot ranking when heatmap is enabled
     // if (enableHeatmap && hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
-    //   markdown += `🎯 Hotspot #${hotspotRank + 1}`;
-    // markdown += `\n\n`;
+    //   markdown += `🎯 Hotspot #${hotspotRank + 1}\n\n`;
     // }
 
-    // Create tree-style list for expressions with enhanced code formatting
-    sortedExpressions.forEach(expr => {
-      const totalCost = expr.acirOpcodes + expr.brilligOpcodes + expr.gates;
-      const percentage = (expr as ExpressionMetrics & { originalPercentage?: number }).originalPercentage || 0;
-      const cleanExpression = (expr.expression || '').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
-      markdown += `└─ ${cleanExpression} : ${totalCost} opcodes (${percentage.toFixed(2)}%)\n\n`;  // 
-    });
+    // Create markdown table for expressions
 
-    markdown += `\`\`\``;
+    if (sortedExpressions.length > 0) {
+      markdown += `| Expression | Opcodes | % |\n`;
+      markdown += `|:-----------|:-------:|--:|\n`;
+
+      sortedExpressions.forEach(expr => {
+        const totalCost = expr.acirOpcodes + expr.brilligOpcodes + expr.gates;
+        const percentage = (expr as ExpressionMetrics & { originalPercentage?: number }).originalPercentage || 0;
+        const cleanExpression = (expr.expression || '').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
+        markdown += `| \`${cleanExpression}\` | \`${totalCost}\` | \`${percentage.toFixed(2)}%\` |\n`;
+      });
+    }
 
     return markdown;
   };
