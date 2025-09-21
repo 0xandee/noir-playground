@@ -396,8 +396,10 @@ export class MetricsAggregationService {
       acirOpcodes: type === 'acir' ? data.opcodes : 0,
       brilligOpcodes: type === 'brillig' ? data.opcodes : 0,
       gates: type === 'gates' ? data.opcodes : 0,
-      opcodeTypes: [type]
-    };
+      opcodeTypes: [type],
+      // Preserve the original SVG percentage for accurate console output
+      ...(data.percentage !== undefined && { originalPercentage: data.percentage })
+    } as ExpressionMetrics & { originalPercentage?: number };
   }
 
   private passesFilter(line: LineMetrics, filter: MetricsFilter, report: CircuitComplexityReport): boolean {

@@ -121,6 +121,8 @@ export class NoirProfilerService {
         fileName: request.fileName
       });
 
+      // Step 6: Automatically output console table with opcode analysis
+      this.generateOpcodeConsoleTable(complexityReport);
 
       return {
         acirSVG: svgData.mainAcirSVG,
@@ -256,5 +258,113 @@ export class NoirProfilerService {
    */
   public updateMetricsConfig(config: Partial<import('@/types/circuitMetrics').MetricsConfiguration>): void {
     this.metricsService.updateConfiguration(config);
+  }
+
+  /**
+   * Generate and output a detailed console table of all expressions with opcodes and percentages
+   */
+  private generateOpcodeConsoleTable(complexityReport: CircuitComplexityReport): void {
+    if (!complexityReport || !complexityReport.files?.length) {
+      console.warn('No complexity report data available for console table');
+      return;
+    }
+
+    const fileMetrics = complexityReport.files[0];
+    if (!fileMetrics?.lines?.length) {
+      console.warn('No line metrics available for console table');
+      return;
+    }
+
+    // Collect all expressions from all lines
+    const allExpressions: Array<{
+      lineNumber: number;
+      column: number;
+      expression: string;
+      acirOpcodes: number;
+      brilligOpcodes: number;
+      gates: number;
+      totalCost: number;
+      percentage: number;
+      fileName: string;
+    }> = [];
+
+    fileMetrics.lines.forEach(line => {
+      if (line.expressions && line.expressions.length > 0) {
+        line.expressions.forEach(expr => {
+          const totalCost = expr.acirOpcodes + expr.brilligOpcodes + expr.gates;
+          // Use original SVG percentage if available, otherwise calculate locally
+          const percentage = (expr as any).originalPercentage ||
+            (complexityReport.totalAcirOpcodes + complexityReport.totalBrilligOpcodes + complexityReport.totalGates > 0
+              ? (totalCost / (complexityReport.totalAcirOpcodes + complexityReport.totalBrilligOpcodes + complexityReport.totalGates)) * 100
+              : 0);
+
+          allExpressions.push({
+            lineNumber: line.lineNumber,
+            column: expr.column || 0,
+            expression: expr.expression || 'Unknown expression',
+            acirOpcodes: expr.acirOpcodes,
+            brilligOpcodes: expr.brilligOpcodes,
+            gates: expr.gates,
+            totalCost,
+            percentage,
+            fileName: line.fileName || 'main.nr'
+          });
+        });
+      } else if (line.acirOpcodes > 0 || line.brilligOpcodes > 0 || line.gates > 0) {
+        // Include lines with opcodes but no specific expressions
+        allExpressions.push({
+          lineNumber: line.lineNumber,
+          column: 0,
+          expression: `Line ${line.lineNumber} (no specific expression)`,
+          acirOpcodes: line.acirOpcodes,
+          brilligOpcodes: line.brilligOpcodes,
+          gates: line.gates,
+          totalCost: line.totalCost || (line.acirOpcodes + line.brilligOpcodes + line.gates),
+          percentage: line.percentage || 0,
+          fileName: line.fileName || 'main.nr'
+        });
+      }
+    });
+
+    // Sort by percentage descending (highest cost first)
+    allExpressions.sort((a, b) => b.percentage - a.percentage);
+
+    // Format data for console.table
+    const tableData = allExpressions.map((expr, index) => ({
+      '#': index + 1,
+      'Line': expr.lineNumber,
+      'Col': expr.column,
+      'Expression': expr.expression.length > 60 ? expr.expression.substring(0, 57) + '...' : expr.expression,
+      'ACIR': expr.acirOpcodes,
+      'Brillig': expr.brilligOpcodes,
+      'Gates': expr.gates,
+      'Total': expr.totalCost,
+      'Percentage': `${expr.percentage.toFixed(2)}%`,
+      'File': expr.fileName
+    }));
+
+    // Output summary header
+    console.log('\n🔥 Circuit Complexity Analysis - Detailed Expression Breakdown');
+    console.log('================================================================');
+    console.log(`Total ACIR Opcodes: ${complexityReport.totalAcirOpcodes}`);
+    console.log(`Total Brillig Opcodes: ${complexityReport.totalBrilligOpcodes}`);
+    console.log(`Total Gates: ${complexityReport.totalGates}`);
+    console.log(`Total Expressions: ${allExpressions.length}`);
+    console.log('================================================================\n');
+
+    // Output the main table
+    console.table(tableData);
+
+    // Output top 5 hotspots if available
+    if (complexityReport.hotspots && complexityReport.hotspots.length > 0) {
+      console.log('\n🎯 Top Performance Hotspots:');
+      console.log('-----------------------------');
+      complexityReport.hotspots.slice(0, 5).forEach((hotspot, index) => {
+        console.log(`${index + 1}. Line ${hotspot.lineNumber}: ${hotspot.percentage.toFixed(2)}% (${hotspot.totalCost} total cost)`);
+      });
+    }
+
+    console.log('\n📊 Use this data to identify the most expensive expressions in your circuit.');
+    console.log('💡 Focus optimization efforts on expressions with high percentages.');
   }
 }

@@ -4,7 +4,7 @@ import * as monaco from 'monaco-editor';
 import { LineAnalysisService, LineAnalysisResult } from '@/services/LineAnalysisService';
 import { HeatmapDecorationService, DecorationOptions } from '@/services/HeatmapDecorationService';
 import { NoirProfilerService } from '@/services/NoirProfilerService';
-import { CircuitComplexityReport, MetricType, MetricsDelta } from '@/types/circuitMetrics';
+import { CircuitComplexityReport, MetricType, MetricsDelta, ExpressionMetrics, LineMetrics } from '@/types/circuitMetrics';
 
 interface NoirEditorWithHoverProps {
   value: string;
@@ -33,22 +33,22 @@ const registerNoirLanguage = (monaco: Monaco) => {
         // Comments
         [/\/\/.*$/, 'comment'],
         [/\/\*/, 'comment', '@comment'],
-        
+
         // Keywords
         [/\b(fn|pub|priv|constrain|assert|let|mut|if|else|for|while|return|struct|impl|trait|use|mod|type|const|static|where|self|Self|true|false|global|unconstrained|contract|library|comptime|dep|crate|main)\b/, 'keyword'],
-        
+
         // Types
         [/\b(Field|bool|u8|u16|u32|u64|u128|i8|i16|i32|i64|i128|str|String|Vec|Option|Result)\b/, 'type'],
-        
+
         // Enhanced constraint highlighting
         [/\bassert\s*\(/, 'constraint.assert'],
         [/\bconstrain\s*\(/, 'constraint.constrain'],
-        
+
         // Opcode-related highlighting
         [/\bas\s+\w+/, 'opcode.cast'],
         [/\bField\b/, 'type.field'],
         [/\bu\d+\b/, 'type.integer'],
-        
+
         // Performance-critical operations
         [/\b\w+\s*\+\s*\w+/, 'operation.arithmetic'],
         [/\b\w+\s*\*\s*\w+/, 'operation.arithmetic'],
@@ -56,30 +56,30 @@ const registerNoirLanguage = (monaco: Monaco) => {
         [/\b\w+\s*<\s*\w+/, 'operation.comparison'],
         [/\b\w+\s*==\s*\w+/, 'operation.comparison'],
         [/\b\w+\s*!=\s*\w+/, 'operation.comparison'],
-        
+
         // Numbers
         [/\b\d+\b/, 'number'],
         [/\b0x[0-9a-fA-F]+\b/, 'number'],
-        
+
         // Strings
         [/"([^"\\]|\\.)*$/, 'string.invalid'],
         [/"/, 'string', '@string'],
-        
+
         // Identifiers
         [/[a-zA-Z_][a-zA-Z0-9_]*/, 'identifier'],
-        
+
         // Operators
         [/[+\-*/%=!<>&|^~]/, 'operator'],
-        
+
         // Delimiters
         [/[{}()[\];,.]/, 'delimiter'],
       ],
-      
+
       comment: [
         [/\*\//, 'comment', '@pop'],
         [/./, 'comment']
       ],
-      
+
       string: [
         [/[^\\"]+/, 'string'],
         [/\\./, 'string.escape.invalid'],
@@ -113,7 +113,7 @@ const registerNoirLanguage = (monaco: Monaco) => {
       { token: 'identifier', foreground: 'D4D4D4' },
       { token: 'operator', foreground: 'D4D4D4' },
       { token: 'delimiter', foreground: 'D4D4D4' },
-      
+
       // Enhanced constraint highlighting
       { token: 'constraint.assert', foreground: 'FF6B6B', fontStyle: 'bold' },
       { token: 'constraint.constrain', foreground: '4ECDC4', fontStyle: 'bold' },
@@ -150,10 +150,10 @@ const registerNoirLanguage = (monaco: Monaco) => {
   });
 };
 
-export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({ 
-  value, 
-  onChange, 
-  disabled = false, 
+export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
+  value,
+  onChange,
+  disabled = false,
   language = 'noir',
   cargoToml,
   onLineAnalysis,
@@ -178,6 +178,19 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
   const [isGeneratingHeatmap, setIsGeneratingHeatmap] = useState(false);
   const updateHeatmapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Refs to track current state for hover provider
+  const enableHeatmapRef = useRef(enableHeatmap);
+  const complexityReportRef = useRef(complexityReport);
+
+  // Update refs when props/state change
+  useEffect(() => {
+    enableHeatmapRef.current = enableHeatmap;
+  }, [enableHeatmap]);
+
+  useEffect(() => {
+    complexityReportRef.current = complexityReport;
+  }, [complexityReport]);
 
   // Value prop logging removed
 
@@ -376,115 +389,46 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     return nameMap[type] || 'Unknown';
   };
 
-  // Function to create hover content - enhanced with better structure and clarity
+  // Function to create hover content - always use simplified format
   const createHoverContent = (lineNumber: number, lineText: string, analysis: LineAnalysisResult) => {
     const contents: monaco.IMarkdownString[] = [];
 
     if (analysis.error) {
       contents.push({
-        value: `❌ **Error:** ${analysis.error}`
+        value: `❌ **Error:** ${analysis.error}`,
+        supportHtml: false
       });
     } else {
-      // Calculate total opcodes for breakdown
-      const totalConstraintOpcodes = analysis.constraints.reduce((sum, c) => sum + c.cost, 0);
+      // Get complexity report data if available (use current ref values)
+      const currentComplexityReport = complexityReportRef.current;
+      const currentEnableHeatmap = enableHeatmapRef.current;
 
-      // Get complexity report data if available
-      const lineMetrics = complexityReport?.files[0]?.lines.find(l => l.lineNumber === lineNumber);
-      const hotspotRank = complexityReport?.hotspots.findIndex(h => h.lineNumber === lineNumber);
+      const lineMetrics = currentComplexityReport?.files[0]?.lines.find(l => l.lineNumber === lineNumber);
+      const hotspotRank = currentComplexityReport?.hotspots.findIndex(h => h.lineNumber === lineNumber);
 
-      // Add line indicator
-      // contents.push({
-      //   value: `**Line ${lineNumber} Complexity**`
-      // });
-
-      // ACIR Breakdown with percentages
-      if (analysis.constraints.length > 0) {
-        let breakdownHeader = `\n⚡ **ACIR Breakdown:** ${totalConstraintOpcodes} opcodes`;
-
-        // Add percentage of total circuit opcodes from SVG data
-        const totalPercentage = analysis.constraints
-          .filter(c => c.percentage !== undefined)
-          .reduce((sum, c) => sum + (c.percentage || 0), 0);
-
-        if (totalPercentage > 0) {
-          breakdownHeader += ` (${totalPercentage.toFixed(2)}%)`;
-        }
-
-        // Add hotspot ranking if available
-        if (lineMetrics && hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
-          breakdownHeader += ` - Hotspot #${hotspotRank + 1}`;
-        }
-
+      // Always use simplified format if we have line metrics and expressions
+      if (lineMetrics && lineMetrics.expressions && lineMetrics.expressions.length > 0) {
+        // Create simplified markdown for expressions
+        const tableMarkdown = createExpressionsSimplifiedMarkdown(lineMetrics, hotspotRank, currentEnableHeatmap);
         contents.push({
-          value: breakdownHeader
-        });
-
-        // Group constraints by type and calculate percentages
-        const constraintsByType = analysis.constraints.reduce((acc, constraint) => {
-          if (!acc[constraint.type]) {
-            acc[constraint.type] = { constraints: [], totalCost: 0 };
-          }
-          acc[constraint.type].constraints.push(constraint);
-          acc[constraint.type].totalCost += constraint.cost;
-          return acc;
-        }, {} as Record<string, { constraints: typeof analysis.constraints, totalCost: number }>);
-
-        // Sort by total cost (highest first)
-        const sortedTypes = Object.entries(constraintsByType)
-          .sort(([, a], [, b]) => b.totalCost - a.totalCost);
-
-        // Display constraints grouped by type with percentages
-        sortedTypes.forEach(([type, data]) => {
-          const typeEmoji = getConstraintTypeEmoji(type);
-          const typeName = getConstraintTypeName(type);
-          const percentage = totalConstraintOpcodes > 0
-            ? ((data.totalCost / totalConstraintOpcodes) * 100).toFixed(1)
-            : '0';
-
-          contents.push({
-            value: `  • **${typeName}:** ${data.totalCost} ops (${percentage}%)`
-          });
-
-          // Show individual expressions indented
-          data.constraints.forEach(constraint => {
-            contents.push({
-              value: `    └─ \`${constraint.expression}\`: ${constraint.cost} ops`
-            });
-          });
-        });
-      } else if (analysis.opcodes.length > 0) {
-        // Show raw opcodes if no constraints detected
-        contents.push({
-          value: `\n⚡ **ACIR Operations**`
-        });
-        contents.push({
-          value: `  \`${analysis.opcodes.join('`, `')}\``
+          value: tableMarkdown,
+          supportHtml: false
         });
       } else {
-        // No opcodes detected
+        // Fallback for lines without complexity report data
         contents.push({
           value: `\n⚡ **ACIR Operations**`
         });
-        contents.push({
-          value: `  No opcodes (line not in circuit)`
-        });
-      }
 
-
-      // Resource Usage details
-      if (lineMetrics) {
-        contents.push({
-          value: `\n📈 **Resource Usage**`
-        });
-        contents.push({
-          value: `  • **ACIR Opcodes:** ${lineMetrics.acirOpcodes}`
-        });
-        contents.push({
-          value: `  • **Brillig Opcodes:** ${lineMetrics.brilligOpcodes}`
-        });
-        contents.push({
-          value: `  • **Proving Gates:** ${lineMetrics.gates}`
-        });
+        if (analysis.opcodes.length > 0) {
+          contents.push({
+            value: `  \`${analysis.opcodes.join('`, `')}\``
+          });
+        } else {
+          contents.push({
+            value: `  No opcodes (line not in circuit)`
+          });
+        }
       }
     }
 
@@ -492,6 +436,43 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       range: new monaco.Range(lineNumber, 1, lineNumber, lineText.length),
       contents
     };
+  };
+
+  // Helper function to create simplified markdown for expressions (simplified approach)
+  const createExpressionsSimplifiedMarkdown = (lineMetrics: LineMetrics, hotspotRank: number, enableHeatmap: boolean) => {
+    const expressions = lineMetrics.expressions || [];
+
+    // Sort expressions by total cost (ACIR + Brillig + Gates) highest first
+    const sortedExpressions = [...expressions].sort((a, b) => {
+      const totalA = a.acirOpcodes + a.brilligOpcodes + a.gates;
+      const totalB = b.acirOpcodes + b.brilligOpcodes + b.gates;
+      return totalB - totalA;
+    });
+
+    // Enhanced summary with total at top
+    const lineTotalOpcodes = lineMetrics.acirOpcodes + lineMetrics.brilligOpcodes + lineMetrics.gates;
+    const linePercentage = lineMetrics.percentage?.toFixed(2) || '0';
+
+    let markdown = `\`\`\`\nTotal : ${lineTotalOpcodes} opcodes (${linePercentage}%)`;
+    markdown += `\n\n`;
+
+    // // Only show hotspot ranking when heatmap is enabled
+    // if (enableHeatmap && hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
+    //   markdown += `🎯 Hotspot #${hotspotRank + 1}`;
+    // markdown += `\n\n`;
+    // }
+
+    // Create tree-style list for expressions with enhanced code formatting
+    sortedExpressions.forEach(expr => {
+      const totalCost = expr.acirOpcodes + expr.brilligOpcodes + expr.gates;
+      const percentage = (expr as ExpressionMetrics & { originalPercentage?: number }).originalPercentage || 0;
+      const cleanExpression = (expr.expression || '').replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(/&amp;/g, '&');
+      markdown += `└─ ${cleanExpression} : ${totalCost} opcodes (${percentage.toFixed(2)}%)\n\n`;  // 
+    });
+
+    markdown += `\`\`\``;
+
+    return markdown;
   };
 
   // Function to add inline decoration showing opcode/constraint count
@@ -506,7 +487,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       const decoration = model.getDecorationRange(id);
       return decoration && decoration.startLineNumber === lineNumber;
     });
-    
+
     if (existingDecorations.length > 0) {
       model.deltaDecorations(existingDecorations, []);
       decorationIds.current = decorationIds.current.filter(id => !existingDecorations.includes(id));
@@ -533,13 +514,13 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     registerNoirLanguage(monaco);
-    
+
     // Initialize heatmap service
     heatmapService.current.initialize(editor);
-    
+
     // Force set the enhanced theme
     monaco.editor.setTheme(language === 'noir' ? 'noir-enhanced' : 'vs-dark');
-    
+
     // Add CSS for inline analysis decorations and Monaco hover fixes
     const style = document.createElement('style');
     style.textContent = `
@@ -570,7 +551,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       }
     `;
     document.head.appendChild(style);
-    
+
     // Ensure the editor has the correct value
     if (value && editor.getValue() !== value) {
       editor.setValue(value);
@@ -585,20 +566,25 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     if (!hoverProviderRegistered.current) {
       monaco.languages.registerHoverProvider('noir', {
         provideHover: async (model, position) => {
+          // Only show hover tooltips when heatmap is enabled
+          if (!enableHeatmapRef.current) {
+            return null;
+          }
+
           const lineNumber = position.lineNumber;
           const lineText = model.getLineContent(lineNumber);
-          
+
           // Skip empty lines or comments
           if (!lineText.trim() || lineText.trim().startsWith('//') || lineText.trim().startsWith('/*')) {
             return null;
           }
 
           setIsAnalyzing(true);
-          
+
           try {
             // Use model content instead of value prop to ensure we get the actual editor content
             const actualSourceCode = model.getValue();
-            
+
             const analysis = await lineAnalysisService.current.analyzeLine({
               sourceCode: actualSourceCode,
               lineNumber,
@@ -632,7 +618,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       if (e.target.position) {
         const lineNumber = e.target.position.lineNumber;
         const lineText = editor.getModel()?.getLineContent(lineNumber) || '';
-        
+
         if (lineText.trim() && !lineText.trim().startsWith('//')) {
           // Trigger line analysis on click
           lineAnalysisService.current.analyzeLine({
@@ -652,20 +638,20 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   const handleEditorChange = (value: string | undefined) => {
     if (value !== undefined) {
       onChange(value);
-      
+
       // Clear cache for the old source code when code changes
       if (editorRef.current) {
         const model = editorRef.current.getModel();
         if (model) {
           const oldSourceCode = model.getValue();
           lineAnalysisService.current.clearCacheForSource(oldSourceCode, cargoToml);
-          
+
           // Clear all decorations when code changes
           if (decorationIds.current.length > 0) {
             model.deltaDecorations(decorationIds.current, []);
             decorationIds.current = [];
           }
-          
+
           // Clear heatmap decorations and schedule update
           if (enableHeatmap) {
             heatmapService.current.clearDecorations();
@@ -775,14 +761,14 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           }
         }}
       />
-      
+
       {/* Analysis and heatmap indicators */}
       {isAnalyzing && (
         <div className="absolute top-2 right-2 bg-primary/20 text-primary text-xs px-2 py-1 rounded">
           Analyzing...
         </div>
       )}
-      
+
       {isGeneratingHeatmap && (
         <div className="absolute top-8 right-2 bg-orange-500/20 text-orange-500 text-xs px-2 py-1 rounded flex items-center gap-1">
           <div className="animate-spin rounded-full h-3 w-3 border border-orange-500 border-t-transparent"></div>
