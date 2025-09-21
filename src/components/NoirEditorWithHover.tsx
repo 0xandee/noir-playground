@@ -454,7 +454,8 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     const lineTotalOpcodes = lineMetrics.acirOpcodes + lineMetrics.brilligOpcodes + lineMetrics.gates;
     const linePercentage = lineMetrics.percentage?.toFixed(2) || '0';
 
-    let markdown = `**Total: ${lineTotalOpcodes} opcodes (${linePercentage}%)**\n\n`;
+    // let markdown = `**Total: ${lineTotalOpcodes} opcodes (${linePercentage}%)**\n\n`;
+    let markdown = `\n\n`;
 
     // // Only show hotspot ranking when heatmap is enabled
     // if (enableHeatmap && hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {
