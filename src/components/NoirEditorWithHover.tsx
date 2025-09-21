@@ -271,6 +271,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     document.head.appendChild(style);
   };
 
+
   // Function to generate and apply heatmap
   const generateHeatmap = async (sourceCode: string): Promise<void> => {
     if (!enableHeatmap || !sourceCode.trim()) return;
@@ -278,16 +279,22 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     setIsGeneratingHeatmap(true);
 
     try {
-      const report = await profilerService.current.getComplexityReport(
-        sourceCode,
-        cargoToml,
-        'main.nr'
-      );
+      // Use existing complexity report if available, otherwise generate it
+      let report = complexityReport;
+      if (!report) {
+        report = await profilerService.current.getComplexityReport(
+          sourceCode,
+          cargoToml,
+          'main.nr'
+        );
+
+        if (report) {
+          setComplexityReport(report);
+          onComplexityReport?.(report);
+        }
+      }
 
       if (report) {
-        setComplexityReport(report);
-        onComplexityReport?.(report);
-
         // Apply heatmap decorations
         try {
           const decorationOptions: DecorationOptions = {
@@ -392,7 +399,16 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
 
       // ACIR Breakdown with percentages
       if (analysis.constraints.length > 0) {
-        let breakdownHeader = `\n⚡ **ACIR Breakdown** (${totalConstraintOpcodes} opcodes)`;
+        let breakdownHeader = `\n⚡ **ACIR Breakdown:** ${totalConstraintOpcodes} opcodes`;
+
+        // Add percentage of total circuit opcodes from SVG data
+        const totalPercentage = analysis.constraints
+          .filter(c => c.percentage !== undefined)
+          .reduce((sum, c) => sum + (c.percentage || 0), 0);
+
+        if (totalPercentage > 0) {
+          breakdownHeader += ` (${totalPercentage.toFixed(2)}%)`;
+        }
 
         // Add hotspot ranking if available
         if (lineMetrics && hotspotRank !== undefined && hotspotRank >= 0 && hotspotRank < 5) {

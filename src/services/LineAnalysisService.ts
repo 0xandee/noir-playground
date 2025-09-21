@@ -16,6 +16,7 @@ export interface ConstraintInfo {
   expression: string;
   complexity: number;
   cost: number;
+  percentage?: number; // Percentage of total circuit opcodes from SVG data
 }
 
 export interface LineAnalysisRequest {
@@ -191,7 +192,8 @@ export class LineAnalysisService {
           type: constraintType,
           expression: expression,
           complexity: this.calculateConstraintComplexity(constraintType, data.opcodes),
-          cost: data.opcodes
+          cost: data.opcodes,
+          percentage: data.percentage // Include percentage from SVG data
         });
       }
     }
