@@ -194,95 +194,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
 
   // Value prop logging removed
 
-  // Function to apply fallback highlighting for lines not in complexity report
-  const applyFallbackHighlighting = async (sourceCode: string, report: CircuitComplexityReport): Promise<void> => {
-    if (!editorRef.current) return;
 
-    const model = editorRef.current.getModel();
-    if (!model) return;
-
-    // Get lines that are already highlighted by the main complexity report
-    const highlightedLines = new Set<number>();
-    if (report.files.length > 0) {
-      report.files[0].lines.forEach(line => {
-        highlightedLines.add(line.lineNumber);
-      });
-    }
-
-    // Analyze lines that aren't highlighted to see if they have opcodes
-    const sourceLines = sourceCode.split('\n');
-    const fallbackDecorations: monaco.editor.IModelDeltaDecoration[] = [];
-
-    for (let i = 0; i < sourceLines.length; i++) {
-      const lineNumber = i + 1;
-      const lineText = sourceLines[i].trim();
-
-      // Skip empty lines, comments, and already highlighted lines
-      if (!lineText || lineText.startsWith('//') || lineText.startsWith('/*') || highlightedLines.has(lineNumber)) {
-        continue;
-      }
-
-      try {
-        const analysis = await lineAnalysisService.current.analyzeLine({
-          sourceCode,
-          lineNumber,
-          cargoToml
-        });
-
-        // If this line has opcodes but isn't highlighted, add minimal highlighting
-        if (analysis.opcodes.length > 0) {
-          // Add very subtle red background highlighting
-          fallbackDecorations.push({
-            range: new monaco.Range(lineNumber, 1, lineNumber, Number.MAX_SAFE_INTEGER),
-            options: {
-              isWholeLine: true,
-              className: 'heatmap-fallback-highlight'
-            }
-          });
-
-          // Add minimal gutter indicator
-          fallbackDecorations.push({
-            range: new monaco.Range(lineNumber, 1, lineNumber, 1),
-            options: {
-              isWholeLine: false,
-              glyphMarginClassName: 'heatmap-fallback-gutter'
-            }
-          });
-        }
-      } catch (error) {
-        // Skip lines that can't be analyzed
-      }
-    }
-
-    // Apply fallback decorations if any were found
-    if (fallbackDecorations.length > 0) {
-      model.deltaDecorations([], fallbackDecorations);
-
-      // Add CSS for fallback highlighting
-      addFallbackHighlightStyles();
-    }
-  };
-
-  // Function to add CSS styles for fallback highlighting
-  const addFallbackHighlightStyles = (): void => {
-    const existingStyle = document.getElementById('heatmap-fallback-styles');
-    if (existingStyle) return; // Already added
-
-    const style = document.createElement('style');
-    style.id = 'heatmap-fallback-styles';
-    style.textContent = `
-      .heatmap-fallback-highlight {
-        background-color: rgba(239, 68, 68, 0.08) !important;
-      }
-      .heatmap-fallback-gutter::before {
-        content: "▌";
-        color: rgba(239, 68, 68, 0.15);
-        font-weight: bold;
-        font-size: 14px;
-      }
-    `;
-    document.head.appendChild(style);
-  };
 
 
   // Function to generate and apply heatmap
@@ -295,19 +207,16 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       // Clear cache to force fresh generation (ensures deduplication fix is applied)
       profilerService.current.clearCache();
 
-      // Use existing complexity report if available, otherwise generate it
-      let report = complexityReport;
-      if (!report) {
-        report = await profilerService.current.getComplexityReport(
-          sourceCode,
-          cargoToml,
-          'main.nr'
-        );
+      // Always generate fresh complexity report to ensure accuracy after code changes
+      const report = await profilerService.current.getComplexityReport(
+        sourceCode,
+        cargoToml,
+        'main.nr'
+      );
 
-        if (report) {
-          setComplexityReport(report);
-          onComplexityReport?.(report);
-        }
+      if (report) {
+        setComplexityReport(report);
+        onComplexityReport?.(report);
       }
 
       if (report) {
@@ -323,9 +232,6 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
 
 
           heatmapService.current.applyHeatmapDecorations(report, decorationOptions, undefined, 'main.nr');
-
-          // Apply fallback highlighting for lines with opcodes not in complexity report
-          await applyFallbackHighlighting(sourceCode, report);
         } catch (decorationError) {
           console.warn('Failed to apply heatmap decorations:', decorationError);
           // Continue without heatmap decorations
@@ -644,9 +550,10 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
             decorationIds.current = [];
           }
 
-          // Clear heatmap decorations and schedule update
+          // Clear heatmap decorations and complexity report, then schedule update
           if (enableHeatmap) {
             heatmapService.current.clearDecorations();
+            setComplexityReport(null); // Clear stale complexity report
             scheduleHeatmapUpdate(value);
           }
         }
