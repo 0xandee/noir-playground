@@ -8,6 +8,18 @@ export interface ProfilerRequest {
   fileName?: string;
 }
 
+export interface ComplexityTableData {
+  lineNumber: number;
+  column: number;
+  expression: string;
+  acirOpcodes: number;
+  brilligOpcodes: number;
+  gates: number;
+  totalCost: number;
+  percentage: number;
+  fileName: string;
+}
+
 export interface ProfilerResult {
   acirSVG: string;
   gatesSVG: string;
@@ -258,6 +270,84 @@ export class NoirProfilerService {
    */
   public updateMetricsConfig(config: Partial<import('@/types/circuitMetrics').MetricsConfiguration>): void {
     this.metricsService.updateConfiguration(config);
+  }
+
+  /**
+   * Generate table data for UI display from complexity report
+   */
+  public getTableData(complexityReport: CircuitComplexityReport): ComplexityTableData[] {
+    if (!complexityReport || !complexityReport.files?.length) {
+      return [];
+    }
+
+    const fileMetrics = complexityReport.files[0];
+    if (!fileMetrics?.lines?.length) {
+      return [];
+    }
+
+    // Collect all expressions from all lines
+    const allExpressions: ComplexityTableData[] = [];
+
+    fileMetrics.lines.forEach(line => {
+      if (line.expressions && line.expressions.length > 0) {
+        line.expressions.forEach(expr => {
+          const totalCost = expr.acirOpcodes + expr.brilligOpcodes + expr.gates;
+          // Use original SVG percentage if available, otherwise calculate locally
+          const percentage = (expr as ExpressionMetrics & { originalPercentage?: number }).originalPercentage ||
+            (complexityReport.totalAcirOpcodes + complexityReport.totalBrilligOpcodes + complexityReport.totalGates > 0
+              ? (totalCost / (complexityReport.totalAcirOpcodes + complexityReport.totalBrilligOpcodes + complexityReport.totalGates)) * 100
+              : 0);
+
+          allExpressions.push({
+            lineNumber: line.lineNumber,
+            column: expr.column || 0,
+            expression: expr.expression || 'Unknown expression',
+            acirOpcodes: expr.acirOpcodes,
+            brilligOpcodes: expr.brilligOpcodes,
+            gates: expr.gates,
+            totalCost,
+            percentage,
+            fileName: line.fileName || 'main.nr'
+          });
+        });
+      } else if (line.acirOpcodes > 0 || line.brilligOpcodes > 0 || line.gates > 0) {
+        // Include lines with opcodes but no specific expressions
+        allExpressions.push({
+          lineNumber: line.lineNumber,
+          column: 0,
+          expression: `Line ${line.lineNumber} (no specific expression)`,
+          acirOpcodes: line.acirOpcodes,
+          brilligOpcodes: line.brilligOpcodes,
+          gates: line.gates,
+          totalCost: line.totalCost || (line.acirOpcodes + line.brilligOpcodes + line.gates),
+          percentage: line.percentage || 0,
+          fileName: line.fileName || 'main.nr'
+        });
+      }
+    });
+
+    // Deduplicate expressions by grouping same line+column+expression and aggregating values
+    const expressionMap = new Map<string, ComplexityTableData>();
+
+    allExpressions.forEach(expr => {
+      const key = `${expr.lineNumber}:${expr.column}:${expr.expression}`;
+      const existing = expressionMap.get(key);
+
+      if (existing) {
+        // Aggregate values for duplicate expressions
+        existing.acirOpcodes += expr.acirOpcodes;
+        existing.brilligOpcodes += expr.brilligOpcodes;
+        existing.gates += expr.gates;
+        existing.totalCost = existing.acirOpcodes + existing.brilligOpcodes + existing.gates;
+        // Use the higher percentage (they should be similar)
+        existing.percentage = Math.max(existing.percentage, expr.percentage);
+      } else {
+        expressionMap.set(key, { ...expr });
+      }
+    });
+
+    // Convert back to array and sort by percentage descending (highest cost first)
+    return Array.from(expressionMap.values()).sort((a, b) => b.percentage - a.percentage);
   }
 
   /**

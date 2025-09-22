@@ -1,9 +1,10 @@
 import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { RefreshCw, Info, BarChart3 } from 'lucide-react';
+import { RefreshCw, Info, BarChart3, Table, Activity } from 'lucide-react';
 import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
 import { CircuitMetrics } from './CircuitMetrics';
+import { ComplexityTableView } from './ComplexityTableView';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
 
 
@@ -24,8 +25,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   className,
   enableHeatmap = false
 }) => {
-  const [selectedView, setSelectedView] = useState<'acir' | 'gates'>('acir');
-
+  const [viewMode, setViewMode] = useState<'table' | 'flamegraph'>('table');
   const [profilerResult, setProfilerResult] = useState<ProfilerResult | null>(null);
   const [isProfiling, setIsProfiling] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +100,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [sourceCode, handleProfiling]);
+  }, [sourceCode, handleProfiling, enableHeatmap]);
 
   // Auto-analyze immediately when heatmap is turned on (if code exists)
   React.useEffect(() => {
@@ -122,19 +122,6 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     };
   }, []);
 
-  // Helper function to get current SVG content based on selection
-  const getCurrentSVGContent = () => {
-    if (!profilerResult) return '';
-    
-    switch (selectedView) {
-      case 'acir':
-        return profilerResult.acirSVG || '';
-      case 'gates':
-        return profilerResult.gatesSVG || '';
-      default:
-        return profilerResult.acirSVG || '';
-    }
-  };
 
 
 
@@ -147,6 +134,30 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
         </div>
 
         <div className="flex items-center gap-2">
+          {/* View Toggle Buttons */}
+          {profilerResult && (
+            <div className="flex items-center gap-1 mr-2">
+              <Button
+                variant={viewMode === 'table' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('table')}
+                className="h-7 px-2"
+              >
+                <Table className="h-3 w-3 mr-1" />
+                Table
+              </Button>
+              <Button
+                variant={viewMode === 'flamegraph' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setViewMode('flamegraph')}
+                className="h-7 px-2"
+              >
+                <Activity className="h-3 w-3 mr-1" />
+                Flamegraph
+              </Button>
+            </div>
+          )}
+
           <Button
             variant="outline"
             size="sm"
@@ -186,40 +197,51 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
           {/* Circuit Metrics - Show at the top if available */}
           {profilerResult.circuitMetrics && (
             <div className="mb-4">
-              <CircuitMetrics 
-                metrics={profilerResult.circuitMetrics} 
+              <CircuitMetrics
+                metrics={profilerResult.circuitMetrics}
                 className="w-full"
               />
             </div>
           )}
 
-          {/* View Toggle Buttons */}
-          <div className="flex gap-2 mb-4 justify-center">
-            <Button
-              variant={selectedView === 'acir' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedView('acir')}
-              className="text-xs px-4"
-            >
-              ACIR Opcodes
-            </Button>
-            <Button
-              variant={selectedView === 'gates' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setSelectedView('gates')}
-              className="text-xs px-4"
-            >
-              Proving Gates
-            </Button>
+          {/* Content Area - Flamegraph or Table View */}
+          <div className="h-full">
+            {viewMode === 'flamegraph' ? (
+              /* Dual SVG Viewers - Vertical Stack */
+              <div className="flex flex-col gap-4 h-full">
+                {/* ACIR Opcodes Flamegraph */}
+                <div className="flex-1 min-h-0">
+                  <SVGFlamegraphViewer
+                    title="ACIR Opcodes"
+                    svgContent={profilerResult.acirSVG || ''}
+                    onFunctionClick={handleFunctionClick}
+                    onLineClick={handleLineClick}
+                    className="h-full"
+                  />
+                </div>
+
+                {/* Proving Gates Flamegraph */}
+                <div className="flex-1 min-h-0">
+                  <SVGFlamegraphViewer
+                    title="Proving Gates"
+                    svgContent={profilerResult.gatesSVG || ''}
+                    onFunctionClick={handleFunctionClick}
+                    onLineClick={handleLineClick}
+                    className="h-full"
+                  />
+                </div>
+              </div>
+            ) : (
+              /* Table View */
+              <div className="h-full">
+                <ComplexityTableView
+                  data={profilerResult.complexityReport ? profilerService.getTableData(profilerResult.complexityReport) : []}
+                  onLineClick={handleLineClick}
+                  className="h-full"
+                />
+              </div>
+            )}
           </div>
-          
-          {/* SVG Viewer */}
-          <SVGFlamegraphViewer
-            svgContent={getCurrentSVGContent()}
-            onFunctionClick={handleFunctionClick}
-            onLineClick={handleLineClick}
-            className="h-full"
-          />
         </div>
       )}
 

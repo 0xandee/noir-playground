@@ -7,6 +7,7 @@ interface SVGFlamegraphViewerProps {
   onFunctionClick?: (functionName: string) => void;
   onLineClick?: (lineNumber: number) => void;
   className?: string;
+  title?: string;
 }
 
 
@@ -15,7 +16,8 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
   svgContent,
   onFunctionClick,
   onLineClick,
-  className = ''
+  className = '',
+  title
 }) => {
   const svgRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -73,10 +75,12 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
   if (!svgContent) {
     return (
       <div className={`h-full flex flex-col ${className}`}>
-        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
-          <h2 className="text-sm font-medium">SVG Flamegraph</h2>
-          <Badge variant="outline">No Data</Badge>
-        </header>
+        {title && (
+          <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
+            <h2 className="text-sm font-medium">{title}</h2>
+            <Badge variant="outline">No Data</Badge>
+          </header>
+        )}
         <div className="flex-1 flex items-center justify-center p-4">
           <div className="text-center text-muted-foreground">
             <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -90,20 +94,11 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
 
   return (
     <div className={`h-full flex flex-col ${className}`}>
-      {/* <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-medium">SVG Flamegraph</h2>
-          <Badge variant="secondary">{svgElements.length} functions</Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={handleExportPNG} title="Export as PNG">
-            <Download className="h-3 w-3" />
-          </Button>
-          <Button variant="ghost" size="sm" onClick={handleExportSVG} title="Export as SVG">
-            <ExternalLink className="h-3 w-3" />
-          </Button>
-        </div>
-      </header> */}
+      {title && (
+        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
+          <h2 className="text-sm font-medium">{title}</h2>
+        </header>
+      )}
 
       {/* Search Bar */}
       {/* <div className="p-3 border-b border-border bg-muted/20">
