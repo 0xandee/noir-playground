@@ -34,12 +34,28 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   const profilerService = useMemo(() => new NoirProfilerService(), []);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevEnableHeatmapRef = useRef<boolean>(enableHeatmap);
+  const shouldProfileRef = useRef<boolean>(false);
+  const profilingQueuedRef = useRef<boolean>(false);
+
+  // Memoize table data to prevent unnecessary re-renders
+  const tableData = useMemo(() => {
+    return profilerResult?.complexityReport
+      ? profilerService.getTableData(profilerResult.complexityReport)
+      : [];
+  }, [profilerResult?.complexityReport, profilerService]);
 
   const handleProfiling = useCallback(async () => {
     if (!sourceCode.trim()) {
       setError('No source code to profile');
       return;
     }
+
+    // Prevent duplicate profiling calls
+    if (isProfiling || profilingQueuedRef.current) {
+      return;
+    }
+
+    profilingQueuedRef.current = true;
     setIsProfiling(true);
     setError(null);
     try {
@@ -54,8 +70,9 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       setError(err instanceof Error ? err.message : 'Profiling failed');
     } finally {
       setIsProfiling(false);
+      profilingQueuedRef.current = false;
     }
-  }, [sourceCode, cargoToml, profilerService]);
+  }, [sourceCode, cargoToml, profilerService, isProfiling]);
 
 
 
@@ -80,7 +97,13 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
   // Auto-profile when source code changes (with debouncing) - only if heatmap is enabled
   React.useEffect(() => {
-    if (!sourceCode.trim() || !enableHeatmap) return;
+    // Only run this effect for source code changes, not heatmap toggles
+    if (!sourceCode.trim() || !enableHeatmap) {
+      shouldProfileRef.current = false;
+      return;
+    }
+
+    shouldProfileRef.current = true;
 
     // Clear any existing timeout
     if (debounceTimeoutRef.current) {
@@ -89,7 +112,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
     // Set new timeout
     debounceTimeoutRef.current = setTimeout(() => {
-      if (sourceCode.trim() && enableHeatmap) {
+      if (shouldProfileRef.current && sourceCode.trim() && enableHeatmap && !isProfiling && !profilingQueuedRef.current) {
         handleProfiling();
       }
     }, 3000); // 3-second delay
@@ -100,7 +123,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
         clearTimeout(debounceTimeoutRef.current);
       }
     };
-  }, [sourceCode, handleProfiling, enableHeatmap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sourceCode]); // Only trigger on source code changes, not heatmap toggle
 
   // Auto-analyze immediately when heatmap is turned on (if code exists)
   React.useEffect(() => {
@@ -108,10 +132,12 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     prevEnableHeatmapRef.current = enableHeatmap;
 
     // Only trigger analysis if heatmap was just turned on (false -> true) and we have code
-    if (!prevEnableHeatmap && enableHeatmap && sourceCode.trim()) {
+    // Also make sure there's no pending timeout to avoid conflicts
+    if (!prevEnableHeatmap && enableHeatmap && sourceCode.trim() && !isProfiling && !debounceTimeoutRef.current && !profilingQueuedRef.current) {
       handleProfiling();
     }
-  }, [enableHeatmap, sourceCode, handleProfiling]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enableHeatmap]); // Only trigger on heatmap toggle, not source code changes
 
   // Cleanup timeout on unmount
   React.useEffect(() => {
@@ -235,7 +261,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
               /* Table View */
               <div className="h-full">
                 <ComplexityTableView
-                  data={profilerResult.complexityReport ? profilerService.getTableData(profilerResult.complexityReport) : []}
+                  data={tableData}
                   onLineClick={handleLineClick}
                   className="h-full"
                 />
