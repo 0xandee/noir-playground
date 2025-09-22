@@ -661,7 +661,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         }}
       />
 
-      {/* Analysis and heatmap indicators */}
+      {/* 
       {isAnalyzing && (
         <div className="absolute top-2 right-2 bg-primary/20 text-primary text-xs px-2 py-1 rounded">
           Analyzing...
@@ -679,7 +679,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
         <div className="absolute top-8 right-2 bg-green-500/20 text-green-500 text-xs px-2 py-1 rounded">
           Heatmap: {heatmapMetricType.toUpperCase()}
         </div>
-      )}
+      )} */}
     </div>
   );
 };
