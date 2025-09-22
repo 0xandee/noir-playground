@@ -330,17 +330,14 @@ export class NoirProfilerService {
     allExpressions.sort((a, b) => b.percentage - a.percentage);
 
     // Format data for console.table
-    const tableData = allExpressions.map((expr, index) => ({
-      '#': index + 1,
+    const tableData = allExpressions.map((expr) => ({
       'Line': expr.lineNumber,
-      'Col': expr.column,
       'Expression': expr.expression.length > 60 ? expr.expression.substring(0, 57) + '...' : expr.expression,
       'ACIR': expr.acirOpcodes,
       'Brillig': expr.brilligOpcodes,
       'Gates': expr.gates,
       'Total': expr.totalCost,
-      'Percentage': `${expr.percentage.toFixed(2)}%`,
-      'File': expr.fileName
+      'Percentage': `${expr.percentage.toFixed(2)}%`
     }));
 
     // Use server metrics if available, otherwise fall back to complexity report
