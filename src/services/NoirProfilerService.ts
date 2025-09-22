@@ -62,20 +62,20 @@ export class NoirProfilerService {
   async profileCircuit(request: ProfilerRequest): Promise<ProfilerResult> {
     try {
       // Step 1: Compile the source code to get real artifacts
-      
+
       // Use provided cargoToml or default from NoirWasmCompiler
       const cargoTomlToUse = request.cargoToml || NoirWasmCompiler.getDefaultCargoToml();
-      
+
       const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, cargoTomlToUse);
-      
+
       if (!compilationResult.success) {
         throw new Error(`Compilation failed: ${compilationResult.error}`);
       }
-      
+
       if (!compilationResult.program) {
         throw new Error('No compiled program available after successful compilation');
       }
-      
+
       // Step 2: Create artifact from compilation result
       const artifact = compilationResult.program.program;
 
@@ -85,7 +85,7 @@ export class NoirProfilerService {
         sourceCode: request.sourceCode,
         cargoToml: cargoTomlToUse // Always include cargoToml (either user-provided or default)
       };
-      
+
 
       const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
         method: 'POST',
@@ -184,43 +184,43 @@ export class NoirProfilerService {
   private cleanSVGContent(svgContent: string): string {
     // Remove the file path header that noir-profiler adds
     // This header contains UUIDs and file paths like: "47fbed73-ce64-42c2-b7f1-d2e0bb01c797"
-    
+
     // Pattern 1: Remove text elements containing UUIDs (8-4-4-4-12 format)
     let cleanedSVG = svgContent.replace(
       /<text[^>]*>[^<]*[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 1.5: Remove text elements containing the specific UUID format you mentioned
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*47fbed73-ce64-42c2-b7f1-d2e0bb01c797[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 2: Remove text elements containing long file paths
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*\/data\/[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 3: Remove text elements containing "noir-playground-server"
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*noir-playground-server[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 4: Remove any remaining text elements that look like file paths
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*\/[^<]*\/[^<]*\/[^<]*\/[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Also remove any empty text elements that might be left
     const finalSVG = cleanedSVG.replace(
       /<text[^>]*><\/text>/g,
       ''
     );
-    
+
     return finalSVG;
   }
 

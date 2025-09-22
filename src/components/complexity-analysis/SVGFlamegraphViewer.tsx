@@ -21,10 +21,6 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-
-
-
-
   // Handle function clicks
   const handleFunctionClick = useCallback((functionName: string) => {
     onFunctionClick?.(functionName);
@@ -129,7 +125,7 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
 
       {/* SVG Content */}
       <div className="flex-1 overflow-auto p-2">
-        <div 
+        <div
           ref={svgRef}
           className="relative w-full"
         >
@@ -153,7 +149,7 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
               sandbox="allow-scripts allow-same-origin"
             />
           </object>
-          
+
         </div>
       </div>
     </div>
