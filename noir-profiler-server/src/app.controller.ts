@@ -1,13 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get } from "@nestjs/common";
 
 @Controller()
 export class AppController {
-  @Get('health')
+  @Get("health")
   getHealth(): { status: string; message: string; timestamp: string } {
     return {
-      status: 'OK',
-      message: 'Noir Playground Server is running',
-      timestamp: new Date().toISOString()
+      status: "OK",
+      message: "Noir Playground Server is running",
+      timestamp: new Date().toISOString(),
     };
   }
 }
