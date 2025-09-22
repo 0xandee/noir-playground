@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development
-npm run dev              # Start dev server on localhost:8080 (not 5173)
+npm run dev              # Start dev server on localhost:8080 (Note: README incorrectly shows 5173)
 npm run build           # Production build with sitemap generation
 npm run build:dev       # Development build without sitemap
 npm run lint            # Run ESLint
@@ -17,6 +17,10 @@ npm run sitemap:generate # Generate sitemap.xml manually
 # Uses Playwright for end-to-end testing
 npx playwright test      # Run all tests
 npx playwright test --ui # Run tests with UI mode
+
+# Manual Testing
+# Comprehensive manual test cases available in MANUAL_TEST_CASES.md
+# Includes heatmap functionality, cross-browser compatibility, and performance testing
 
 # WASM Debugging
 # If WASM issues occur, delete node_modules/.vite and restart dev server
@@ -128,6 +132,12 @@ The build process automatically generates `sitemap.xml` via `scripts/generateSit
 #### TypeScript Configuration
 Uses path aliases (`@/` maps to `src/`) and ES2022 target for modern browser features required by WASM modules.
 
+#### Browser Compatibility
+- **Modern browsers required**: Chrome, Firefox, Safari, Edge (latest versions)
+- **WASM support**: Requires WebAssembly and SharedArrayBuffer support
+- **Cross-origin isolation**: CORP/COOP headers enable SharedArrayBuffer in browsers
+- **Mobile limitations**: Monaco editor performance constraints show mobile warning
+
 ### Package Manager
 This project uses Yarn 4.8.1+ with Plug'n'Play (PnP) enabled. Files `.pnp.cjs`, `.pnp.loader.mjs`, and `.yarn/` directory are part of the PnP system. Use `yarn` instead of `npm` for all package operations.
 
@@ -150,6 +160,18 @@ Handles browser-based Noir compilation:
 #### SnippetService (`src/services/SnippetService.ts`)
 Manages code snippet persistence and sharing via Supabase integration.
 
+#### MetricsAggregationService (`src/services/MetricsAggregationService.ts`)
+Processes SVG profiler output into structured complexity metrics:
+- **Normalized heat values**: Calculates 0-1 scale heat indicators
+- **Hotspot identification**: Ranks lines by circuit complexity
+- **Performance tracking**: Monitors complexity changes over time
+
+#### HeatmapDecorationService (`src/services/HeatmapDecorationService.ts`)
+Manages Monaco editor visual decorations for complexity heatmaps:
+- **Gutter indicators**: Colored bars showing circuit complexity
+- **Inline badges**: Metric counts displayed at line ends
+- **Gradient colors**: Dynamic color application based on complexity thresholds
+
 ### UI Component Patterns
 
 #### Monaco Editor Integration
@@ -160,12 +182,29 @@ Manages code snippet persistence and sharing via Supabase integration.
 #### ShadCN/UI Component Library
 Extensive use of Radix UI components with Tailwind CSS styling. All components follow consistent patterns in `src/components/ui/`.
 
+### Key Type Definitions
+
+#### Circuit Metrics Types (`src/types/circuitMetrics.ts`)
+Core TypeScript interfaces for complexity analysis:
+- **LineMetrics**: Per-line complexity data with ACIR/Brillig/gate counts
+- **CircuitComplexityReport**: Complete analysis results from profiler
+- **HeatmapData**: Visualization data with normalized heat values
+- **MetricsConfiguration**: Customization options for thresholds and colors
+
 ### Development Notes
 
 #### Circuit Profiling System
 - **External profiler server**: Requires separate Noir profiler server for ACIR/gate analysis
 - **SVG visualization**: Renders circuit complexity as interactive flamegraphs
 - **Metrics tracking**: Provides ACIR opcodes, Brillig opcodes, and gate count analysis
+
+#### Real-Time Heatmap Feature
+- **Monaco editor integration**: Visual heat overlays with gutter indicators and inline badges
+- **Three metric types**: ACIR opcodes, Brillig opcodes, and proving gates
+- **Hotspot navigator**: Interactive panel showing complexity rankings with click-to-jump navigation
+- **Real-time updates**: Debounced analysis (1-second delay) with background processing
+- **Color gradient**: Green (low) → Yellow (medium) → Red (high complexity)
+- **Performance optimized**: Caching system and non-blocking UI updates
 
 ## Noir Profiler Server
 
