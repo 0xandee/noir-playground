@@ -23,7 +23,6 @@ import { NoirEditorWithHover } from "./NoirEditorWithHover";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
-import { HotspotNavigator } from "./complexity-analysis/HotspotNavigator";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 
 interface CodePlaygroundProps {
@@ -91,9 +90,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   // Heatmap-related state
   const [enableHeatmap, setEnableHeatmap] = useState<boolean>(false);
   const [heatmapMetricType, setHeatmapMetricType] = useState<MetricType>('acir');
-  const [showHotspotNavigator, setShowHotspotNavigator] = useState<boolean>(false);
   const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
   const [selectedHotspotLine, setSelectedHotspotLine] = useState<number | undefined>(undefined);
+
 
   // Extract input types when initial code is provided
   useEffect(() => {
@@ -554,15 +553,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                   <SelectItem value="acir">ACIR</SelectItem>
                                 </SelectContent>
                               </Select> */}
-                              
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setShowHotspotNavigator(!showHotspotNavigator)}
-                                className={`h-7 px-2 ${showHotspotNavigator ? 'bg-primary/10' : ''}`}
-                              >
-                                <Target className="h-3 w-3" />
-                              </Button>
                             </>
                           )}
                         </div>
@@ -688,21 +678,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
               {/* Complexity Analysis Panel */}
               <ResizablePanel defaultSize={60} minSize={30}>
-                {showHotspotNavigator && complexityReport ? (
-                  <HotspotNavigator
-                    report={complexityReport}
-                    metricType={heatmapMetricType}
-                    selectedLine={selectedHotspotLine}
-                    onLineClick={(lineNumber) => {
-                      setSelectedHotspotLine(lineNumber);
-                      // TODO: Implement line jumping in editor
-                    }}
-                    onFunctionClick={(functionName, startLine) => {
-                      setSelectedHotspotLine(startLine);
-                    }}
-                  />
-                ) : (
-                  <CombinedComplexityPanel
+                <CombinedComplexityPanel
                     sourceCode={files["main.nr"]}
                     cargoToml={files["Nargo.toml"]}
                     enableHeatmap={enableHeatmap}
@@ -713,7 +689,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       // Highlight function
                     }}
                   />
-                )}
               </ResizablePanel>
 
               {/* Resizable Handle between Complexity and Execution */}
