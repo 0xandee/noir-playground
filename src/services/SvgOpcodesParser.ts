@@ -41,8 +41,6 @@ export class SvgOpcodesParser {
       const opcodes = parseInt(match[5]);
       const percentage = parseFloat(match[6]);
 
-      // Debug logging to track what's being parsed
-      console.log(`🔍 SVG Parser: Line ${lineNumber}, Col ${column}, Expression: "${expression}", Opcodes: ${opcodes}, Percentage: ${percentage}%`);
 
       lineData.push({
         lineNumber,
@@ -61,13 +59,10 @@ export class SvgOpcodesParser {
       const key = `${data.lineNumber}:${data.column}:${data.expression}:${data.opcodes}`;
       if (!uniqueData.has(key)) {
         uniqueData.set(key, data);
-      } else {
-        console.log(`⚠️ SVG Parser: Skipping duplicate expression: Line ${data.lineNumber}: "${data.expression}" (${data.opcodes} opcodes)`);
       }
     });
 
     const deduplicatedData = Array.from(uniqueData.values());
-    console.log(`📋 SVG Parser: Parsed ${lineData.length} total expressions, kept ${deduplicatedData.length} unique expressions`);
 
     // Sort by line number, then by column for easier lookup
     return deduplicatedData.sort((a, b) => {
