@@ -20,10 +20,52 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
   const svgRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sanitizedSvg, setSanitizedSvg] = useState<string | null>(null);
 
+  // Sanitize SVG content by removing embedded scripts and problematic elements
+  const sanitizeSvgContent = useCallback((svgContent: string): string => {
+    try {
+      // Remove script tags and their content
+      let cleaned = svgContent.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
 
+      // Remove event handlers that might cause errors
+      cleaned = cleaned.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '');
+      cleaned = cleaned.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '');
 
+      // Remove any remaining JavaScript function calls
+      cleaned = cleaned.replace(/javascript:[^"']*/gi, '');
 
+      // Remove any CDATA sections that might contain scripts
+      cleaned = cleaned.replace(/<!\[CDATA\[[\s\S]*?\]\]>/gi, '');
+
+      return cleaned;
+    } catch (error) {
+      console.warn('Failed to sanitize SVG content:', error);
+      return svgContent; // Return original if sanitization fails
+    }
+  }, []);
+
+  // Process SVG content when it changes
+  useEffect(() => {
+    if (!svgContent) {
+      setSanitizedSvg(null);
+      setError(null);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const sanitized = sanitizeSvgContent(svgContent);
+      setSanitizedSvg(sanitized);
+    } catch (err) {
+      setError(`Failed to process SVG: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setSanitizedSvg(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [svgContent, sanitizeSvgContent]);
 
   // Handle function clicks
   const handleFunctionClick = useCallback((functionName: string) => {
@@ -34,6 +76,31 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
   const handleLineClick = useCallback((lineNumber: number) => {
     onLineClick?.(lineNumber);
   }, [onLineClick]);
+
+  // Handle SVG clicks to extract function/line information
+  const handleSvgClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    const target = event.target as HTMLElement;
+
+    // Look for text elements that might contain function or line information
+    if (target.tagName === 'text' || target.tagName === 'tspan') {
+      const textContent = target.textContent || '';
+
+      // Try to extract line numbers from text like "main.nr:42"
+      const lineMatch = textContent.match(/\.nr:(\d+)/);
+      if (lineMatch) {
+        const lineNumber = parseInt(lineMatch[1], 10);
+        handleLineClick(lineNumber);
+        return;
+      }
+
+      // Try to extract function names
+      const functionMatch = textContent.match(/^([a-zA-Z_][a-zA-Z0-9_]*)/);
+      if (functionMatch && !textContent.includes(':')) {
+        handleFunctionClick(functionMatch[1]);
+        return;
+      }
+    }
+  }, [handleFunctionClick, handleLineClick]);
 
 
 
@@ -129,31 +196,24 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
 
       {/* SVG Content */}
       <div className="flex-1 overflow-auto p-2">
-        <div 
+        <div
           ref={svgRef}
-          className="relative w-full"
+          className="relative w-full cursor-pointer"
+          onClick={handleSvgClick}
         >
-          {/* Use object tag for full SVG functionality including JavaScript */}
-          <object
-            data={`data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgContent)))}`}
-            type="image/svg+xml"
-            className="w-full h-auto cursor-pointer block mx-auto min-w-full max-w-full"
-            onLoad={(e) => {
-              // SVG loaded successfully
-            }}
-            onError={(e) => {
-              // Fallback to iframe if object fails
-            }}
-          >
-            {/* Fallback: iframe for better SVG support */}
-            <iframe
-              src={`data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svgContent)))}`}
-              className="w-full h-auto border-0 block mx-auto min-w-full max-w-full"
-              title="SVG Flamegraph"
-              sandbox="allow-scripts allow-same-origin"
+          {sanitizedSvg ? (
+            <div
+              className="w-full h-auto block mx-auto min-w-full max-w-full"
+              dangerouslySetInnerHTML={{ __html: sanitizedSvg }}
             />
-          </object>
-          
+          ) : (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-center text-muted-foreground">
+                <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                <p>Processing SVG content...</p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

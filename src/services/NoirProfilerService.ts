@@ -60,83 +60,78 @@ export class NoirProfilerService {
    * Profile a Noir circuit by compiling and calling the server API
    */
   async profileCircuit(request: ProfilerRequest): Promise<ProfilerResult> {
-    try {
-      // Step 1: Compile the source code to get real artifacts
-      
-      // Use provided cargoToml or default from NoirWasmCompiler
-      const cargoTomlToUse = request.cargoToml || NoirWasmCompiler.getDefaultCargoToml();
-      
-      const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, cargoTomlToUse);
-      
-      if (!compilationResult.success) {
-        throw new Error(`Compilation failed: ${compilationResult.error}`);
-      }
-      
-      if (!compilationResult.program) {
-        throw new Error('No compiled program available after successful compilation');
-      }
-      
-      // Step 2: Create artifact from compilation result
-      const artifact = compilationResult.program.program;
+    // Step 1: Compile the source code to get real artifacts
 
-      // Step 3: Make request to server API
-      const requestBody = {
-        artifact,
-        sourceCode: request.sourceCode,
-        cargoToml: cargoTomlToUse // Always include cargoToml (either user-provided or default)
-      };
-      
+    // Use provided cargoToml or default from NoirWasmCompiler
+    const cargoTomlToUse = request.cargoToml || NoirWasmCompiler.getDefaultCargoToml();
 
-      const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify(requestBody)
-      });
+    const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, cargoTomlToUse);
 
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Server responded with status: ${response.status}`);
-      }
-
-      const serverResponse: ServerProfilerResponse = await response.json();
-
-      if (!serverResponse.success) {
-        throw new Error(serverResponse.error || 'Server profiling failed');
-      }
-
-
-      // Step 4: Extract SVG content from server response
-      const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
-
-      // Step 5: Generate enhanced complexity report
-      const complexityReport = await this.generateComplexityReport({
-        acirSvg: svgData.mainAcirSVG,
-        gatesSvg: svgData.mainGatesSVG,
-        brilligSvg: svgData.brilligSVG,
-        sourceCode: request.sourceCode,
-        fileName: request.fileName
-      });
-
-      // Step 6: Automatically output console table with opcode analysis
-      this.generateOpcodeConsoleTable(complexityReport, serverResponse.circuitMetrics);
-
-      return {
-        acirSVG: svgData.mainAcirSVG,
-        gatesSVG: svgData.mainGatesSVG,
-        brilligSVG: svgData.brilligSVG,
-        source: 'noir-profiler',
-        message: `Profiling completed via server API with real compilation using ${request.cargoToml ? 'user-provided' : 'default'} Nargo.toml`,
-        circuitMetrics: serverResponse.circuitMetrics,
-        complexityReport
-      };
-
-    } catch (error) {
-      throw error; // Re-throw the error
+    if (!compilationResult.success) {
+      throw new Error(`Compilation failed: ${compilationResult.error}`);
     }
+
+    if (!compilationResult.program) {
+      throw new Error('No compiled program available after successful compilation');
+    }
+
+    // Step 2: Create artifact from compilation result
+    const artifact = compilationResult.program.program;
+
+    // Step 3: Make request to server API
+    const requestBody = {
+      artifact,
+      sourceCode: request.sourceCode,
+      cargoToml: cargoTomlToUse // Always include cargoToml (either user-provided or default)
+    };
+
+
+    const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+
+    const serverResponse: ServerProfilerResponse = await response.json();
+
+    if (!serverResponse.success) {
+      throw new Error(serverResponse.error || 'Server profiling failed');
+    }
+
+
+    // Step 4: Extract SVG content from server response
+    const svgData = this.extractSVGDataFromResponse(serverResponse.svgs);
+
+    // Step 5: Generate enhanced complexity report
+    const complexityReport = await this.generateComplexityReport({
+      acirSvg: svgData.mainAcirSVG,
+      gatesSvg: svgData.mainGatesSVG,
+      brilligSvg: svgData.brilligSVG,
+      sourceCode: request.sourceCode,
+      fileName: request.fileName
+    });
+
+    // Step 6: Automatically output console table with opcode analysis
+    this.generateOpcodeConsoleTable(complexityReport, serverResponse.circuitMetrics);
+
+    return {
+      acirSVG: svgData.mainAcirSVG,
+      gatesSVG: svgData.mainGatesSVG,
+      brilligSVG: svgData.brilligSVG,
+      source: 'noir-profiler',
+      message: `Profiling completed via server API with real compilation using ${request.cargoToml ? 'user-provided' : 'default'} Nargo.toml`,
+      circuitMetrics: serverResponse.circuitMetrics,
+      complexityReport
+    };
   }
 
   /**
@@ -179,48 +174,66 @@ export class NoirProfilerService {
   }
 
   /**
-   * Clean SVG content by removing the file path header
+   * Clean SVG content by removing file path headers and dangerous script elements
    */
   private cleanSVGContent(svgContent: string): string {
     // Remove the file path header that noir-profiler adds
     // This header contains UUIDs and file paths like: "47fbed73-ce64-42c2-b7f1-d2e0bb01c797"
-    
+
     // Pattern 1: Remove text elements containing UUIDs (8-4-4-4-12 format)
     let cleanedSVG = svgContent.replace(
       /<text[^>]*>[^<]*[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 1.5: Remove text elements containing the specific UUID format you mentioned
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*47fbed73-ce64-42c2-b7f1-d2e0bb01c797[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 2: Remove text elements containing long file paths
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*\/data\/[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 3: Remove text elements containing "noir-playground-server"
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*noir-playground-server[^<]*<\/text>/gi,
       ''
     );
-    
+
     // Pattern 4: Remove any remaining text elements that look like file paths
     cleanedSVG = cleanedSVG.replace(
       /<text[^>]*>[^<]*\/[^<]*\/[^<]*\/[^<]*\/[^<]*<\/text>/gi,
       ''
     );
-    
+
+    // Enhanced cleaning: Remove problematic JavaScript elements that cause errors
+    // Remove script tags and their content
+    cleanedSVG = cleanedSVG.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+    // Remove event handlers that reference undefined functions
+    cleanedSVG = cleanedSVG.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '');
+    cleanedSVG = cleanedSVG.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '');
+
+    // Remove JavaScript function calls in attributes
+    cleanedSVG = cleanedSVG.replace(/javascript:[^"']*/gi, '');
+
+    // Remove CDATA sections that might contain scripts
+    cleanedSVG = cleanedSVG.replace(/<!\[CDATA\[[\s\S]*?\]\]>/gi, '');
+
+    // Remove any style attributes that might contain JavaScript
+    cleanedSVG = cleanedSVG.replace(/style\s*=\s*"[^"]*javascript[^"]*"/gi, '');
+    cleanedSVG = cleanedSVG.replace(/style\s*=\s*'[^']*javascript[^']*'/gi, '');
+
     // Also remove any empty text elements that might be left
     const finalSVG = cleanedSVG.replace(
       /<text[^>]*><\/text>/g,
       ''
     );
-    
+
     return finalSVG;
   }
 

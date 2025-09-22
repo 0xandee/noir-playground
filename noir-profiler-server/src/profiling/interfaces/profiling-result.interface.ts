@@ -1,8 +1,8 @@
 export interface SvgResult {
-  content: string;      // SVG content
-  filename: string;     // Generated filename
-  function?: string;    // Function name if available
-  type?: string;        // Type: 'acir_opcodes', 'brillig_opcodes', 'gates'
+  content: string; // SVG content
+  filename: string; // Generated filename
+  function?: string; // Function name if available
+  type?: string; // Type: 'acir_opcodes', 'brillig_opcodes', 'gates'
 }
 
 export interface ProfilingResult {
