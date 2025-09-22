@@ -1,6 +1,6 @@
 import { noirWasmCompiler, NoirWasmCompiler } from './NoirWasmCompiler';
 import { MetricsAggregationService, AggregationInput } from './MetricsAggregationService';
-import { CircuitComplexityReport } from '@/types/circuitMetrics';
+import { CircuitComplexityReport, ExpressionMetrics } from '@/types/circuitMetrics';
 
 export interface ProfilerRequest {
   sourceCode: string;
@@ -122,7 +122,7 @@ export class NoirProfilerService {
       });
 
       // Step 6: Automatically output console table with opcode analysis
-      this.generateOpcodeConsoleTable(complexityReport);
+      this.generateOpcodeConsoleTable(complexityReport, serverResponse.circuitMetrics);
 
       return {
         acirSVG: svgData.mainAcirSVG,
@@ -263,7 +263,7 @@ export class NoirProfilerService {
   /**
    * Generate and output a detailed console table of all expressions with opcodes and percentages
    */
-  private generateOpcodeConsoleTable(complexityReport: CircuitComplexityReport): void {
+  private generateOpcodeConsoleTable(complexityReport: CircuitComplexityReport, serverMetrics?: { totalAcirOpcodes: number; totalBrilligOpcodes: number; totalGates: number }): void {
     if (!complexityReport || !complexityReport.files?.length) {
       console.warn('No complexity report data available for console table');
       return;
@@ -293,7 +293,7 @@ export class NoirProfilerService {
         line.expressions.forEach(expr => {
           const totalCost = expr.acirOpcodes + expr.brilligOpcodes + expr.gates;
           // Use original SVG percentage if available, otherwise calculate locally
-          const percentage = (expr as any).originalPercentage ||
+          const percentage = (expr as ExpressionMetrics & { originalPercentage?: number }).originalPercentage ||
             (complexityReport.totalAcirOpcodes + complexityReport.totalBrilligOpcodes + complexityReport.totalGates > 0
               ? (totalCost / (complexityReport.totalAcirOpcodes + complexityReport.totalBrilligOpcodes + complexityReport.totalGates)) * 100
               : 0);
@@ -343,12 +343,19 @@ export class NoirProfilerService {
       'File': expr.fileName
     }));
 
+    // Use server metrics if available, otherwise fall back to complexity report
+    const actualMetrics = serverMetrics || {
+      totalAcirOpcodes: complexityReport.totalAcirOpcodes,
+      totalBrilligOpcodes: complexityReport.totalBrilligOpcodes,
+      totalGates: complexityReport.totalGates
+    };
+
     // Output summary header
     console.log('\n🔥 Circuit Complexity Analysis - Detailed Expression Breakdown');
     console.log('================================================================');
-    console.log(`Total ACIR Opcodes: ${complexityReport.totalAcirOpcodes}`);
-    console.log(`Total Brillig Opcodes: ${complexityReport.totalBrilligOpcodes}`);
-    console.log(`Total Gates: ${complexityReport.totalGates}`);
+    console.log(`Total ACIR Opcodes: ${actualMetrics.totalAcirOpcodes}`);
+    console.log(`Total Brillig Opcodes: ${actualMetrics.totalBrilligOpcodes}`);
+    console.log(`Total Gates: ${actualMetrics.totalGates}`);
     console.log(`Total Expressions: ${allExpressions.length}`);
     console.log('================================================================\n');
 
