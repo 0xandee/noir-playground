@@ -415,21 +415,6 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
           value: tableMarkdown,
           supportHtml: false
         });
-      } else {
-        // Fallback for lines without complexity report data
-        contents.push({
-          value: `\n⚡ **ACIR Operations**`
-        });
-
-        if (analysis.opcodes.length > 0) {
-          contents.push({
-            value: `  \`${analysis.opcodes.join('`, `')}\``
-          });
-        } else {
-          contents.push({
-            value: `  No opcodes (line not in circuit)`
-          });
-        }
       }
     }
 
