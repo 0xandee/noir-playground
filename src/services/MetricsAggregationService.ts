@@ -53,12 +53,15 @@ export class MetricsAggregationService {
    */
   async generateComplexityReport(input: AggregationInput): Promise<CircuitComplexityReport> {
     const sourceHash = this.generateSourceHash(input.sourceCode);
-    
-    // Check cache first
-    const cached = this.getCachedReport(sourceHash);
-    if (cached) {
-      return cached;
-    }
+
+    // Temporarily disable cache to force regeneration with deduplication fix
+    // TODO: Re-enable after testing
+    // const cached = this.getCachedReport(sourceHash);
+    // if (cached) {
+    //   return cached;
+    // }
+
+    console.log('🔄 Generating fresh complexity report (cache disabled for debugging)');
 
     const fileName = input.fileName || 'main.nr';
     
@@ -227,6 +230,7 @@ export class MetricsAggregationService {
     // Filter and process ACIR data
     acirData.filter(isMatchingFile).forEach(data => {
       const existing = lineMap.get(data.lineNumber) || this.createEmptyLineMetrics(data.lineNumber, fileName);
+      console.log(`📊 Aggregating ACIR - Line ${data.lineNumber}: "${data.expression}" (${data.opcodes} opcodes) - Previous total: ${existing.acirOpcodes}, New total: ${existing.acirOpcodes + data.opcodes}`);
       existing.acirOpcodes += data.opcodes;
       existing.expressions.push(this.createExpressionMetrics(data, 'acir'));
       lineMap.set(data.lineNumber, existing);
@@ -235,6 +239,7 @@ export class MetricsAggregationService {
     // Filter and process Brillig data (if available)
     brilligData.filter(isMatchingFile).forEach(data => {
       const existing = lineMap.get(data.lineNumber) || this.createEmptyLineMetrics(data.lineNumber, fileName);
+      console.log(`📊 Aggregating Brillig - Line ${data.lineNumber}: "${data.expression}" (${data.opcodes} opcodes)`);
       existing.brilligOpcodes += data.opcodes;
       existing.expressions.push(this.createExpressionMetrics(data, 'brillig'));
       lineMap.set(data.lineNumber, existing);
@@ -243,6 +248,7 @@ export class MetricsAggregationService {
     // Filter and process Gates data (if available)
     gatesData.filter(isMatchingFile).forEach(data => {
       const existing = lineMap.get(data.lineNumber) || this.createEmptyLineMetrics(data.lineNumber, fileName);
+      console.log(`📊 Aggregating Gates - Line ${data.lineNumber}: "${data.expression}" (${data.opcodes} opcodes)`);
       existing.gates += data.opcodes; // Assuming opcodes represent gates in this context
       existing.expressions.push(this.createExpressionMetrics(data, 'gates'));
       lineMap.set(data.lineNumber, existing);
@@ -251,6 +257,7 @@ export class MetricsAggregationService {
     // Calculate total cost for each line
     lineMap.forEach(line => {
       line.totalCost = line.acirOpcodes + line.brilligOpcodes + line.gates;
+      console.log(`✅ Final Line ${line.lineNumber}: ACIR=${line.acirOpcodes}, Brillig=${line.brilligOpcodes}, Gates=${line.gates}, Total=${line.totalCost}, Expressions=${line.expressions.length}`);
     });
 
     return Array.from(lineMap.values()).sort((a, b) => a.lineNumber - b.lineNumber);

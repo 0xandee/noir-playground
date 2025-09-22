@@ -292,6 +292,9 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
     setIsGeneratingHeatmap(true);
 
     try {
+      // Clear cache to force fresh generation (ensures deduplication fix is applied)
+      profilerService.current.clearCache();
+
       // Use existing complexity report if available, otherwise generate it
       let report = complexityReport;
       if (!report) {

@@ -39,6 +39,7 @@ export class HeatmapDecorationService {
   private styleElement: HTMLStyleElement | null = null;
   private currentHeatmapData: HeatmapData[] = [];
   private currentReport: CircuitComplexityReport | null = null;
+  private lineSpecificStyles: Map<number, string> = new Map();
 
   constructor(config?: Partial<MetricsConfiguration>) {
     this.config = { ...DEFAULT_METRICS_CONFIG, ...config };
@@ -267,6 +268,9 @@ export class HeatmapDecorationService {
       this.currentDecorations.inlineDecorations,
       decorations
     );
+
+    // Update styles after adding all line-specific CSS
+    this.updateStyles();
   }
 
   /**
@@ -339,9 +343,7 @@ export class HeatmapDecorationService {
    * Add CSS for a specific line's opcode annotation
    */
   private addLineSpecificCSS(lineNumber: number, badgeText: string): void {
-    if (!this.styleElement) return;
-
-    // Add CSS for this specific line matching Monaco editor exactly
+    // Store line-specific CSS in Map instead of appending directly
     const lineCSS = `
       .line-${lineNumber}::after {
         content: " // ${badgeText}";
@@ -360,7 +362,7 @@ export class HeatmapDecorationService {
       }
     `;
 
-    this.styleElement.textContent += lineCSS;
+    this.lineSpecificStyles.set(lineNumber, lineCSS);
   }
 
   /**
@@ -383,6 +385,9 @@ export class HeatmapDecorationService {
         lineHighlights: []
       };
     }
+
+    // Clear all line-specific styles
+    this.lineSpecificStyles.clear();
 
     // Reset the style element to clear line-specific CSS
     this.updateStyles();
@@ -487,8 +492,13 @@ export class HeatmapDecorationService {
     const uniqueHeatLevels = this.getUniqueHeatLevels();
     const dynamicStyles = this.generateDynamicStyles(uniqueHeatLevels);
 
+    // Combine all line-specific styles
+    const lineSpecificStyles = Array.from(this.lineSpecificStyles.values()).join('\n');
+
     this.styleElement.textContent = `
       ${dynamicStyles}
+
+      ${lineSpecificStyles}
 
       /* Neutral inline decorations for opcode annotations */
       .heatmap-inline-neutral {
