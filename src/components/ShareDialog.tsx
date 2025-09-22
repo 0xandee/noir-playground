@@ -296,7 +296,7 @@ export function ShareDialog({
                         title="Copy URL"
                       >
                         <Copy className={`h-4 w-4 ${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`} />
-                        <span className={`text-xs ${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <span className={`${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`} style={{fontSize: '13px'}}>
                           Copy link
                         </span>
                       </button>
@@ -306,7 +306,7 @@ export function ShareDialog({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground" style={{fontSize: '13px'}}>
                   URL automatically copied to clipboard
                 </p>
               </div>

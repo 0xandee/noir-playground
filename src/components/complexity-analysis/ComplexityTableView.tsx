@@ -124,7 +124,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
   return (
     <div className={`flex flex-col h-full ${className}`}>
       {/* Search Bar */}
-      <div className="p-4 border-b border-border bg-muted/20">
+      {/* <div className="p-4 border-b border-border bg-muted/20">
         <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -135,11 +135,11 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
           />
         </div>
         {searchQuery && (
-          <div className="mt-2 text-xs text-muted-foreground">
+          <div className="mt-2 text-muted-foreground" style={{fontSize: '13px'}}>
             {processedData.length} of {data.length} expressions shown
           </div>
         )}
-      </div>
+      </div> */}
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
@@ -152,6 +152,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   size="sm"
                   onClick={() => handleSort('lineNumber')}
                   className="h-auto p-0 font-medium hover:bg-transparent"
+                  style={{fontSize: '13px'}}
                 >
                   Line
                   {getSortIcon('lineNumber')}
@@ -163,6 +164,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   size="sm"
                   onClick={() => handleSort('expression')}
                   className="h-auto p-0 font-medium hover:bg-transparent"
+                  style={{fontSize: '13px'}}
                 >
                   Expression
                   {getSortIcon('expression')}
@@ -174,6 +176,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   size="sm"
                   onClick={() => handleSort('acirOpcodes')}
                   className="h-auto p-0 font-medium hover:bg-transparent"
+                  style={{fontSize: '13px'}}
                 >
                   ACIR
                   {getSortIcon('acirOpcodes')}
@@ -185,6 +188,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   size="sm"
                   onClick={() => handleSort('percentage')}
                   className="h-auto p-0 font-medium hover:bg-transparent"
+                  style={{fontSize: '13px'}}
                 >
                   %
                   {getSortIcon('percentage')}
@@ -200,12 +204,12 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                 onClick={() => handleRowClick(item)}
                 title="Click to jump to line in code"
               >
-                <TableCell className="font-mono text-sm">
+                <TableCell className="font-mono" style={{fontSize: '13px'}}>
                   <Badge variant="outline" className="font-mono">
                     {item.lineNumber}
                   </Badge>
                 </TableCell>
-                <TableCell className="font-mono text-xs max-w-md">
+                <TableCell className="font-mono max-w-md" style={{fontSize: '13px'}}>
                   <span title={decodeHtmlEntities(item.expression)}>
                     {truncateExpression(item.expression)}
                   </span>
@@ -232,7 +236,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
             <div className="text-center">
               <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
               <p>No expressions found</p>
-              <p className="text-xs mt-1">
+              <p className="mt-1" style={{fontSize: '13px'}}>
                 {searchQuery ? 'Try adjusting your search query' : 'No data available'}
               </p>
             </div>

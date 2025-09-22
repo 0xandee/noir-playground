@@ -70,7 +70,7 @@ export const ComplexityAnalysisPanel: React.FC<ComplexityAnalysisPanelProps> = (
         <div className="text-center text-muted-foreground py-8">
           <TrendingUp className="h-8 w-8 mx-auto mb-2 opacity-50" />
           <p>Complexity analysis panel</p>
-          <p className="text-xs mt-1">Ready for future enhancements</p>
+          <p className="mt-1" style={{fontSize: '13px'}}>Ready for future enhancements</p>
         </div>
       </div>
     </div>

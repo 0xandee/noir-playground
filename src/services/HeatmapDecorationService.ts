@@ -350,7 +350,7 @@ export class HeatmapDecorationService {
         color: #9ca3af !important;
         font-family: Consolas, Monaco, "Courier New", monospace !important;
         font-style: normal !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         font-weight: normal !important;
         opacity: 0.8 !important;
         margin-left: 12px;
@@ -505,7 +505,7 @@ export class HeatmapDecorationService {
         color: #9ca3af !important;
         font-family: Consolas, Monaco, "Courier New", monospace !important;
         font-style: normal !important;
-        font-size: 14px !important;
+        font-size: 13px !important;
         font-weight: normal !important;
         opacity: 0.8 !important;
         line-height: 1.4 !important;
@@ -561,7 +561,7 @@ export class HeatmapDecorationService {
           content: "▌";
           color: ${colorWithOpacity};
           font-weight: bold;
-          font-size: 14px;
+          font-size: 13px;
         }
 
         /* Inline metric badges for ${level} */

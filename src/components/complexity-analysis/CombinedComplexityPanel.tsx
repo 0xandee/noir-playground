@@ -201,7 +201,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
           <div className="text-center text-muted-foreground">
             <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No complexity analysis available</p>
-            <p className="text-xs mt-1">
+            <p className="mt-1" style={{fontSize: '13px'}}>
               {enableHeatmap ? "Start typing or click refresh to analyze" : "Enable heatmap to start analysis"}
             </p>
           </div>
@@ -213,7 +213,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
           <div className="text-center text-muted-foreground">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
             <p>Analyzing circuit complexity...</p>
-            <p className="text-xs mt-1">This may take a few seconds</p>
+            <p className="mt-1" style={{fontSize: '13px'}}>This may take a few seconds</p>
           </div>
         </div>
       )}
@@ -275,8 +275,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
         <div className="p-4 border-t border-border bg-destructive/10">
           <div className="flex items-center gap-2 text-destructive">
             <Info className="h-4 w-4" />
-            <span className="text-sm font-medium">Error:</span>
-            <span className="text-sm">{error}</span>
+            <span className="font-medium" style={{fontSize: '13px'}}>Error:</span>
+            <span style={{fontSize: '13px'}}>{error}</span>
           </div>
         </div>
       )}

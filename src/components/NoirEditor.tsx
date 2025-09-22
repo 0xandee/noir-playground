@@ -138,7 +138,7 @@ export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disable
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         automaticLayout: true,
-        fontSize: 14,
+        fontSize: 13,
         fontFamily: 'Consolas, Monaco, "Courier New", monospace',
         lineHeight: 21,
         tabSize: 2,

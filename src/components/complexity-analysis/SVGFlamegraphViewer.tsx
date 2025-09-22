@@ -65,7 +65,7 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
           <div className="text-center text-muted-foreground">
             <Info className="h-8 w-8 mx-auto mb-2 text-destructive" />
             <p className="text-sm">{error}</p>
-            <p className="text-xs mt-1">SVG content could not be parsed</p>
+            <p className="mt-1" style={{fontSize: '13px'}}>SVG content could not be parsed</p>
           </div>
         </div>
       </div>
@@ -85,7 +85,7 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
           <div className="text-center text-muted-foreground">
             <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No SVG content available</p>
-            <p className="text-xs mt-1">Run profiling to generate flamegraph</p>
+            <p className="mt-1" style={{fontSize: '13px'}}>Run profiling to generate flamegraph</p>
           </div>
         </div>
       </div>
@@ -112,7 +112,7 @@ export const SVGFlamegraphViewer: React.FC<SVGFlamegraphViewerProps> = ({
           />
         </div>
         {searchQuery && (
-          <div className="mt-2 text-xs text-muted-foreground">
+          <div className="mt-2 text-muted-foreground" style={{fontSize: '13px'}}>
             {highlightedElements.size} matches found
           </div>
         )}

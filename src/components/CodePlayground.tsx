@@ -494,14 +494,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         <div className="flex items-center gap-1">
                           {snippetTitle ? (
                             // Show snippet title instead of examples dropdown
-                            <div className="flex items-center gap-2 text-sm px-2">
+                            <div className="flex items-center gap-2 px-2" style={{fontSize: '13px'}}>
                               <span className="text-muted-foreground">Shared Snippet:</span>
                               <span className="font-medium text-foreground">{snippetTitle}</span>
                             </div>
                           ) : (
                             // Show examples dropdown in normal mode
                             <Select value={selectedExample} onValueChange={loadExample}>
-                              <SelectTrigger className="w-36 h-8 text-xs focus:ring-0 focus:ring-offset-0">
+                              <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0" style={{fontSize: '13px'}}>
                                 <SelectValue placeholder="Examples" />
                               </SelectTrigger>
                               <SelectContent>
@@ -521,10 +521,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           <button
                             key={filename}
                             onClick={() => setActiveFile(filename)}
-                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
+                            className={`flex items-center gap-2 px-3 py-2 font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
                               ? 'bg-background text-foreground'
                               : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
                               }`}
+                            style={{fontSize: '13px'}}
                           >
                             {filename}
                           </button>
@@ -533,7 +534,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 text-sm select-none">
+                          <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
                             <Switch 
                               checked={enableHeatmap}
                               onCheckedChange={setEnableHeatmap}
@@ -546,7 +547,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           {enableHeatmap && (
                             <>
                               {/* <Select value={heatmapMetricType} onValueChange={(value: MetricType) => setHeatmapMetricType(value)}>
-                                <SelectTrigger className="w-20 h-7 text-xs">
+                                <SelectTrigger className="w-20 h-7" style={{fontSize: '13px'}}>
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -558,7 +559,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <label className="flex items-center gap-2 text-sm select-none">
+                          <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
                             <input
                               type="checkbox"
                               checked={proveAndVerify}
@@ -632,7 +633,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
                       <Terminal className="h-4 w-4 text-primary" />
-                      <h2 className="text-sm font-medium">Console</h2>
+                      <h2 className="font-medium" style={{fontSize: '14px'}}>Console</h2>
                     </div>
                     <Tooltip open={copiedItem === 'console'}>
                       <TooltipTrigger asChild>
@@ -658,7 +659,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </TooltipContent>
                     </Tooltip>
                   </header>
-                  <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono text-xs space-y-1" role="log" aria-live="polite">
+                  <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{fontSize: '13px'}} role="log" aria-live="polite">
                     {renderConsoleContent()}
                   </div>
                 </section>
@@ -702,7 +703,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
                       <Cpu className="h-4 w-4 text-primary" />
-                      <h2 className="text-sm font-medium">Circuit Inputs</h2>
+                      <h2 className="font-medium" style={{fontSize: '14px'}}>Circuit Inputs</h2>
                     </div>
                     <Button
                       onClick={handleShareClick}
@@ -712,26 +713,27 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       className="flex items-center gap-1"
                     >
                       <Share className="h-4 w-4" />
-                      <span className="text-sm">Share</span>
+                      <span style={{fontSize: '13px'}}>Share</span>
                     </Button>
                   </header>
                   <div className="p-4 overflow-y-auto flex-1">
                     <div className="space-y-4">
                       {parameterOrder.map((key) => (
                         <div key={key}>
-                          <label className="text-sm font-medium mb-2 block">{key}: {formatParameterType(key)}</label>
+                          <label className="font-medium mb-2 block" style={{fontSize: '13px'}}>{key}: {formatParameterType(key)}</label>
                           <input
                             type="text"
                             value={inputs[key] || ''}
                             onChange={(e) => handleInputChange(key, e.target.value)}
-                            className={`w-full px-3 py-2 bg-muted/50 border rounded text-sm focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                            className={`w-full px-3 py-2 bg-muted/50 border rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
                               ? 'border-red-500/50 focus:ring-red-500/50'
                               : 'border-border focus:ring-primary/50'
                               }`}
+                            style={{fontSize: '13px'}}
                             disabled={isRunning}
                           />
                           {inputValidationErrors[key] && (
-                            <p className="text-xs text-red-400 mt-1">{inputValidationErrors[key]}</p>
+                            <p className="text-red-400 mt-1" style={{fontSize: '13px'}}>{inputValidationErrors[key]}</p>
                           )}
                         </div>
                       ))}
@@ -751,7 +753,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-primary" />
-                      <h2 className="text-sm font-medium">Output</h2>
+                      <h2 className="font-medium" style={{fontSize: '14px'}}>Output</h2>
                     </div>
                     <div className="flex gap-1">
                       <Tooltip open={copiedItem === 'full-proof'}>
@@ -785,7 +787,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-medium">Public Inputs</h3>
+                              <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
                               <Tooltip open={copiedItem === 'public-inputs'}>
                                 <TooltipTrigger asChild>
                                   <Button
@@ -802,7 +804,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 </TooltipContent>
                               </Tooltip>
                             </div>
-                            <div className="bg-muted/50 p-3 rounded text-xs font-mono space-y-1 overflow-x-auto">
+                            <div className="bg-muted/50 p-3 rounded font-mono space-y-1 overflow-x-auto" style={{fontSize: '13px'}}>
                               {proofData.publicInputs.map((input: string, i: number) => (
                                 <div key={i}>{input}</div>
                               ))}
@@ -813,7 +815,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         {proofData.witness && proofData.witness.length > 0 && (
                           <div>
                             <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-medium">Witness</h3>
+                              <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
                               <Tooltip open={copiedItem === 'witness'}>
                                 <TooltipTrigger asChild>
                                   <Button
@@ -833,7 +835,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 </TooltipContent>
                               </Tooltip>
                             </div>
-                            <div className="bg-muted/50 p-3 rounded text-xs font-mono overflow-x-auto whitespace-nowrap">
+                            <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
                               {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
                             </div>
                           </div>
@@ -841,7 +843,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Proof</h3>
+                            <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
                             <Tooltip open={copiedItem === 'proof'}>
                               <TooltipTrigger asChild>
                                 <Button
@@ -863,7 +865,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               </TooltipContent>
                             </Tooltip>
                           </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono overflow-x-auto whitespace-nowrap">
+                          <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
                             {proofData.proof && proofData.proof.length > 0
                               ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
                               : 'No proof generated'}
@@ -874,7 +876,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       <div className="space-y-3">
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Public Inputs</h3>
+                            <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -884,14 +886,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono text-muted-foreground">
+                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
                             No public inputs
                           </div>
                         </div>
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Witness</h3>
+                            <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -901,14 +903,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono text-muted-foreground">
+                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
                             No witness data
                           </div>
                         </div>
 
                         <div>
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Proof</h3>
+                            <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -918,7 +920,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <Copy className="h-3 w-3" />
                             </Button>
                           </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono text-muted-foreground">
+                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
                             No proof generated
                           </div>
                         </div>
@@ -933,7 +935,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-muted/90 border-t border-border px-4 py-2 text-xs text-muted-foreground flex justify-between items-center shrink-0">
+      <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{fontSize: '13px'}}>
         <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
         <span>
           Made by{" "}
