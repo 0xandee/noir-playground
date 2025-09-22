@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Info, BarChart3 } from 'lucide-react';
@@ -13,6 +13,7 @@ interface CombinedComplexityPanelProps {
   onLineClick?: (lineNumber: number) => void;
   onFunctionClick?: (functionName: string) => void;
   className?: string;
+  enableHeatmap?: boolean;
 }
 
 export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = ({
@@ -20,7 +21,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   cargoToml,
   onLineClick,
   onFunctionClick,
-  className
+  className,
+  enableHeatmap = false
 }) => {
   const [selectedView, setSelectedView] = useState<'acir' | 'gates'>('acir');
 
@@ -29,9 +31,11 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   const [error, setError] = useState<string | null>(null);
   const [lastProfiled, setLastProfiled] = useState<Date | null>(null);
 
-  const profilerService = new NoirProfilerService();
+  const profilerService = useMemo(() => new NoirProfilerService(), []);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const prevEnableHeatmapRef = useRef<boolean>(enableHeatmap);
 
-  const handleProfiling = async () => {
+  const handleProfiling = useCallback(async () => {
     if (!sourceCode.trim()) {
       setError('No source code to profile');
       return;
@@ -51,12 +55,12 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     } finally {
       setIsProfiling(false);
     }
-  };
+  }, [sourceCode, cargoToml, profilerService]);
 
 
 
   const handleRefresh = () => {
-    if (sourceCode.trim()) {
+    if (sourceCode.trim() && enableHeatmap) {
       handleProfiling();
     }
   };
@@ -74,12 +78,49 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     // This could trigger scrolling to the line in the editor
   };
 
-  // Auto-profile when source code changes (with debouncing)
+  // Auto-profile when source code changes (with debouncing) - only if heatmap is enabled
   React.useEffect(() => {
-    if (!sourceCode.trim()) return;
+    if (!sourceCode.trim() || !enableHeatmap) return;
 
-    handleProfiling();
-  }, [sourceCode]);
+    // Clear any existing timeout
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+
+    // Set new timeout
+    debounceTimeoutRef.current = setTimeout(() => {
+      if (sourceCode.trim() && enableHeatmap) {
+        handleProfiling();
+      }
+    }, 3000); // 3-second delay
+
+    // Cleanup function to clear timeout if effect runs again
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [sourceCode, handleProfiling]);
+
+  // Auto-analyze immediately when heatmap is turned on (if code exists)
+  React.useEffect(() => {
+    const prevEnableHeatmap = prevEnableHeatmapRef.current;
+    prevEnableHeatmapRef.current = enableHeatmap;
+
+    // Only trigger analysis if heatmap was just turned on (false -> true) and we have code
+    if (!prevEnableHeatmap && enableHeatmap && sourceCode.trim()) {
+      handleProfiling();
+    }
+  }, [enableHeatmap, sourceCode, handleProfiling]);
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Helper function to get current SVG content based on selection
   const getCurrentSVGContent = () => {
@@ -110,8 +151,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isProfiling || !sourceCode.trim()}
-            title="Refresh analysis"
+            disabled={isProfiling || !sourceCode.trim() || !enableHeatmap}
+            title={enableHeatmap ? "Refresh analysis" : "Enable heatmap to analyze"}
           >
             <RefreshCw className={`h-3 w-3 ${isProfiling ? 'animate-spin' : ''}`} />
           </Button>
@@ -123,7 +164,9 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
           <div className="text-center text-muted-foreground">
             <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No complexity analysis available</p>
-            <p className="text-xs mt-1">Start typing or click refresh to analyze</p>
+            <p className="text-xs mt-1">
+              {enableHeatmap ? "Start typing or click refresh to analyze" : "Enable heatmap to start analysis"}
+            </p>
           </div>
         </div>
       )}

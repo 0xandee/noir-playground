@@ -705,6 +705,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   <CombinedComplexityPanel
                     sourceCode={files["main.nr"]}
                     cargoToml={files["Nargo.toml"]}
+                    enableHeatmap={enableHeatmap}
                     onLineClick={(lineNumber) => {
                       setSelectedHotspotLine(lineNumber);
                     }}
