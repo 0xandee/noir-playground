@@ -182,7 +182,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   {getSortIcon('acirOpcodes')}
                 </Button>
               </TableHead>
-              <TableHead className="w-24">
+              <TableHead className="w-24 text-center">
                 <Button
                   variant="ghost"
                   size="sm"
