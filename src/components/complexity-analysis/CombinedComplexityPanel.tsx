@@ -219,22 +219,21 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {profilerResult && !isProfiling && (
-        <div className="flex-1 p-4 overflow-hidden">
-          {/* Circuit Metrics - Show at the top if available */}
-          {profilerResult.circuitMetrics && (
-            <div className="mb-4">
-              <CircuitMetrics
-                metrics={profilerResult.circuitMetrics}
-                className="w-full"
-              />
-            </div>
-          )}
-
+        <div className="flex-1 px-4 overflow-hidden">
           {/* Content Area - Flamegraph or Table View */}
           <div className="h-full">
             {viewMode === 'flamegraph' ? (
               /* Dual SVG Viewers - Vertical Stack */
               <div className="flex flex-col gap-4 h-full">
+                {/* Circuit Metrics - Show only on Flamegraph tab */}
+                {profilerResult.circuitMetrics && (
+                  <div className="mb-4">
+                    <CircuitMetrics
+                      metrics={profilerResult.circuitMetrics}
+                      className="w-full"
+                    />
+                  </div>
+                )}
                 {/* ACIR Opcodes Flamegraph */}
                 <div className="flex-1 min-h-0">
                   <SVGFlamegraphViewer

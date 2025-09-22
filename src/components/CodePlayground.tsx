@@ -697,8 +697,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
               />
 
-              {/* Circuit Inputs Panel */}
+              {/* Bottom Panel - Circuit Inputs and Proof Output Side by Side */}
               <ResizablePanel defaultSize={40} minSize={20}>
+                <ResizablePanelGroup direction="horizontal" className="h-full">
+                  {/* Circuit Inputs Panel */}
+                  <ResizablePanel defaultSize={50} minSize={20}>
                 <section className="h-full flex flex-col" aria-label="Circuit Inputs">
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
@@ -740,15 +743,15 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </div>
                   </div>
                 </section>
-              </ResizablePanel>
+                  </ResizablePanel>
 
-              {/* Resizable Handle */}
-              <ResizableHandle
-                className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-              />
+                  {/* Resizable Handle between Circuit Inputs and Proof Output */}
+                  <ResizableHandle
+                    className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+                  />
 
-              {/* Proof Output Panel */}
-              <ResizablePanel defaultSize={40} minSize={20}>
+                  {/* Proof Output Panel */}
+                  <ResizablePanel defaultSize={50} minSize={20}>
                 <section className="h-full flex flex-col" aria-label="Proof Output">
                   <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                     <div className="flex items-center gap-2">
@@ -927,7 +930,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
                     )}
                   </div>
-                </section>
+                  </section>
+                  </ResizablePanel>
+                </ResizablePanelGroup>
               </ResizablePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
