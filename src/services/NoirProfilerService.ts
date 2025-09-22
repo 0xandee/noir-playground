@@ -326,19 +326,62 @@ export class NoirProfilerService {
       }
     });
 
+    // Deduplicate expressions by grouping same line+column+expression and aggregating values
+    const expressionMap = new Map<string, {
+      lineNumber: number;
+      column: number;
+      expression: string;
+      acirOpcodes: number;
+      brilligOpcodes: number;
+      gates: number;
+      totalCost: number;
+      percentage: number;
+      fileName: string;
+    }>();
+
+    allExpressions.forEach(expr => {
+      const key = `${expr.lineNumber}:${expr.column}:${expr.expression}`;
+      const existing = expressionMap.get(key);
+
+      if (existing) {
+        // Aggregate values for duplicate expressions
+        existing.acirOpcodes += expr.acirOpcodes;
+        existing.brilligOpcodes += expr.brilligOpcodes;
+        existing.gates += expr.gates;
+        existing.totalCost = existing.acirOpcodes + existing.brilligOpcodes + existing.gates;
+        // Use the higher percentage (they should be similar)
+        existing.percentage = Math.max(existing.percentage, expr.percentage);
+      } else {
+        expressionMap.set(key, { ...expr });
+      }
+    });
+
+    // Convert back to array
+    const deduplicatedExpressions = Array.from(expressionMap.values());
+
     // Sort by percentage descending (highest cost first)
-    allExpressions.sort((a, b) => b.percentage - a.percentage);
+    deduplicatedExpressions.sort((a, b) => b.percentage - a.percentage);
+
+    // Helper function to decode HTML entities
+    const decodeHtmlEntities = (text: string): string => {
+      return text
+        .replace(/&gt;/g, '>')
+        .replace(/&lt;/g, '<')
+        .replace(/&amp;/g, '&')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+    };
 
     // Format data for console.table
-    const tableData = allExpressions.map((expr) => ({
-      'Line': expr.lineNumber,
-      'Expression': expr.expression.length > 60 ? expr.expression.substring(0, 57) + '...' : expr.expression,
-      'ACIR': expr.acirOpcodes,
-      'Brillig': expr.brilligOpcodes,
-      'Gates': expr.gates,
-      'Total': expr.totalCost,
-      'Percentage': `${expr.percentage.toFixed(2)}%`
-    }));
+    const tableData = deduplicatedExpressions.map((expr) => {
+      const decodedExpression = decodeHtmlEntities(expr.expression);
+      return {
+        'Line': expr.lineNumber,
+        'Expression': decodedExpression.length > 60 ? decodedExpression.substring(0, 57) + '...' : decodedExpression,
+        'ACIR': expr.acirOpcodes,
+        'Percentage': `${expr.percentage.toFixed(2)}%`
+      };
+    });
 
     // Use server metrics if available, otherwise fall back to complexity report
     const actualMetrics = serverMetrics || {
@@ -353,7 +396,7 @@ export class NoirProfilerService {
     console.log(`Total ACIR Opcodes: ${actualMetrics.totalAcirOpcodes}`);
     console.log(`Total Brillig Opcodes: ${actualMetrics.totalBrilligOpcodes}`);
     console.log(`Total Gates: ${actualMetrics.totalGates}`);
-    console.log(`Total Expressions: ${allExpressions.length}`);
+    console.log(`Total Expressions: ${deduplicatedExpressions.length}`);
     console.log('================================================================\n');
 
     // Output the main table
