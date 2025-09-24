@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
 import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
@@ -24,6 +25,8 @@ import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
+import { usePanelState } from "@/hooks/usePanelState";
+import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
   initialCode?: string;
@@ -86,12 +89,16 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
+  const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   
   // Heatmap-related state
   const [enableHeatmap, setEnableHeatmap] = useState<boolean>(false);
   const [heatmapMetricType, setHeatmapMetricType] = useState<MetricType>('acir');
   const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
   const [selectedHotspotLine, setSelectedHotspotLine] = useState<number | undefined>(undefined);
+
+  // Panel collapse state
+  const { panelState, togglePanel } = usePanelState();
 
 
   // Extract input types when initial code is provided
@@ -122,6 +129,17 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
   }, [executionSteps, consoleMessages]);
+
+  // Handle Monaco editor resize when panels expand/collapse
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (monacoEditorRef.current) {
+        monacoEditorRef.current.layout();
+      }
+    }, 300); // Add slight delay to allow panel animations to complete
+
+    return () => clearTimeout(timeoutId);
+  }, [panelState]);
 
   const loadExample = (exampleId: string) => {
     const example = noirExamples.find(ex => ex.id === exampleId);
@@ -533,31 +551,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-3">
-                          <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
-                            <Switch 
-                              checked={enableHeatmap}
-                              onCheckedChange={setEnableHeatmap}
-                              size="sm"
-                            />
-                            <Flame className="h-4 w-4" />
-                            Heatmap
-                          </label>
-                          
-                          {enableHeatmap && (
-                            <>
-                              {/* <Select value={heatmapMetricType} onValueChange={(value: MetricType) => setHeatmapMetricType(value)}>
-                                <SelectTrigger className="w-20 h-7" style={{fontSize: '13px'}}>
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="acir">ACIR</SelectItem>
-                                </SelectContent>
-                              </Select> */}
-                            </>
-                          )}
-                        </div>
-                        
                         <div className="flex items-center gap-2">
                           <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
                             <input
@@ -585,6 +578,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   <div className="flex-1">
                     {activeFile === 'main.nr' ? (
                       <NoirEditorWithHover
+                        ref={monacoEditorRef}
                         value={files[activeFile] || `pub fn main(x: Field, y: pub Field) -> pub Field {
     // Verify that x and y are both non-zero
     assert(x != 0);
@@ -610,6 +604,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       />
                     ) : (
                       <NoirEditor
+                        ref={monacoEditorRef}
                         value={files[activeFile] || ''}
                         onChange={(content) => {
                           handleFileChange(activeFile, content);
@@ -628,42 +623,47 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
               />
 
               {/* Console Panel */}
-              <ResizablePanel defaultSize={30} minSize={20}>
-                <section className="h-full flex flex-col border-t border-border bg-muted/20" aria-label="Console Output">
-                  <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="h-4 w-4 text-primary" />
-                      <h2 className="font-medium" style={{fontSize: '14px'}}>Console</h2>
-                    </div>
-                    <Tooltip open={copiedItem === 'console'}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const allMessages = [
-                              ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
-                              ...consoleMessages.map(msg => msg.message)
-                            ];
-                            const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
-                            handleCopy(consoleText, "console");
-                          }}
-                          disabled={executionSteps.length === 0 && consoleMessages.length === 0}
-                          title="Copy console output"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Copied!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </header>
+              <CollapsiblePanel
+                id="console-panel"
+                title="Console"
+                icon={<Terminal className="h-4 w-4 text-primary" />}
+                isExpanded={panelState.console}
+                onToggle={() => togglePanel('console')}
+                defaultSize={30}
+                minSize={20}
+                direction="vertical"
+                headerActions={
+                  <Tooltip open={copiedItem === 'console'}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const allMessages = [
+                            ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
+                            ...consoleMessages.map(msg => msg.message)
+                          ];
+                          const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
+                          handleCopy(consoleText, "console");
+                        }}
+                        disabled={executionSteps.length === 0 && consoleMessages.length === 0}
+                        title="Copy console output"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copied!</p>
+                    </TooltipContent>
+                  </Tooltip>
+                }
+              >
+                <div className="h-full flex flex-col border-t border-border bg-muted/20">
                   <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{fontSize: '13px'}} role="log" aria-live="polite">
                     {renderConsoleContent()}
                   </div>
-                </section>
-              </ResizablePanel>
+                </div>
+              </CollapsiblePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
 
@@ -678,7 +678,29 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
 
               {/* Complexity Analysis Panel */}
-              <ResizablePanel defaultSize={60} minSize={30}>
+              <CollapsiblePanel
+                id="complexity-panel"
+                title="Complexity Analysis"
+                icon={<Target className="h-4 w-4 text-primary" />}
+                isExpanded={panelState.complexity}
+                onToggle={() => togglePanel('complexity')}
+                defaultSize={60}
+                minSize={30}
+                direction="vertical"
+                headerActions={
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
+                      <Switch
+                        checked={enableHeatmap}
+                        onCheckedChange={setEnableHeatmap}
+                        size="sm"
+                      />
+                      <Flame className="h-4 w-4" />
+                      Heatmap
+                    </label>
+                  </div>
+                }
+              >
                 <CombinedComplexityPanel
                     sourceCode={files["main.nr"]}
                     cargoToml={files["Nargo.toml"]}
@@ -690,175 +712,94 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       // Highlight function
                     }}
                   />
-              </ResizablePanel>
+              </CollapsiblePanel>
 
               {/* Resizable Handle between Complexity and Execution */}
               <ResizableHandle
                 className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
               />
 
-              {/* Bottom Panel - Circuit Inputs and Proof Output Side by Side */}
-              <ResizablePanel defaultSize={40} minSize={20}>
-                <ResizablePanelGroup direction="horizontal" className="h-full">
-                  {/* Circuit Inputs Panel */}
-                  <ResizablePanel defaultSize={50} minSize={20}>
-                <section className="h-full flex flex-col" aria-label="Circuit Inputs">
-                  <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
-                    <div className="flex items-center gap-2">
-                      <Cpu className="h-4 w-4 text-primary" />
-                      <h2 className="font-medium" style={{fontSize: '14px'}}>Circuit Inputs</h2>
-                    </div>
-                    <Button
-                      onClick={handleShareClick}
-                      variant="ghost"
-                      size="sm"
-                      title="Share"
-                      className="flex items-center gap-1"
-                    >
-                      <Share className="h-4 w-4" />
-                      <span style={{fontSize: '13px'}}>Share</span>
-                    </Button>
-                  </header>
-                  <div className="p-4 overflow-y-auto flex-1">
-                    <div className="space-y-4">
-                      {parameterOrder.map((key) => (
-                        <div key={key}>
-                          <label className="font-medium mb-2 block" style={{fontSize: '13px'}}>{key}: {formatParameterType(key)}</label>
-                          <input
-                            type="text"
-                            value={inputs[key] || ''}
-                            onChange={(e) => handleInputChange(key, e.target.value)}
-                            className={`w-full px-3 py-2 bg-muted/50 border rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
-                              ? 'border-red-500/50 focus:ring-red-500/50'
-                              : 'border-border focus:ring-primary/50'
-                              }`}
-                            style={{fontSize: '13px'}}
-                            disabled={isRunning}
-                          />
-                          {inputValidationErrors[key] && (
-                            <p className="text-red-400 mt-1" style={{fontSize: '13px'}}>{inputValidationErrors[key]}</p>
-                          )}
+              {/* Bottom Drawer - Circuit Inputs and Proof Output */}
+              <CollapsiblePanel
+                id="bottom-drawer-panel"
+                title="Circuit Inputs & Output"
+                icon={<Settings className="h-4 w-4 text-primary" />}
+                isExpanded={panelState.bottomDrawer}
+                onToggle={() => togglePanel('bottomDrawer')}
+                defaultSize={40}
+                minSize={20}
+                direction="vertical"
+                headerActions={
+                  <Button
+                    onClick={handleShareClick}
+                    variant="ghost"
+                    size="sm"
+                    title="Share"
+                    className="flex items-center gap-1"
+                  >
+                    <Share className="h-4 w-4" />
+                    <span style={{fontSize: '13px'}}>Share</span>
+                  </Button>
+                }
+              >
+                <div className="h-full flex flex-col">
+                  <ResizablePanelGroup direction="horizontal" className="flex-1">
+                    {/* Circuit Inputs Section */}
+                    <ResizablePanel defaultSize={50} minSize={30}>
+                      <section className="h-full flex flex-col" aria-label="Circuit Inputs">
+                        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
+                          <div className="flex items-center gap-2">
+                            <Cpu className="h-4 w-4 text-primary" />
+                            <h2 className="font-medium" style={{fontSize: '14px'}}>Circuit Inputs</h2>
+                          </div>
+                        </header>
+                        <div className="p-4 overflow-y-auto flex-1">
+                          <div className="space-y-4">
+                            {parameterOrder.map((key) => (
+                              <div key={key}>
+                                <label className="font-medium mb-2 block" style={{fontSize: '13px'}}>{key}: {formatParameterType(key)}</label>
+                                <input
+                                  type="text"
+                                  value={inputs[key] || ''}
+                                  onChange={(e) => handleInputChange(key, e.target.value)}
+                                  className={`w-full px-3 py-2 bg-muted/50 border rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                                    ? 'border-red-500/50 focus:ring-red-500/50'
+                                    : 'border-border focus:ring-primary/50'
+                                    }`}
+                                  style={{fontSize: '13px'}}
+                                  disabled={isRunning}
+                                />
+                                {inputValidationErrors[key] && (
+                                  <p className="text-red-400 mt-1" style={{fontSize: '13px'}}>{inputValidationErrors[key]}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-                  </ResizablePanel>
+                      </section>
+                    </ResizablePanel>
 
-                  {/* Resizable Handle between Circuit Inputs and Proof Output */}
-                  <ResizableHandle
-                    className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-                  />
+                    {/* Resizable Handle */}
+                    <ResizableHandle
+                      className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+                    />
 
-                  {/* Proof Output Panel */}
-                  <ResizablePanel defaultSize={50} minSize={20}>
-                <section className="h-full flex flex-col" aria-label="Proof Output">
-                  <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <h2 className="font-medium" style={{fontSize: '14px'}}>Output</h2>
-                    </div>
-                    <div className="flex gap-1">
-                      <Tooltip open={copiedItem === 'full-proof'}>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
-                            disabled={!proofData}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copied!</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDownloadProof}
-                        disabled={!proofData}
-                      >
-                        <Download className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </header>
-                  <div className="p-4 overflow-y-auto flex-1">
-                    {proofData ? (
-                      <div className="space-y-3">
-                        {proofData.publicInputs && proofData.publicInputs.length > 0 && (
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
-                              <Tooltip open={copiedItem === 'public-inputs'}>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Copied!</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <div className="bg-muted/50 p-3 rounded font-mono space-y-1 overflow-x-auto" style={{fontSize: '13px'}}>
-                              {proofData.publicInputs.map((input: string, i: number) => (
-                                <div key={i}>{input}</div>
-                              ))}
-                            </div>
+                    {/* Proof Output Section */}
+                    <ResizablePanel defaultSize={50} minSize={30}>
+                      <section className="h-full flex flex-col" aria-label="Proof Output">
+                        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <h2 className="font-medium" style={{fontSize: '14px'}}>Output</h2>
                           </div>
-                        )}
-
-                        {proofData.witness && proofData.witness.length > 0 && (
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
-                              <Tooltip open={copiedItem === 'witness'}>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    onClick={() => {
-                                      const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-                                      handleCopy(witnessHex, "witness");
-                                    }}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Copied!</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
-                              {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                            </div>
-                          </div>
-                        )}
-
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
-                            <Tooltip open={copiedItem === 'proof'}>
+                          <div className="flex gap-1">
+                            <Tooltip open={copiedItem === 'full-proof'}>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="h-7 px-2 py-1"
-                                  onClick={() => {
-                                    const proofHex = proofData.proof && proofData.proof.length > 0
-                                      ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                      : '';
-                                    handleCopy(proofHex, "proof");
-                                  }}
+                                  onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
+                                  disabled={!proofData}
                                 >
                                   <Copy className="h-3 w-3" />
                                 </Button>
@@ -867,73 +808,167 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 <p>Copied!</p>
                               </TooltipContent>
                             </Tooltip>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
-                            {proofData.proof && proofData.proof.length > 0
-                              ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                              : 'No proof generated'}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 px-2 py-1"
-                              disabled={true}
+                              onClick={handleDownloadProof}
+                              disabled={!proofData}
                             >
-                              <Copy className="h-3 w-3" />
+                              <Download className="h-3 w-3" />
                             </Button>
                           </div>
-                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
-                            No public inputs
-                          </div>
-                        </div>
+                        </header>
+                        <div className="p-4 overflow-y-auto flex-1">
+                          {proofData ? (
+                            <div className="space-y-3">
+                              {proofData.publicInputs && proofData.publicInputs.length > 0 && (
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
+                                    <Tooltip open={copiedItem === 'public-inputs'}>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-2 py-1"
+                                          onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Copied!</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                  <div className="bg-muted/50 p-3 rounded font-mono space-y-1 overflow-x-auto" style={{fontSize: '13px'}}>
+                                    {proofData.publicInputs.map((input: string, i: number) => (
+                                      <div key={i}>{input}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 py-1"
-                              disabled={true}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
-                            No witness data
-                          </div>
-                        </div>
+                              {proofData.witness && proofData.witness.length > 0 && (
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
+                                    <Tooltip open={copiedItem === 'witness'}>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="h-7 px-2 py-1"
+                                          onClick={() => {
+                                            const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+                                            handleCopy(witnessHex, "witness");
+                                          }}
+                                        >
+                                          <Copy className="h-3 w-3" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Copied!</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </div>
+                                  <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
+                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                  </div>
+                                </div>
+                              )}
 
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 py-1"
-                              disabled={true}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
-                            No proof generated
-                          </div>
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
+                                  <Tooltip open={copiedItem === 'proof'}>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 px-2 py-1"
+                                        onClick={() => {
+                                          const proofHex = proofData.proof && proofData.proof.length > 0
+                                            ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                            : '';
+                                          handleCopy(proofHex, "proof");
+                                        }}
+                                      >
+                                        <Copy className="h-3 w-3" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Copied!</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </div>
+                                <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
+                                  {proofData.proof && proofData.proof.length > 0
+                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                    : 'No proof generated'}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 py-1"
+                                    disabled={true}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
+                                  No public inputs
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 py-1"
+                                    disabled={true}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
+                                  No witness data
+                                </div>
+                              </div>
+
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-7 px-2 py-1"
+                                    disabled={true}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                                <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
+                                  No proof generated
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    )}
-                  </div>
-                  </section>
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              </ResizablePanel>
+                      </section>
+                    </ResizablePanel>
+                  </ResizablePanelGroup>
+                </div>
+              </CollapsiblePanel>
             </ResizablePanelGroup>
           </ResizablePanel>
         </ResizablePanelGroup>

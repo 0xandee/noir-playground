@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
@@ -108,8 +108,11 @@ const registerNoirLanguage = (monaco: Monaco) => {
   });
 };
 
-export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disabled = false, language = 'noir' }) => {
+export const NoirEditor = forwardRef<monaco.editor.IStandaloneCodeEditor | null, NoirEditorProps>(({ value, onChange, disabled = false, language = 'noir' }, ref) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  // Expose editor ref to parent
+  useImperativeHandle(ref, () => editorRef.current);
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -156,4 +159,4 @@ export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disable
       }}
     />
   );
-};
+});

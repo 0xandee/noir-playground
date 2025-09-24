@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { LineAnalysisService, LineAnalysisResult } from '@/services/LineAnalysisService';
@@ -150,7 +150,7 @@ const registerNoirLanguage = (monaco: Monaco) => {
   });
 };
 
-export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
+export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEditor | null, NoirEditorWithHoverProps>(({
   value,
   onChange,
   disabled = false,
@@ -164,7 +164,7 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   showInlineMetrics = true,
   showGutterHeat = true,
   onComplexityReport
-}) => {
+}, ref) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const lineAnalysisService = useRef<LineAnalysisService>(new LineAnalysisService());
   const [hoverContent, setHoverContent] = useState<LineAnalysisResult | null>(null);
@@ -182,6 +182,9 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
   // Refs to track current state for hover provider
   const enableHeatmapRef = useRef(enableHeatmap);
   const complexityReportRef = useRef(complexityReport);
+
+  // Expose editor ref to parent
+  useImperativeHandle(ref, () => editorRef.current);
 
   // Update refs when props/state change
   useEffect(() => {
@@ -682,4 +685,4 @@ export const NoirEditorWithHover: React.FC<NoirEditorWithHoverProps> = ({
       )} */}
     </div>
   );
-};
+});
