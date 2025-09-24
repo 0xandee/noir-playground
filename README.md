@@ -91,6 +91,10 @@ npm run preview  # Preview production build
 -   [ ] **Circuit optimization** suggestions and analysis
 -   [ ] **Preload Common Dependencies**: Bundle popular Noir libraries (std, aztec, crypto) locally to enable dependency usage without external fetching. Current issue: https://github.com/noir-lang/noir/issues/7823
 
+## UI Inspiration
+
+-   Inspired by the excellent [Cairo VM Playground](https://cairovm.codes/).
+
 ## Contributing
 
 We welcome contributions! See [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.

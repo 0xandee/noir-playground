@@ -52,7 +52,7 @@ export function CollapsiblePanel({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
             {/* {icon} */}
-            <span className="text-sm font-medium">{title}</span>
+            <span className="text-sm font-medium select-none">{title}</span>
           </div>
         </div>
         {headerActions && (

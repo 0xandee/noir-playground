@@ -512,19 +512,19 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     if (allMessages.length === 0) {
       return (
         <div className="flex items-center gap-2">
-          <span className="text-foreground">Ready to execute...</span>
+          <span className="text-foreground select-none">Ready to execute...</span>
         </div>
       );
     }
 
     return allMessages.map((msg, i) => (
       <div key={msg.id || i} className="flex items-center gap-2">
-        <span className={
+        <span className={`select-none ${
           msg.type === "success" ? "text-green-400" :
             msg.type === "error" ? "text-red-400" :
               msg.type === "info" ? "text-foreground" :
                 "text-foreground"
-        }>
+        }`}>
           {msg.message}
         </span>
       </div>
@@ -558,8 +558,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             {snippetTitle ? (
                               // Show snippet title instead of examples dropdown
                               <div className="flex items-center gap-2 px-2" style={{ fontSize: '13px' }}>
-                                <span className="text-muted-foreground">Shared Snippet:</span>
-                                <span className="font-medium text-foreground">{snippetTitle}</span>
+                                <span className="text-muted-foreground select-none">Shared Snippet:</span>
+                                <span className="font-medium text-foreground select-none">{snippetTitle}</span>
                               </div>
                             ) : (
                               // Show examples dropdown in normal mode
@@ -603,7 +603,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             className="flex items-center gap-1 h-7 px-2"
                           >
                             <Share className="h-4 w-4" />
-                            <span style={{ fontSize: '13px' }}>Share</span>
+                            <span className="select-none" style={{ fontSize: '13px' }}>Share</span>
                           </Button>
                         </div>
                       </div>
@@ -747,7 +747,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         <Switch
                           checked={enableHeatmap}
                           onCheckedChange={setEnableHeatmap}
-                          size="sm"
                         />
                         <Flame className="h-4 w-4" />
                         Heatmap
@@ -810,7 +809,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     onLineClick={(lineNumber) => {
                       setSelectedHotspotLine(lineNumber);
                     }}
-                    onFunctionClick={(functionName) => {
+                    onFunctionClick={(_functionName) => {
                       // Highlight function
                     }}
                   />
@@ -833,14 +832,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         <section className="h-full flex flex-col" aria-label="Inputs">
                           <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none border-r border-[#0C0E12]">
                             <div className="flex items-center gap-2">
-                              <h2 className="font-medium text-sm">Inputs</h2>
+                              <h2 className="font-medium text-sm select-none">Inputs</h2>
                             </div>
                           </header>
                           <div className="p-4 overflow-y-auto flex-1">
                             <div className="space-y-3">
                               {parameterOrder.map((key) => (
                                 <div key={key}>
-                                  <label className="font-medium mb-2 block text-xs">{key}: {formatParameterType(key)}</label>
+                                  <label className="font-medium mb-2 block text-xs select-none">{key}: {formatParameterType(key)}</label>
                                   <input
                                     type="text"
                                     value={inputs[key] || ''}
@@ -852,7 +851,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                     disabled={isRunning}
                                   />
                                   {inputValidationErrors[key] && (
-                                    <p className="text-red-400 mt-1 text-xs">{inputValidationErrors[key]}</p>
+                                    <p className="text-red-400 mt-1 text-xs select-none">{inputValidationErrors[key]}</p>
                                   )}
                                 </div>
                               ))}
@@ -871,7 +870,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         <section className="h-full flex flex-col" aria-label="Proof Outputs">
                           <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none">
                             <div className="flex items-center gap-2">
-                              <h2 className="font-medium text-sm">Outputs</h2>
+                              <h2 className="font-medium text-sm select-none">Outputs</h2>
                             </div>
                             {/* <div className="flex gap-4">
                               <Tooltip open={copiedItem === 'full-proof'}>
@@ -906,7 +905,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <div className="space-y-3">
                                 {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                                   <div>
-                                    <h3 className="font-medium text-xs mb-2">Public Inputs</h3>
+                                    <h3 className="font-medium text-xs mb-2 select-none">Public Inputs</h3>
                                     <div className="relative bg-muted/50 p-3 rounded font-mono text-xs space-y-1 overflow-x-auto group">
                                       {proofData.publicInputs.map((input: string, i: number) => (
                                         <div key={i}>{input}</div>
@@ -932,7 +931,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                                 {proofData.witness && proofData.witness.length > 0 && (
                                   <div>
-                                    <h3 className="font-medium text-xs mb-2">Witness</h3>
+                                    <h3 className="font-medium text-xs mb-2 select-none">Witness</h3>
                                     <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
                                       {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
                                       <Tooltip open={copiedItem === 'witness'}>
@@ -958,7 +957,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 )}
 
                                 <div>
-                                  <h3 className="font-medium text-xs mb-2">Proof</h3>
+                                  <h3 className="font-medium text-xs mb-2 select-none">Proof</h3>
                                   <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
                                     {proofData.proof && proofData.proof.length > 0
                                       ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
@@ -990,7 +989,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <div className="space-y-3">
                                 <div>
                                   <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium text-xs">Public Inputs</h3>
+                                    <h3 className="font-medium text-xs select-none">Public Inputs</h3>
                                   </div>
                                   <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
                                     No public inputs
