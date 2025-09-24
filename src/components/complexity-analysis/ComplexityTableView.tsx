@@ -204,7 +204,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                 onClick={() => handleRowClick(item)}
                 title="Click to jump to line in code"
               >
-                <TableCell className="font-mono" style={{ fontSize: '13px' }}>
+                <TableCell className="font-mono text-center" style={{ fontSize: '13px' }}>
                   {item.lineNumber}
                 </TableCell>
                 <TableCell className="font-mono max-w-md" style={{ fontSize: '13px' }}>

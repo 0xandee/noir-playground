@@ -683,7 +683,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         disabled={isRunning}
                         variant="default"
                         size="sm"
-                        className="h-7 px-3"
+                        className="h-7 px-8"
                       >
                         Run
                       </Button>
