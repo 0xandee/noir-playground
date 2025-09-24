@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
@@ -29,7 +29,7 @@ import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
-import { ProfilerResult } from "@/services/NoirProfilerService";
+import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -109,6 +109,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [complexityProfilerResult, setComplexityProfilerResult] = useState<ProfilerResult | null>(null);
   const [isComplexityProfiling, setIsComplexityProfiling] = useState(false);
 
+  // Profiler service instance
+  const profilerServiceRef = useRef<NoirProfilerService | null>(null);
+  if (!profilerServiceRef.current) {
+    profilerServiceRef.current = new NoirProfilerService();
+  }
 
   // Extract input types when initial code is provided
   useEffect(() => {
@@ -131,6 +136,37 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     const id = Date.now().toString();
     setConsoleMessages(prev => [...prev, { id, type, message, timestamp }]);
   };
+
+  const handleComplexityRefresh = useCallback(async () => {
+    if (!files["main.nr"].trim() || !enableHeatmap || isComplexityProfiling) {
+      return;
+    }
+
+    setIsComplexityProfiling(true);
+    try {
+      const result = await profilerServiceRef.current!.profileCircuit({
+        sourceCode: files["main.nr"].trim(),
+        cargoToml: files["Nargo.toml"] || undefined
+      });
+      setComplexityProfilerResult(result);
+    } catch (err) {
+      addConsoleMessage('error', `Profiling failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsComplexityProfiling(false);
+    }
+  }, [files, enableHeatmap, isComplexityProfiling, addConsoleMessage]);
+
+  // Trigger profiling when heatmap is enabled
+  const prevEnableHeatmapRef = useRef(enableHeatmap);
+  useEffect(() => {
+    const wasHeatmapEnabled = prevEnableHeatmapRef.current;
+    prevEnableHeatmapRef.current = enableHeatmap;
+
+    // Only trigger profiling if heatmap was just turned on (false -> true) and we have code
+    if (!wasHeatmapEnabled && enableHeatmap && files["main.nr"].trim() && !isComplexityProfiling) {
+      handleComplexityRefresh();
+    }
+  }, [enableHeatmap, files, isComplexityProfiling, handleComplexityRefresh]);
 
   // Auto-scroll console to bottom when new messages arrive
   useEffect(() => {
@@ -262,14 +298,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   const handleShareClick = () => {
     setShareDialogOpen(true);
-  };
-
-  const handleComplexityRefresh = () => {
-    // This function will trigger profiling in CombinedComplexityPanel
-    if (files["main.nr"].trim() && enableHeatmap) {
-      // The actual profiling logic will remain in CombinedComplexityPanel
-      // This is just a trigger for external refresh
-    }
   };
 
 
@@ -773,6 +801,15 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     onRefresh={handleComplexityRefresh}
                     isProfiling={isComplexityProfiling}
                     profilerResult={complexityProfilerResult}
+                    onProfilingStart={() => setIsComplexityProfiling(true)}
+                    onProfilingComplete={(result) => {
+                      setComplexityProfilerResult(result);
+                      setIsComplexityProfiling(false);
+                    }}
+                    onProfilingError={(error) => {
+                      addConsoleMessage('error', `Profiling failed: ${error}`);
+                      setIsComplexityProfiling(false);
+                    }}
                     onLineClick={(lineNumber) => {
                       setSelectedHotspotLine(lineNumber);
                     }}

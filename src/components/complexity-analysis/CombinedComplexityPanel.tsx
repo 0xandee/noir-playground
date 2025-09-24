@@ -20,6 +20,9 @@ interface CombinedComplexityPanelProps {
   viewMode?: 'table' | 'flamegraph';
   isProfiling?: boolean;
   profilerResult?: ProfilerResult | null;
+  onProfilingStart?: () => void;
+  onProfilingComplete?: (result: ProfilerResult) => void;
+  onProfilingError?: (error: string) => void;
 }
 
 export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = ({
@@ -33,7 +36,10 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   onRefresh,
   viewMode: externalViewMode,
   isProfiling: externalIsProfiling,
-  profilerResult: externalProfilerResult
+  profilerResult: externalProfilerResult,
+  onProfilingStart,
+  onProfilingComplete,
+  onProfilingError
 }) => {
   const [internalViewMode, setInternalViewMode] = useState<'table' | 'flamegraph'>('table');
   const [internalProfilerResult, setInternalProfilerResult] = useState<ProfilerResult | null>(null);
@@ -72,7 +78,11 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
   const handleProfiling = useCallback(async () => {
     if (!sourceCode.trim()) {
-      setError('No source code to profile');
+      const errorMsg = 'No source code to profile';
+      setError(errorMsg);
+      if (onProfilingError) {
+        onProfilingError(errorMsg);
+      }
       return;
     }
 
@@ -83,6 +93,9 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
     profilingQueuedRef.current = true;
     setIsProfiling(true);
+    if (onProfilingStart) {
+      onProfilingStart();
+    }
     setError(null);
     try {
       const result = await profilerService.profileCircuit({
@@ -92,13 +105,20 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
       setProfilerResult(result);
       setLastProfiled(new Date());
+      if (onProfilingComplete) {
+        onProfilingComplete(result);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Profiling failed');
+      const errorMsg = err instanceof Error ? err.message : 'Profiling failed';
+      setError(errorMsg);
+      if (onProfilingError) {
+        onProfilingError(errorMsg);
+      }
     } finally {
       setIsProfiling(false);
       profilingQueuedRef.current = false;
     }
-  }, [sourceCode, cargoToml, profilerService, isProfiling]);
+  }, [sourceCode, cargoToml, profilerService, isProfiling, onProfilingStart, onProfilingComplete, onProfilingError]);
 
 
 
@@ -162,8 +182,12 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     prevEnableHeatmapRef.current = enableHeatmap;
 
     // Only trigger analysis if heatmap was just turned on (false -> true) and we have code
-    // Also make sure there's no pending timeout to avoid conflicts
-    if (!prevEnableHeatmap && enableHeatmap && sourceCode.trim() && !isProfiling && !debounceTimeoutRef.current && !profilingQueuedRef.current) {
+    if (!prevEnableHeatmap && enableHeatmap && sourceCode.trim() && !isProfiling && !profilingQueuedRef.current) {
+      // Clear any pending timeout since we want immediate analysis when heatmap is toggled on
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+        debounceTimeoutRef.current = null;
+      }
       handleProfiling();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
