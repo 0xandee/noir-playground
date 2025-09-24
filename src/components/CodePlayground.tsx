@@ -552,7 +552,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     {/* Code Editor Header with File Tabs */}
                     <header className="border-b border-border bg-muted/30">
                       {/* File Tabs */}
-                      <div className="flex items-center justify-between px-4 py-2">
+                      <div className="flex items-center justify-between px-4 py-1 h-[44px]">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center">
                             {snippetTitle ? (
@@ -715,7 +715,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </Tooltip>
                   }
                 >
-                  <div className="h-full flex flex-col bg-muted/20">
+                  <div className="h-full flex flex-col" style={{ backgroundColor: '#0C0E12' }}>
                     <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
                       {renderConsoleContent()}
                     </div>
@@ -743,7 +743,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   minSize={30}
                   direction="vertical"
                   headerActions={
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 h-6 min-h-0">
                       <label className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
                         <Switch
                           checked={enableHeatmap}
