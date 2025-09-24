@@ -685,12 +685,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   icon={<Terminal className="h-4 w-4 text-primary" />}
                   isExpanded={panelState.console}
                   onToggle={() => togglePanel('console')}
-                  defaultSize={30}
+                  defaultSize={40}
                   minSize={20}
                   direction="vertical"
                   headerActions={
                     <Tooltip open={copiedItem === 'console'}>
-                      <TooltipTrigger asChild>
+                      {/* <TooltipTrigger asChild>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -711,7 +711,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>Copied!</p>
-                      </TooltipContent>
+                      </TooltipContent> */}
                     </Tooltip>
                   }
                 >
@@ -732,8 +732,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             {/* Right Panel - Complexity Analysis and Execution Details */}
             <ResizablePanel defaultSize={50} minSize={30}>
               <ResizablePanelGroup direction="vertical" className="h-full">
-
-
                 {/* Complexity Analysis Panel */}
                 <CollapsiblePanel
                   id="complexity-panel"
@@ -831,7 +829,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   icon={<Settings className="h-4 w-4 text-primary" />}
                   isExpanded={panelState.bottomDrawer}
                   onToggle={() => togglePanel('bottomDrawer')}
-                  defaultSize={40}
+                  defaultSize={34.4}
                   minSize={20}
                   direction="vertical"
                   headerActions={undefined}
@@ -883,7 +881,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             <div className="flex items-center gap-2">
                               <h2 className="font-medium text-sm">Outputs</h2>
                             </div>
-                            <div className="flex gap-4">
+                            {/* <div className="flex gap-4">
                               <Tooltip open={copiedItem === 'full-proof'}>
                                 <TooltipTrigger asChild>
                                   <Button
@@ -909,7 +907,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               >
                                 <Download className="h-3 w-3" />
                               </Button>
-                            </div>
+                            </div> */}
                           </header>
                           <div className="p-4 overflow-y-auto flex-1">
                             {proofData ? (
