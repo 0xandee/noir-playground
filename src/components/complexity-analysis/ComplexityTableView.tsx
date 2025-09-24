@@ -217,7 +217,11 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                 </TableCell>
                 <TableCell className="text-center">
                   <Badge
-                    variant={item.percentage > 10 ? "destructive" : item.percentage > 5 ? "default" : "outline"}
+                    style={{
+                      backgroundColor: `rgba(239, 68, 68, ${item.percentage > 10 ? 0.7 : item.percentage > 5 ? 0.5 : 0.3})`,
+                      color: 'white',
+                      border: 'none'
+                    }}
                   >
                     {item.percentage.toFixed(2)}%
                   </Badge>
