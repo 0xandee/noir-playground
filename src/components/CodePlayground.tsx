@@ -524,9 +524,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   {/* Code Editor Header with File Tabs */}
                   <header className="border-b border-border bg-muted/30">
                     {/* File Tabs */}
-                    <div className="flex items-center justify-between px-4 py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
+                    <div className="flex items-center justify-between p-2">
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center">
                           {snippetTitle ? (
                             // Show snippet title instead of examples dropdown
                             <div className="flex items-center gap-2 px-2" style={{fontSize: '13px'}}>
@@ -565,10 +565,20 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             {filename}
                           </button>
                         ))}
+                          <Button
+                            onClick={handleShareClick}
+                            variant="ghost"
+                            size="sm"
+                            title="Share"
+                            className="flex items-center gap-1 h-7 px-2"
+                          >
+                            <Share className="h-4 w-4" />
+                            <span style={{fontSize: '13px'}}>Share</span>
+                          </Button>
 
                       </div>
                       <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-4">
                           <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
                             <input
                               type="checkbox"
@@ -583,6 +593,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             disabled={isRunning}
                             variant="default"
                             size="sm"
+                            className="h-7 px-3"
                           >
                             Run
                           </Button>
@@ -655,6 +666,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="h-6 w-6 p-0"
                         onClick={() => {
                           const allMessages = [
                             ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
@@ -785,47 +797,35 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 defaultSize={40}
                 minSize={20}
                 direction="vertical"
-                headerActions={
-                  <Button
-                    onClick={handleShareClick}
-                    variant="ghost"
-                    size="sm"
-                    title="Share"
-                    className="flex items-center gap-1"
-                  >
-                    <Share className="h-4 w-4" />
-                    <span style={{fontSize: '13px'}}>Share</span>
-                  </Button>
-                }
+                headerActions={undefined}
               >
                 <div className="h-full flex flex-col">
                   <ResizablePanelGroup direction="horizontal" className="flex-1">
                     {/* Circuit Inputs Section */}
                     <ResizablePanel defaultSize={50} minSize={30}>
                       <section className="h-full flex flex-col" aria-label="Inputs">
-                        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
+                        <header className="flex items-center justify-between px-4 py-2 min-h-[44px] border-b border-border bg-muted/30 select-none">
                           <div className="flex items-center gap-2">
-                            <h2 className="font-medium" style={{fontSize: '14px'}}>Inputs</h2>
+                            <h2 className="font-medium text-sm">Inputs</h2>
                           </div>
                         </header>
                         <div className="p-4 overflow-y-auto flex-1">
-                          <div className="space-y-4">
+                          <div className="space-y-3">
                             {parameterOrder.map((key) => (
                               <div key={key}>
-                                <label className="font-medium mb-2 block" style={{fontSize: '13px'}}>{key}: {formatParameterType(key)}</label>
+                                <label className="font-medium mb-2 block text-xs">{key}: {formatParameterType(key)}</label>
                                 <input
                                   type="text"
                                   value={inputs[key] || ''}
                                   onChange={(e) => handleInputChange(key, e.target.value)}
-                                  className={`w-full px-3 py-2 bg-muted/50 border rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                                  className={`w-full px-3 py-3 text-xs bg-muted/50 border rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
                                     ? 'border-red-500/50 focus:ring-red-500/50'
                                     : 'border-border focus:ring-primary/50'
                                     }`}
-                                  style={{fontSize: '13px'}}
                                   disabled={isRunning}
                                 />
                                 {inputValidationErrors[key] && (
-                                  <p className="text-red-400 mt-1" style={{fontSize: '13px'}}>{inputValidationErrors[key]}</p>
+                                  <p className="text-red-400 mt-1 text-xs">{inputValidationErrors[key]}</p>
                                 )}
                               </div>
                             ))}
@@ -842,16 +842,17 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     {/* Proof Outputs Section */}
                     <ResizablePanel defaultSize={50} minSize={30}>
                       <section className="h-full flex flex-col" aria-label="Proof Outputs">
-                        <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
+                        <header className="flex items-center justify-between px-4 py-2 min-h-[44px] border-b border-border bg-muted/30 select-none">
                           <div className="flex items-center gap-2">
-                            <h2 className="font-medium" style={{fontSize: '14px'}}>Outputs</h2>
+                            <h2 className="font-medium text-sm">Outputs</h2>
                           </div>
-                          <div className="flex gap-1">
+                          <div className="flex gap-4">
                             <Tooltip open={copiedItem === 'full-proof'}>
                               <TooltipTrigger asChild>
                                 <Button
                                   variant="ghost"
                                   size="sm"
+                                  className="h-6 w-6 p-0"
                                   onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
                                   disabled={!proofData}
                                 >
@@ -865,6 +866,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-6 w-6 p-0"
                               onClick={handleDownloadProof}
                               disabled={!proofData}
                             >
@@ -877,14 +879,17 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             <div className="space-y-3">
                               {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                                 <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
+                                  <h3 className="font-medium text-xs mb-2">Public Inputs</h3>
+                                  <div className="relative bg-muted/50 p-3 rounded font-mono text-xs space-y-1 overflow-x-auto group">
+                                    {proofData.publicInputs.map((input: string, i: number) => (
+                                      <div key={i}>{input}</div>
+                                    ))}
                                     <Tooltip open={copiedItem === 'public-inputs'}>
                                       <TooltipTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-7 px-2 py-1"
+                                          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
                                           onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
                                         >
                                           <Copy className="h-3 w-3" />
@@ -895,24 +900,20 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>
-                                  <div className="bg-muted/50 p-3 rounded font-mono space-y-1 overflow-x-auto" style={{fontSize: '13px'}}>
-                                    {proofData.publicInputs.map((input: string, i: number) => (
-                                      <div key={i}>{input}</div>
-                                    ))}
-                                  </div>
                                 </div>
                               )}
 
                               {proofData.witness && proofData.witness.length > 0 && (
                                 <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
+                                  <h3 className="font-medium text-xs mb-2">Witness</h3>
+                                  <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
+                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
                                     <Tooltip open={copiedItem === 'witness'}>
                                       <TooltipTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="h-7 px-2 py-1"
+                                          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
                                           onClick={() => {
                                             const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
                                             handleCopy(witnessHex, "witness");
@@ -926,21 +927,21 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                       </TooltipContent>
                                     </Tooltip>
                                   </div>
-                                  <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
-                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                                  </div>
                                 </div>
                               )}
 
                               <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
+                                <h3 className="font-medium text-xs mb-2">Proof</h3>
+                                <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
+                                  {proofData.proof && proofData.proof.length > 0
+                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                    : 'No proof generated'}
                                   <Tooltip open={copiedItem === 'proof'}>
                                     <TooltipTrigger asChild>
                                       <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="h-7 px-2 py-1"
+                                        className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
                                         onClick={() => {
                                           const proofHex = proofData.proof && proofData.proof.length > 0
                                             ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
@@ -956,18 +957,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                     </TooltipContent>
                                   </Tooltip>
                                 </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono overflow-x-auto whitespace-nowrap" style={{fontSize: '13px'}}>
-                                  {proofData.proof && proofData.proof.length > 0
-                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                    : 'No proof generated'}
-                                </div>
                               </div>
                             </div>
                           ) : (
                             <div className="space-y-3">
                               <div>
                                 <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Public Inputs</h3>
+                                  <h3 className="font-medium text-xs">Public Inputs</h3>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -977,14 +973,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                     <Copy className="h-3 w-3" />
                                   </Button>
                                 </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
+                                <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
                                   No public inputs
                                 </div>
                               </div>
 
                               <div>
                                 <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Witness</h3>
+                                  <h3 className="font-medium text-xs">Witness</h3>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -994,14 +990,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                     <Copy className="h-3 w-3" />
                                   </Button>
                                 </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
+                                <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
                                   No witness data
                                 </div>
                               </div>
 
                               <div>
                                 <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium" style={{fontSize: '13px'}}>Proof</h3>
+                                  <h3 className="font-medium text-xs">Proof</h3>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -1011,7 +1007,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                     <Copy className="h-3 w-3" />
                                   </Button>
                                 </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{fontSize: '13px'}}>
+                                <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
                                   No proof generated
                                 </div>
                               </div>
