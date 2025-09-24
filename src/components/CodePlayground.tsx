@@ -823,16 +823,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 />
 
                 {/* Bottom Drawer - Circuit Inputs and Proof Outputs */}
-                <CollapsiblePanel
-                  id="bottom-drawer-panel"
-                  title="Circuit Inputs & Outputs"
-                  icon={<Settings className="h-4 w-4 text-primary" />}
-                  isExpanded={panelState.bottomDrawer}
-                  onToggle={() => togglePanel('bottomDrawer')}
+                <ResizablePanel
                   defaultSize={34.4}
                   minSize={20}
-                  direction="vertical"
-                  headerActions={undefined}
                 >
                   <div className="h-full flex flex-col">
                     <ResizablePanelGroup direction="horizontal" className="flex-1">
@@ -1028,7 +1021,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </ResizablePanel>
                     </ResizablePanelGroup>
                   </div>
-                </CollapsiblePanel>
+                </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
           </ResizablePanelGroup>
