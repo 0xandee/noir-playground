@@ -593,6 +593,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               {filename}
                             </button>
                           ))}
+                        </div>
+                        <div className="flex items-center">
                           <Button
                             onClick={handleShareClick}
                             variant="ghost"
@@ -603,29 +605,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             <Share className="h-4 w-4" />
                             <span style={{ fontSize: '13px' }}>Share</span>
                           </Button>
-
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-4">
-                            <label className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
-                              <input
-                                type="checkbox"
-                                checked={proveAndVerify}
-                                onChange={(e) => setProveAndVerify(e.target.checked)}
-                                className="rounded"
-                              />
-                              Prove & Verify
-                            </label>
-                            <Button
-                              onClick={handleRun}
-                              disabled={isRunning}
-                              variant="default"
-                              size="sm"
-                              className="h-7 px-3"
-                            >
-                              Run
-                            </Button>
-                          </div>
                         </div>
                       </div>
                     </header>
@@ -689,30 +668,50 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   minSize={20}
                   direction="vertical"
                   headerActions={
-                    <Tooltip open={copiedItem === 'console'}>
-                      {/* <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0"
-                          onClick={() => {
-                            const allMessages = [
-                              ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
-                              ...consoleMessages.map(msg => msg.message)
-                            ];
-                            const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
-                            handleCopy(consoleText, "console");
-                          }}
-                          disabled={executionSteps.length === 0 && consoleMessages.length === 0}
-                          title="Copy console output"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Copied!</p>
-                      </TooltipContent> */}
-                    </Tooltip>
+                    <div className="flex items-center gap-4">
+                      <label className="flex items-center gap-2 cursor-pointer select-none" style={{ fontSize: '14px' }}>
+                        <input
+                          type="checkbox"
+                          checked={proveAndVerify}
+                          onChange={(e) => setProveAndVerify(e.target.checked)}
+                          className="rounded"
+                        />
+                        Prove & Verify
+                      </label>
+                      <Button
+                        onClick={handleRun}
+                        disabled={isRunning}
+                        variant="default"
+                        size="sm"
+                        className="h-7 px-3"
+                      >
+                        Run
+                      </Button>
+                      <Tooltip open={copiedItem === 'console'}>
+                        {/* <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0"
+                            onClick={() => {
+                              const allMessages = [
+                                ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
+                                ...consoleMessages.map(msg => msg.message)
+                              ];
+                              const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
+                              handleCopy(consoleText, "console");
+                            }}
+                            disabled={executionSteps.length === 0 && consoleMessages.length === 0}
+                            title="Copy console output"
+                          >
+                            <Copy className="h-3 w-3" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copied!</p>
+                        </TooltipContent> */}
+                      </Tooltip>
+                    </div>
                   }
                 >
                   <div className="h-full flex flex-col" style={{ backgroundColor: '#0C0E12' }}>
