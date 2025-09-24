@@ -906,10 +906,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                                   <div>
                                     <h3 className="font-medium text-xs mb-2 select-none">Public Inputs</h3>
-                                    <div className="relative bg-muted/50 p-3 rounded font-mono text-xs space-y-1 overflow-x-auto group">
-                                      {proofData.publicInputs.map((input: string, i: number) => (
-                                        <div key={i}>{input}</div>
-                                      ))}
+                                    <div className="relative bg-muted/50 rounded group">
+                                      <div className="p-3 font-mono text-xs space-y-1 overflow-x-auto">
+                                        {proofData.publicInputs.map((input: string, i: number) => (
+                                          <div key={i}>{input}</div>
+                                        ))}
+                                      </div>
                                       <Tooltip open={copiedItem === 'public-inputs'}>
                                         <TooltipTrigger asChild>
                                           <Button
@@ -932,8 +934,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 {proofData.witness && proofData.witness.length > 0 && (
                                   <div>
                                     <h3 className="font-medium text-xs mb-2 select-none">Witness</h3>
-                                    <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
-                                      {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                    <div className="relative bg-muted/50 rounded group">
+                                      <div className="p-3 font-mono text-xs overflow-x-auto whitespace-nowrap">
+                                        {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                      </div>
                                       <Tooltip open={copiedItem === 'witness'}>
                                         <TooltipTrigger asChild>
                                           <Button
@@ -958,10 +962,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                                 <div>
                                   <h3 className="font-medium text-xs mb-2 select-none">Proof</h3>
-                                  <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
-                                    {proofData.proof && proofData.proof.length > 0
-                                      ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                      : 'No proof generated'}
+                                  <div className="relative bg-muted/50 rounded group">
+                                    <div className="p-3 font-mono text-xs overflow-x-auto whitespace-nowrap">
+                                      {proofData.proof && proofData.proof.length > 0
+                                        ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                        : 'No proof generated'}
+                                    </div>
                                     <Tooltip open={copiedItem === 'proof'}>
                                       <TooltipTrigger asChild>
                                         <Button
