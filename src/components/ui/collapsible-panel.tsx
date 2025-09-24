@@ -48,11 +48,11 @@ export function CollapsiblePanel({
       className={cn("flex flex-col", className)}
       id={id}
     >
-      <div className="flex items-center justify-between p-2 bg-muted/50 border-b border-border">
+      <div className="flex items-center justify-between px-2 py-1 min-h-[44px] bg-muted/50 border-b border-border">
         <div className="flex items-center gap-2">
           <button
             onClick={onToggle}
-            className="flex items-center gap-2 hover:bg-accent hover:text-accent-foreground p-1 rounded-sm transition-colors"
+            className="flex items-center gap-2 hover:bg-accent hover:text-accent-foreground px-1 py-0.5 rounded-sm transition-colors"
             aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${title} panel`}
           >
             {icon}
