@@ -94,7 +94,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
   const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
-  
+
   // Heatmap-related state
   const [enableHeatmap, setEnableHeatmap] = useState<boolean>(false);
   const [heatmapMetricType, setHeatmapMetricType] = useState<MetricType>('acir');
@@ -534,65 +534,65 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   return (
     <TooltipProvider>
       <main className="h-screen bg-background flex flex-col">
-      <header className="sr-only">
-        <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
-      </header>
+        <header className="sr-only">
+          <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
+        </header>
 
 
-      {/* Main Content */}
-      <section className="flex flex-1" aria-label="Development Environment">
-        {/* Desktop Layout - Resizable Panels */}
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left Panel - Code Editor and Console */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* Code Editor Panel */}
-              <ResizablePanel defaultSize={70} minSize={50}>
-                <section className="h-full flex flex-col" aria-label="Code Editor">
-                  {/* Code Editor Header with File Tabs */}
-                  <header className="border-b border-border bg-muted/30">
-                    {/* File Tabs */}
-                    <div className="flex items-center justify-between p-2">
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center">
-                          {snippetTitle ? (
-                            // Show snippet title instead of examples dropdown
-                            <div className="flex items-center gap-2 px-2" style={{fontSize: '13px'}}>
-                              <span className="text-muted-foreground">Shared Snippet:</span>
-                              <span className="font-medium text-foreground">{snippetTitle}</span>
-                            </div>
-                          ) : (
-                            // Show examples dropdown in normal mode
-                            <Select value={selectedExample} onValueChange={loadExample}>
-                              <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0" style={{fontSize: '13px'}}>
-                                <SelectValue placeholder="Examples" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {noirExamples.map((example, index) => (
-                                  <div key={example.id}>
-                                    <SelectItem value={example.id}>
-                                      {example.name}
-                                    </SelectItem>
-                                    {index === 0 && <SelectSeparator />}
-                                  </div>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                        </div>
-                        {Object.keys(files).filter(filename => filename !== 'main.nr').map((filename) => (
-                          <button
-                            key={filename}
-                            onClick={() => setActiveFile(filename)}
-                            className={`flex items-center gap-2 px-3 py-2 font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
-                              ? 'bg-background text-foreground'
-                              : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                              }`}
-                            style={{fontSize: '13px'}}
-                          >
-                            {filename}
-                          </button>
-                        ))}
+        {/* Main Content */}
+        <section className="flex flex-1" aria-label="Development Environment">
+          {/* Desktop Layout - Resizable Panels */}
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Left Panel - Code Editor and Console */}
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <ResizablePanelGroup direction="vertical" className="h-full">
+                {/* Code Editor Panel */}
+                <ResizablePanel defaultSize={70} minSize={50}>
+                  <section className="h-full flex flex-col" aria-label="Code Editor">
+                    {/* Code Editor Header with File Tabs */}
+                    <header className="border-b border-border bg-muted/30">
+                      {/* File Tabs */}
+                      <div className="flex items-center justify-between px-4 py-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center">
+                            {snippetTitle ? (
+                              // Show snippet title instead of examples dropdown
+                              <div className="flex items-center gap-2 px-2" style={{ fontSize: '13px' }}>
+                                <span className="text-muted-foreground">Shared Snippet:</span>
+                                <span className="font-medium text-foreground">{snippetTitle}</span>
+                              </div>
+                            ) : (
+                              // Show examples dropdown in normal mode
+                              <Select value={selectedExample} onValueChange={loadExample}>
+                                <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0" style={{ fontSize: '13px' }}>
+                                  <SelectValue placeholder="Examples" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {noirExamples.map((example, index) => (
+                                    <div key={example.id}>
+                                      <SelectItem value={example.id}>
+                                        {example.name}
+                                      </SelectItem>
+                                      {index === 0 && <SelectSeparator />}
+                                    </div>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                          {Object.keys(files).filter(filename => filename !== 'main.nr').map((filename) => (
+                            <button
+                              key={filename}
+                              onClick={() => setActiveFile(filename)}
+                              className={`flex items-center gap-2 px-3 py-2 font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
+                                ? 'bg-background text-foreground'
+                                : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                              style={{ fontSize: '13px' }}
+                            >
+                              {filename}
+                            </button>
+                          ))}
                           <Button
                             onClick={handleShareClick}
                             variant="ghost"
@@ -601,41 +601,41 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             className="flex items-center gap-1 h-7 px-2"
                           >
                             <Share className="h-4 w-4" />
-                            <span style={{fontSize: '13px'}}>Share</span>
+                            <span style={{ fontSize: '13px' }}>Share</span>
                           </Button>
 
-                      </div>
-                      <div className="flex items-center gap-4">
+                        </div>
                         <div className="flex items-center gap-4">
-                          <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
-                            <input
-                              type="checkbox"
-                              checked={proveAndVerify}
-                              onChange={(e) => setProveAndVerify(e.target.checked)}
-                              className="rounded"
-                            />
-                            Prove & Verify
-                          </label>
-                          <Button
-                            onClick={handleRun}
-                            disabled={isRunning}
-                            variant="default"
-                            size="sm"
-                            className="h-7 px-3"
-                          >
-                            Run
-                          </Button>
+                          <div className="flex items-center gap-4">
+                            <label className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
+                              <input
+                                type="checkbox"
+                                checked={proveAndVerify}
+                                onChange={(e) => setProveAndVerify(e.target.checked)}
+                                className="rounded"
+                              />
+                              Prove & Verify
+                            </label>
+                            <Button
+                              onClick={handleRun}
+                              disabled={isRunning}
+                              variant="default"
+                              size="sm"
+                              className="h-7 px-3"
+                            >
+                              Run
+                            </Button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </header>
+                    </header>
 
-                  {/* Code Editor */}
-                  <div className="flex-1">
-                    {activeFile === 'main.nr' ? (
-                      <NoirEditorWithHover
-                        ref={monacoEditorRef}
-                        value={files[activeFile] || `pub fn main(x: Field, y: pub Field) -> pub Field {
+                    {/* Code Editor */}
+                    <div className="flex-1">
+                      {activeFile === 'main.nr' ? (
+                        <NoirEditorWithHover
+                          ref={monacoEditorRef}
+                          value={files[activeFile] || `pub fn main(x: Field, y: pub Field) -> pub Field {
     // Verify that x and y are both non-zero
     assert(x != 0);
     assert(y != 0);
@@ -648,151 +648,151 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     // Return the sum as proof output
     sum
 }`}
-                        onChange={(content) => {
-                          handleMainFileChange(content);
-                        }}
-                        disabled={isRunning}
-                        language={getFileLanguage(activeFile)}
-                        cargoToml={files["Nargo.toml"]}
-                        enableHeatmap={enableHeatmap}
-                        heatmapMetricType={heatmapMetricType}
-                        onComplexityReport={setComplexityReport}
-                      />
-                    ) : (
-                      <NoirEditor
-                        ref={monacoEditorRef}
-                        value={files[activeFile] || ''}
-                        onChange={(content) => {
-                          handleFileChange(activeFile, content);
-                        }}
-                        disabled={isRunning}
-                        language={getFileLanguage(activeFile)}
-                      />
-                    )}
+                          onChange={(content) => {
+                            handleMainFileChange(content);
+                          }}
+                          disabled={isRunning}
+                          language={getFileLanguage(activeFile)}
+                          cargoToml={files["Nargo.toml"]}
+                          enableHeatmap={enableHeatmap}
+                          heatmapMetricType={heatmapMetricType}
+                          onComplexityReport={setComplexityReport}
+                        />
+                      ) : (
+                        <NoirEditor
+                          ref={monacoEditorRef}
+                          value={files[activeFile] || ''}
+                          onChange={(content) => {
+                            handleFileChange(activeFile, content);
+                          }}
+                          disabled={isRunning}
+                          language={getFileLanguage(activeFile)}
+                        />
+                      )}
+                    </div>
+                  </section>
+                </ResizablePanel>
+
+                {/* Resizable Handle between Editor and Console */}
+                <ResizableHandle
+                  className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+                />
+
+                {/* Console Panel */}
+                <CollapsiblePanel
+                  id="console-panel"
+                  title="Console"
+                  icon={<Terminal className="h-4 w-4 text-primary" />}
+                  isExpanded={panelState.console}
+                  onToggle={() => togglePanel('console')}
+                  defaultSize={30}
+                  minSize={20}
+                  direction="vertical"
+                  headerActions={
+                    <Tooltip open={copiedItem === 'console'}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={() => {
+                            const allMessages = [
+                              ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
+                              ...consoleMessages.map(msg => msg.message)
+                            ];
+                            const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
+                            handleCopy(consoleText, "console");
+                          }}
+                          disabled={executionSteps.length === 0 && consoleMessages.length === 0}
+                          title="Copy console output"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copied!</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  }
+                >
+                  <div className="h-full flex flex-col bg-muted/20">
+                    <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
+                      {renderConsoleContent()}
+                    </div>
                   </div>
-                </section>
-              </ResizablePanel>
+                </CollapsiblePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
 
-              {/* Resizable Handle between Editor and Console */}
-              <ResizableHandle
-                className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-              />
+            {/* Resizable Handle between Editor Area and Right Panel */}
+            <ResizableHandle
+              className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+            />
 
-              {/* Console Panel */}
-              <CollapsiblePanel
-                id="console-panel"
-                title="Console"
-                icon={<Terminal className="h-4 w-4 text-primary" />}
-                isExpanded={panelState.console}
-                onToggle={() => togglePanel('console')}
-                defaultSize={30}
-                minSize={20}
-                direction="vertical"
-                headerActions={
-                  <Tooltip open={copiedItem === 'console'}>
-                    <TooltipTrigger asChild>
+            {/* Right Panel - Complexity Analysis and Execution Details */}
+            <ResizablePanel defaultSize={50} minSize={30}>
+              <ResizablePanelGroup direction="vertical" className="h-full">
+
+
+                {/* Complexity Analysis Panel */}
+                <CollapsiblePanel
+                  id="complexity-panel"
+                  title="Complexity Analysis"
+                  icon={<Target className="h-4 w-4 text-primary" />}
+                  isExpanded={panelState.complexity}
+                  onToggle={() => togglePanel('complexity')}
+                  defaultSize={60}
+                  minSize={30}
+                  direction="vertical"
+                  headerActions={
+                    <div className="flex items-center gap-2">
+                      <label className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
+                        <Switch
+                          checked={enableHeatmap}
+                          onCheckedChange={setEnableHeatmap}
+                          size="sm"
+                        />
+                        <Flame className="h-4 w-4" />
+                        Heatmap
+                      </label>
+
+                      {/* View Toggle Buttons */}
+                      {complexityProfilerResult && (
+                        <div className="flex items-center gap-1 ml-2">
+                          <Button
+                            variant={complexityViewMode === 'table' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setComplexityViewMode('table')}
+                            className="h-7 px-2"
+                          >
+                            <Table className="h-3 w-3 mr-1" />
+                            Table
+                          </Button>
+                          <Button
+                            variant={complexityViewMode === 'flamegraph' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setComplexityViewMode('flamegraph')}
+                            className="h-7 px-2"
+                          >
+                            <Activity className="h-3 w-3 mr-1" />
+                            Flamegraph
+                          </Button>
+                        </div>
+                      )}
+
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
-                        className="h-6 w-6 p-0"
-                        onClick={() => {
-                          const allMessages = [
-                            ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
-                            ...consoleMessages.map(msg => msg.message)
-                          ];
-                          const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
-                          handleCopy(consoleText, "console");
-                        }}
-                        disabled={executionSteps.length === 0 && consoleMessages.length === 0}
-                        title="Copy console output"
+                        onClick={handleComplexityRefresh}
+                        disabled={isComplexityProfiling || !files["main.nr"].trim() || !enableHeatmap}
+                        title={enableHeatmap ? "Refresh analysis" : "Enable heatmap to analyze"}
                       >
-                        <Copy className="h-3 w-3" />
+                        <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
                       </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Copied!</p>
-                    </TooltipContent>
-                  </Tooltip>
-                }
-              >
-                <div className="h-full flex flex-col border-t border-border bg-muted/20">
-                  <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{fontSize: '13px'}} role="log" aria-live="polite">
-                    {renderConsoleContent()}
-                  </div>
-                </div>
-              </CollapsiblePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-
-          {/* Resizable Handle between Editor Area and Right Panel */}
-          <ResizableHandle
-            className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-          />
-
-          {/* Right Panel - Complexity Analysis and Execution Details */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <ResizablePanelGroup direction="vertical" className="h-full">
-
-
-              {/* Complexity Analysis Panel */}
-              <CollapsiblePanel
-                id="complexity-panel"
-                title="Complexity Analysis"
-                icon={<Target className="h-4 w-4 text-primary" />}
-                isExpanded={panelState.complexity}
-                onToggle={() => togglePanel('complexity')}
-                defaultSize={60}
-                minSize={30}
-                direction="vertical"
-                headerActions={
-                  <div className="flex items-center gap-2">
-                    <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
-                      <Switch
-                        checked={enableHeatmap}
-                        onCheckedChange={setEnableHeatmap}
-                        size="sm"
-                      />
-                      <Flame className="h-4 w-4" />
-                      Heatmap
-                    </label>
-
-                    {/* View Toggle Buttons */}
-                    {complexityProfilerResult && (
-                      <div className="flex items-center gap-1 ml-2">
-                        <Button
-                          variant={complexityViewMode === 'table' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setComplexityViewMode('table')}
-                          className="h-7 px-2"
-                        >
-                          <Table className="h-3 w-3 mr-1" />
-                          Table
-                        </Button>
-                        <Button
-                          variant={complexityViewMode === 'flamegraph' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setComplexityViewMode('flamegraph')}
-                          className="h-7 px-2"
-                        >
-                          <Activity className="h-3 w-3 mr-1" />
-                          Flamegraph
-                        </Button>
-                      </div>
-                    )}
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleComplexityRefresh}
-                      disabled={isComplexityProfiling || !files["main.nr"].trim() || !enableHeatmap}
-                      title={enableHeatmap ? "Refresh analysis" : "Enable heatmap to analyze"}
-                    >
-                      <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
-                    </Button>
-                  </div>
-                }
-              >
-                <CombinedComplexityPanel
+                    </div>
+                  }
+                >
+                  <CombinedComplexityPanel
                     sourceCode={files["main.nr"]}
                     cargoToml={files["Nargo.toml"]}
                     enableHeatmap={enableHeatmap}
@@ -817,143 +817,173 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       // Highlight function
                     }}
                   />
-              </CollapsiblePanel>
+                </CollapsiblePanel>
 
-              {/* Resizable Handle between Complexity and Execution */}
-              <ResizableHandle
-                className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-              />
+                {/* Resizable Handle between Complexity and Execution */}
+                <ResizableHandle
+                  className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+                />
 
-              {/* Bottom Drawer - Circuit Inputs and Proof Outputs */}
-              <CollapsiblePanel
-                id="bottom-drawer-panel"
-                title="Circuit Inputs & Outputs"
-                icon={<Settings className="h-4 w-4 text-primary" />}
-                isExpanded={panelState.bottomDrawer}
-                onToggle={() => togglePanel('bottomDrawer')}
-                defaultSize={40}
-                minSize={20}
-                direction="vertical"
-                headerActions={undefined}
-              >
-                <div className="h-full flex flex-col">
-                  <ResizablePanelGroup direction="horizontal" className="flex-1">
-                    {/* Circuit Inputs Section */}
-                    <ResizablePanel defaultSize={50} minSize={30}>
-                      <section className="h-full flex flex-col" aria-label="Inputs">
-                        <header className="flex items-center justify-between px-4 py-2 min-h-[44px] border-b border-border bg-muted/30 select-none">
-                          <div className="flex items-center gap-2">
-                            <h2 className="font-medium text-sm">Inputs</h2>
-                          </div>
-                        </header>
-                        <div className="p-4 overflow-y-auto flex-1">
-                          <div className="space-y-3">
-                            {parameterOrder.map((key) => (
-                              <div key={key}>
-                                <label className="font-medium mb-2 block text-xs">{key}: {formatParameterType(key)}</label>
-                                <input
-                                  type="text"
-                                  value={inputs[key] || ''}
-                                  onChange={(e) => handleInputChange(key, e.target.value)}
-                                  className={`w-full px-3 py-3 text-xs bg-muted/50 border rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
-                                    ? 'border-red-500/50 focus:ring-red-500/50'
-                                    : 'border-border focus:ring-primary/50'
-                                    }`}
-                                  disabled={isRunning}
-                                />
-                                {inputValidationErrors[key] && (
-                                  <p className="text-red-400 mt-1 text-xs">{inputValidationErrors[key]}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </section>
-                    </ResizablePanel>
-
-                    {/* Resizable Handle */}
-                    <ResizableHandle
-                      className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-                    />
-
-                    {/* Proof Outputs Section */}
-                    <ResizablePanel defaultSize={50} minSize={30}>
-                      <section className="h-full flex flex-col" aria-label="Proof Outputs">
-                        <header className="flex items-center justify-between px-4 py-2 min-h-[44px] border-b border-border bg-muted/30 select-none">
-                          <div className="flex items-center gap-2">
-                            <h2 className="font-medium text-sm">Outputs</h2>
-                          </div>
-                          <div className="flex gap-4">
-                            <Tooltip open={copiedItem === 'full-proof'}>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-6 w-6 p-0"
-                                  onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
-                                  disabled={!proofData}
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Copied!</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0"
-                              onClick={handleDownloadProof}
-                              disabled={!proofData}
-                            >
-                              <Download className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </header>
-                        <div className="p-4 overflow-y-auto flex-1">
-                          {proofData ? (
+                {/* Bottom Drawer - Circuit Inputs and Proof Outputs */}
+                <CollapsiblePanel
+                  id="bottom-drawer-panel"
+                  title="Circuit Inputs & Outputs"
+                  icon={<Settings className="h-4 w-4 text-primary" />}
+                  isExpanded={panelState.bottomDrawer}
+                  onToggle={() => togglePanel('bottomDrawer')}
+                  defaultSize={40}
+                  minSize={20}
+                  direction="vertical"
+                  headerActions={undefined}
+                >
+                  <div className="h-full flex flex-col">
+                    <ResizablePanelGroup direction="horizontal" className="flex-1">
+                      {/* Circuit Inputs Section */}
+                      <ResizablePanel defaultSize={50} minSize={30}>
+                        <section className="h-full flex flex-col" aria-label="Inputs">
+                          <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none border-r border-[#0C0E12]">
+                            <div className="flex items-center gap-2">
+                              <h2 className="font-medium text-sm">Inputs</h2>
+                            </div>
+                          </header>
+                          <div className="p-4 overflow-y-auto flex-1">
                             <div className="space-y-3">
-                              {proofData.publicInputs && proofData.publicInputs.length > 0 && (
-                                <div>
-                                  <h3 className="font-medium text-xs mb-2">Public Inputs</h3>
-                                  <div className="relative bg-muted/50 p-3 rounded font-mono text-xs space-y-1 overflow-x-auto group">
-                                    {proofData.publicInputs.map((input: string, i: number) => (
-                                      <div key={i}>{input}</div>
-                                    ))}
-                                    <Tooltip open={copiedItem === 'public-inputs'}>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                                          onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Copied!</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </div>
+                              {parameterOrder.map((key) => (
+                                <div key={key}>
+                                  <label className="font-medium mb-2 block text-xs">{key}: {formatParameterType(key)}</label>
+                                  <input
+                                    type="text"
+                                    value={inputs[key] || ''}
+                                    onChange={(e) => handleInputChange(key, e.target.value)}
+                                    className={`w-full px-3 py-3 text-xs bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                                      ? 'border-red-500/50 focus:ring-red-500/50'
+                                      : 'border-border focus:ring-primary/50'
+                                      }`}
+                                    disabled={isRunning}
+                                  />
+                                  {inputValidationErrors[key] && (
+                                    <p className="text-red-400 mt-1 text-xs">{inputValidationErrors[key]}</p>
+                                  )}
                                 </div>
-                              )}
+                              ))}
+                            </div>
+                          </div>
+                        </section>
+                      </ResizablePanel>
 
-                              {proofData.witness && proofData.witness.length > 0 && (
+                      {/* Resizable Handle */}
+                      {/* <ResizableHandle
+                      className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+                    /> */}
+
+                      {/* Proof Outputs Section */}
+                      <ResizablePanel defaultSize={50} minSize={30}>
+                        <section className="h-full flex flex-col" aria-label="Proof Outputs">
+                          <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none">
+                            <div className="flex items-center gap-2">
+                              <h2 className="font-medium text-sm">Outputs</h2>
+                            </div>
+                            <div className="flex gap-4">
+                              <Tooltip open={copiedItem === 'full-proof'}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
+                                    disabled={!proofData}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Copied!</p>
+                                </TooltipContent>
+                              </Tooltip>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={handleDownloadProof}
+                                disabled={!proofData}
+                              >
+                                <Download className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </header>
+                          <div className="p-4 overflow-y-auto flex-1">
+                            {proofData ? (
+                              <div className="space-y-3">
+                                {proofData.publicInputs && proofData.publicInputs.length > 0 && (
+                                  <div>
+                                    <h3 className="font-medium text-xs mb-2">Public Inputs</h3>
+                                    <div className="relative bg-muted/50 p-3 rounded font-mono text-xs space-y-1 overflow-x-auto group">
+                                      {proofData.publicInputs.map((input: string, i: number) => (
+                                        <div key={i}>{input}</div>
+                                      ))}
+                                      <Tooltip open={copiedItem === 'public-inputs'}>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                                            onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
+                                          >
+                                            <Copy className="h-3 w-3" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Copied!</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </div>
+                                  </div>
+                                )}
+
+                                {proofData.witness && proofData.witness.length > 0 && (
+                                  <div>
+                                    <h3 className="font-medium text-xs mb-2">Witness</h3>
+                                    <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
+                                      {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                      <Tooltip open={copiedItem === 'witness'}>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                                            onClick={() => {
+                                              const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+                                              handleCopy(witnessHex, "witness");
+                                            }}
+                                          >
+                                            <Copy className="h-3 w-3" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Copied!</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </div>
+                                  </div>
+                                )}
+
                                 <div>
-                                  <h3 className="font-medium text-xs mb-2">Witness</h3>
+                                  <h3 className="font-medium text-xs mb-2">Proof</h3>
                                   <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
-                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                                    <Tooltip open={copiedItem === 'witness'}>
+                                    {proofData.proof && proofData.proof.length > 0
+                                      ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                      : 'No proof generated'}
+                                    <Tooltip open={copiedItem === 'proof'}>
                                       <TooltipTrigger asChild>
                                         <Button
                                           variant="ghost"
                                           size="sm"
                                           className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
                                           onClick={() => {
-                                            const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-                                            handleCopy(witnessHex, "witness");
+                                            const proofHex = proofData.proof && proofData.proof.length > 0
+                                              ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                              : '';
+                                            handleCopy(proofHex, "proof");
                                           }}
                                         >
                                           <Copy className="h-3 w-3" />
@@ -965,126 +995,71 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                     </Tooltip>
                                   </div>
                                 </div>
-                              )}
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-medium text-xs">Public Inputs</h3>
+                                  </div>
+                                  <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
+                                    No public inputs
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-medium text-xs">Witness</h3>
+                                  </div>
+                                  <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
+                                    No witness data
+                                  </div>
+                                </div>
 
-                              <div>
-                                <h3 className="font-medium text-xs mb-2">Proof</h3>
-                                <div className="relative bg-muted/50 p-3 rounded font-mono text-xs overflow-x-auto whitespace-nowrap group">
-                                  {proofData.proof && proofData.proof.length > 0
-                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                    : 'No proof generated'}
-                                  <Tooltip open={copiedItem === 'proof'}>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                                        onClick={() => {
-                                          const proofHex = proofData.proof && proofData.proof.length > 0
-                                            ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                            : '';
-                                          handleCopy(proofHex, "proof");
-                                        }}
-                                      >
-                                        <Copy className="h-3 w-3" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Copied!</p>
-                                    </TooltipContent>
-                                  </Tooltip>
+                                <div>
+                                  <div className="flex items-center justify-between mb-2">
+                                    <h3 className="font-medium text-xs">Proof</h3>
+                                  </div>
+                                  <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
+                                    No proof generated
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          ) : (
-                            <div className="space-y-3">
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium text-xs">Public Inputs</h3>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    disabled={true}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
-                                  No public inputs
-                                </div>
-                              </div>
+                            )}
+                          </div>
+                        </section>
+                      </ResizablePanel>
+                    </ResizablePanelGroup>
+                  </div>
+                </CollapsiblePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </section>
 
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium text-xs">Witness</h3>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    disabled={true}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
-                                  No witness data
-                                </div>
-                              </div>
+        {/* Footer */}
+        <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{ fontSize: '13px' }}>
+          <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
+          <span>
+            Made by{" "}
+            <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              Andee
+            </a> {" "}
+            with ☕️
+            . Contribute on{" "}
+            <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+              GitHub
+            </a>
+          </span>
+        </footer>
 
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium text-xs">Proof</h3>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    disabled={true}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
-                                  No proof generated
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </section>
-                    </ResizablePanel>
-                  </ResizablePanelGroup>
-                </div>
-              </CollapsiblePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{fontSize: '13px'}}>
-        <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
-        <span>
-          Made by{" "}
-          <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            Andee
-          </a> {" "}
-          with ☕️
-          . Contribute on{" "}
-          <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            GitHub
-          </a>
-        </span>
-      </footer>
-      
-      <ShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        code={files["main.nr"]}
-        inputs={inputs}
-        // No TOML file needed
-        proofData={proofData}
-      />
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          code={files["main.nr"]}
+          inputs={inputs}
+          // No TOML file needed
+          proofData={proofData}
+        />
       </main>
     </TooltipProvider>
   );

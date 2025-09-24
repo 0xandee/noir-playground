@@ -48,10 +48,10 @@ export function CollapsiblePanel({
       className={cn("flex flex-col", className)}
       id={id}
     >
-      <div className="flex items-center justify-between px-2 py-1 min-h-[44px] bg-muted/50 border-b border-border">
+      <div className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/50 ">
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 px-1 py-0.5">
-            {icon}
+          <div className="flex items-center gap-2">
+            {/* {icon} */}
             <span className="text-sm font-medium">{title}</span>
           </div>
         </div>
