@@ -15,6 +15,11 @@ interface CombinedComplexityPanelProps {
   onFunctionClick?: (functionName: string) => void;
   className?: string;
   enableHeatmap?: boolean;
+  onViewModeChange?: (viewMode: 'table' | 'flamegraph') => void;
+  onRefresh?: () => void;
+  viewMode?: 'table' | 'flamegraph';
+  isProfiling?: boolean;
+  profilerResult?: ProfilerResult | null;
 }
 
 export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = ({
@@ -23,11 +28,32 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   onLineClick,
   onFunctionClick,
   className,
-  enableHeatmap = false
+  enableHeatmap = false,
+  onViewModeChange,
+  onRefresh,
+  viewMode: externalViewMode,
+  isProfiling: externalIsProfiling,
+  profilerResult: externalProfilerResult
 }) => {
-  const [viewMode, setViewMode] = useState<'table' | 'flamegraph'>('table');
-  const [profilerResult, setProfilerResult] = useState<ProfilerResult | null>(null);
-  const [isProfiling, setIsProfiling] = useState(false);
+  const [internalViewMode, setInternalViewMode] = useState<'table' | 'flamegraph'>('table');
+  const [internalProfilerResult, setInternalProfilerResult] = useState<ProfilerResult | null>(null);
+  const [internalIsProfiling, setInternalIsProfiling] = useState(false);
+
+  // Use external state if provided, otherwise use internal state
+  const viewMode = externalViewMode ?? internalViewMode;
+  const profilerResult = externalProfilerResult ?? internalProfilerResult;
+  const isProfiling = externalIsProfiling ?? internalIsProfiling;
+
+  const setViewMode = (mode: 'table' | 'flamegraph') => {
+    if (onViewModeChange) {
+      onViewModeChange(mode);
+    } else {
+      setInternalViewMode(mode);
+    }
+  };
+
+  const setProfilerResult = externalProfilerResult !== undefined ? () => {} : setInternalProfilerResult;
+  const setIsProfiling = externalIsProfiling !== undefined ? () => {} : setInternalIsProfiling;
   const [error, setError] = useState<string | null>(null);
   const [lastProfiled, setLastProfiled] = useState<Date | null>(null);
 
@@ -77,8 +103,12 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
 
   const handleRefresh = () => {
-    if (sourceCode.trim() && enableHeatmap) {
-      handleProfiling();
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      if (sourceCode.trim() && enableHeatmap) {
+        handleProfiling();
+      }
     }
   };
 
@@ -153,48 +183,6 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
   return (
     <div className={`h-full flex flex-col ${className || ''}`}>
-      <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30">
-        <div className="flex items-center gap-2">
-          <BarChart3 className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-medium">Complexity Analysis</h2>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* View Toggle Buttons */}
-          {profilerResult && (
-            <div className="flex items-center gap-1 mr-2">
-              <Button
-                variant={viewMode === 'table' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('table')}
-                className="h-7 px-2"
-              >
-                <Table className="h-3 w-3 mr-1" />
-                Table
-              </Button>
-              <Button
-                variant={viewMode === 'flamegraph' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setViewMode('flamegraph')}
-                className="h-7 px-2"
-              >
-                <Activity className="h-3 w-3 mr-1" />
-                Flamegraph
-              </Button>
-            </div>
-          )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isProfiling || !sourceCode.trim() || !enableHeatmap}
-            title={enableHeatmap ? "Refresh analysis" : "Enable heatmap to analyze"}
-          >
-            <RefreshCw className={`h-3 w-3 ${isProfiling ? 'animate-spin' : ''}`} />
-          </Button>
-        </div>
-      </header>
 
       {!profilerResult && !isProfiling && (
         <div className="flex-1 flex items-center justify-center p-4">

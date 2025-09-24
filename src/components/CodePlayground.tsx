@@ -17,6 +17,9 @@ import {
   Share,
   Flame,
   Target,
+  Table,
+  Activity,
+  RefreshCw,
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
@@ -26,6 +29,7 @@ import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
+import { ProfilerResult } from "@/services/NoirProfilerService";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -99,6 +103,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   // Panel collapse state
   const { panelState, togglePanel } = usePanelState();
+
+  // Complexity panel state
+  const [complexityViewMode, setComplexityViewMode] = useState<'table' | 'flamegraph'>('table');
+  const [complexityProfilerResult, setComplexityProfilerResult] = useState<ProfilerResult | null>(null);
+  const [isComplexityProfiling, setIsComplexityProfiling] = useState(false);
 
 
   // Extract input types when initial code is provided
@@ -253,6 +262,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   const handleShareClick = () => {
     setShareDialogOpen(true);
+  };
+
+  const handleComplexityRefresh = () => {
+    // This function will trigger profiling in CombinedComplexityPanel
+    if (files["main.nr"].trim() && enableHeatmap) {
+      // The actual profiling logic will remain in CombinedComplexityPanel
+      // This is just a trigger for external refresh
+    }
   };
 
 
@@ -688,7 +705,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 minSize={30}
                 direction="vertical"
                 headerActions={
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
                     <label className="flex items-center gap-2 select-none" style={{fontSize: '14px'}}>
                       <Switch
                         checked={enableHeatmap}
@@ -698,6 +715,40 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       <Flame className="h-4 w-4" />
                       Heatmap
                     </label>
+
+                    {/* View Toggle Buttons */}
+                    {complexityProfilerResult && (
+                      <div className="flex items-center gap-1 ml-2">
+                        <Button
+                          variant={complexityViewMode === 'table' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setComplexityViewMode('table')}
+                          className="h-7 px-2"
+                        >
+                          <Table className="h-3 w-3 mr-1" />
+                          Table
+                        </Button>
+                        <Button
+                          variant={complexityViewMode === 'flamegraph' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setComplexityViewMode('flamegraph')}
+                          className="h-7 px-2"
+                        >
+                          <Activity className="h-3 w-3 mr-1" />
+                          Flamegraph
+                        </Button>
+                      </div>
+                    )}
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleComplexityRefresh}
+                      disabled={isComplexityProfiling || !files["main.nr"].trim() || !enableHeatmap}
+                      title={enableHeatmap ? "Refresh analysis" : "Enable heatmap to analyze"}
+                    >
+                      <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
+                    </Button>
                   </div>
                 }
               >
@@ -705,6 +756,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     sourceCode={files["main.nr"]}
                     cargoToml={files["Nargo.toml"]}
                     enableHeatmap={enableHeatmap}
+                    viewMode={complexityViewMode}
+                    onViewModeChange={setComplexityViewMode}
+                    onRefresh={handleComplexityRefresh}
+                    isProfiling={isComplexityProfiling}
+                    profilerResult={complexityProfilerResult}
                     onLineClick={(lineNumber) => {
                       setSelectedHotspotLine(lineNumber);
                     }}
@@ -719,10 +775,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
               />
 
-              {/* Bottom Drawer - Circuit Inputs and Proof Output */}
+              {/* Bottom Drawer - Circuit Inputs and Proof Outputs */}
               <CollapsiblePanel
                 id="bottom-drawer-panel"
-                title="Circuit Inputs & Output"
+                title="Circuit Inputs & Outputs"
                 icon={<Settings className="h-4 w-4 text-primary" />}
                 isExpanded={panelState.bottomDrawer}
                 onToggle={() => togglePanel('bottomDrawer')}
@@ -746,11 +802,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   <ResizablePanelGroup direction="horizontal" className="flex-1">
                     {/* Circuit Inputs Section */}
                     <ResizablePanel defaultSize={50} minSize={30}>
-                      <section className="h-full flex flex-col" aria-label="Circuit Inputs">
+                      <section className="h-full flex flex-col" aria-label="Inputs">
                         <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                           <div className="flex items-center gap-2">
-                            <Cpu className="h-4 w-4 text-primary" />
-                            <h2 className="font-medium" style={{fontSize: '14px'}}>Circuit Inputs</h2>
+                            <h2 className="font-medium" style={{fontSize: '14px'}}>Inputs</h2>
                           </div>
                         </header>
                         <div className="p-4 overflow-y-auto flex-1">
@@ -784,13 +839,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
                     />
 
-                    {/* Proof Output Section */}
+                    {/* Proof Outputs Section */}
                     <ResizablePanel defaultSize={50} minSize={30}>
-                      <section className="h-full flex flex-col" aria-label="Proof Output">
+                      <section className="h-full flex flex-col" aria-label="Proof Outputs">
                         <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
                           <div className="flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-primary" />
-                            <h2 className="font-medium" style={{fontSize: '14px'}}>Output</h2>
+                            <h2 className="font-medium" style={{fontSize: '14px'}}>Outputs</h2>
                           </div>
                           <div className="flex gap-1">
                             <Tooltip open={copiedItem === 'full-proof'}>
