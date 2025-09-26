@@ -728,145 +728,49 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
               className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
             />
 
-            {/* Right Panel - Complexity Analysis and Execution Details */}
+            {/* Right Panel - Circuit Inputs and Proof Outputs */}
             <ResizablePanel defaultSize={50} minSize={30}>
               <ResizablePanelGroup direction="vertical" className="h-full">
-                {/* Complexity Analysis Panel */}
-                <CollapsiblePanel
-                  id="complexity-panel"
-                  title="Complexity Analysis"
-                  icon={<Target className="h-4 w-4 text-primary" />}
-                  isExpanded={panelState.complexity}
-                  onToggle={() => togglePanel('complexity')}
-                  defaultSize={60}
-                  minSize={30}
-                  direction="vertical"
-                  headerActions={
-                    <div className="flex items-center gap-2 h-6 min-h-0">
-                      <label className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
-                        <Switch
-                          checked={enableHeatmap}
-                          onCheckedChange={setEnableHeatmap}
-                        />
-                        <Flame className="h-4 w-4" />
-                        Heatmap
-                      </label>
-
-                      {/* View Toggle Buttons */}
-                      {complexityProfilerResult && (
-                        <div className="flex items-center gap-1 ml-2">
-                          <Button
-                            variant={complexityViewMode === 'table' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setComplexityViewMode('table')}
-                            className="h-7 px-2"
-                          >
-                            <Table className="h-3 w-3 mr-1" />
-                            Table
-                          </Button>
-                          <Button
-                            variant={complexityViewMode === 'flamegraph' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setComplexityViewMode('flamegraph')}
-                            className="h-7 px-2"
-                          >
-                            <Activity className="h-3 w-3 mr-1" />
-                            Flamegraph
-                          </Button>
-                        </div>
-                      )}
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleComplexityRefresh}
-                        disabled={isComplexityProfiling || !files["main.nr"].trim() || !enableHeatmap}
-                        title={enableHeatmap ? "Refresh analysis" : "Enable heatmap to analyze"}
-                      >
-                        <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
-                      </Button>
+                {/* Circuit Inputs Section */}
+                <ResizablePanel defaultSize={50} minSize={30}>
+                  <section className="h-full flex flex-col" aria-label="Inputs">
+                    <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none">
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-medium text-sm select-none">Inputs</h2>
+                      </div>
+                    </header>
+                    <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
+                      <div className="space-y-3">
+                        {parameterOrder.map((key) => (
+                          <div key={key}>
+                            <label className="font-medium mb-2 block text-xs select-none">{key}: {formatParameterType(key)}</label>
+                            <input
+                              type="text"
+                              value={inputs[key] || ''}
+                              onChange={(e) => handleInputChange(key, e.target.value)}
+                              className={`w-full px-3 py-3 text-xs bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                                ? 'border-red-500/50 focus:ring-red-500/50'
+                                : 'border-border focus:ring-primary/50'
+                                }`}
+                              disabled={isRunning}
+                            />
+                            {inputValidationErrors[key] && (
+                              <p className="text-red-400 mt-1 text-xs select-none">{inputValidationErrors[key]}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  }
-                >
-                  <CombinedComplexityPanel
-                    sourceCode={files["main.nr"]}
-                    cargoToml={files["Nargo.toml"]}
-                    enableHeatmap={enableHeatmap}
-                    viewMode={complexityViewMode}
-                    onViewModeChange={setComplexityViewMode}
-                    onRefresh={handleComplexityRefresh}
-                    isProfiling={isComplexityProfiling}
-                    profilerResult={complexityProfilerResult}
-                    onProfilingStart={() => setIsComplexityProfiling(true)}
-                    onProfilingComplete={(result) => {
-                      setComplexityProfilerResult(result);
-                      setIsComplexityProfiling(false);
-                    }}
-                    onProfilingError={(error) => {
-                      addConsoleMessage('error', `Profiling failed: ${error}`);
-                      setIsComplexityProfiling(false);
-                    }}
-                    onLineClick={(lineNumber) => {
-                      setSelectedHotspotLine(lineNumber);
-                    }}
-                    onFunctionClick={(_functionName) => {
-                      // Highlight function
-                    }}
-                  />
-                </CollapsiblePanel>
+                  </section>
+                </ResizablePanel>
 
-                {/* Resizable Handle between Complexity and Execution */}
+                {/* Resizable Handle between Inputs and Outputs */}
                 <ResizableHandle
                   className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
                 />
 
-                {/* Bottom Drawer - Circuit Inputs and Proof Outputs */}
-                <ResizablePanel
-                  defaultSize={34.4}
-                  minSize={20}
-                >
-                  <div className="h-full flex flex-col">
-                    <ResizablePanelGroup direction="horizontal" className="flex-1">
-                      {/* Circuit Inputs Section */}
-                      <ResizablePanel defaultSize={50} minSize={30}>
-                        <section className="h-full flex flex-col" aria-label="Inputs">
-                          <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none border-r border-[#0C0E12]">
-                            <div className="flex items-center gap-2">
-                              <h2 className="font-medium text-sm select-none">Inputs</h2>
-                            </div>
-                          </header>
-                          <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
-                            <div className="space-y-3">
-                              {parameterOrder.map((key) => (
-                                <div key={key}>
-                                  <label className="font-medium mb-2 block text-xs select-none">{key}: {formatParameterType(key)}</label>
-                                  <input
-                                    type="text"
-                                    value={inputs[key] || ''}
-                                    onChange={(e) => handleInputChange(key, e.target.value)}
-                                    className={`w-full px-3 py-3 text-xs bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
-                                      ? 'border-red-500/50 focus:ring-red-500/50'
-                                      : 'border-border focus:ring-primary/50'
-                                      }`}
-                                    disabled={isRunning}
-                                  />
-                                  {inputValidationErrors[key] && (
-                                    <p className="text-red-400 mt-1 text-xs select-none">{inputValidationErrors[key]}</p>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </section>
-                      </ResizablePanel>
-
-                      {/* Resizable Handle */}
-                      {/* <ResizableHandle
-                      className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-                    /> */}
-
-                      {/* Proof Outputs Section */}
-                      <ResizablePanel defaultSize={50} minSize={30}>
+                {/* Proof Outputs Section */}
+                <ResizablePanel defaultSize={50} minSize={30}>
                         <section className="h-full flex flex-col" aria-label="Proof Outputs">
                           <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none">
                             <div className="flex items-center gap-2">
@@ -1021,10 +925,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               </div>
                             )}
                           </div>
-                        </section>
-                      </ResizablePanel>
-                    </ResizablePanelGroup>
-                  </div>
+                  </section>
                 </ResizablePanel>
               </ResizablePanelGroup>
             </ResizablePanel>
