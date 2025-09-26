@@ -665,8 +665,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   icon={<Terminal className="h-4 w-4 text-primary" />}
                   isExpanded={panelState.console}
                   onToggle={() => togglePanel('console')}
-                  defaultSize={30}
-                  minSize={30}
+                  defaultSize={35}
+                  minSize={35}
                   direction="vertical"
                   headerActions={
                     <div className="flex items-center gap-4">
@@ -734,7 +734,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             <ResizablePanel defaultSize={25} minSize={20}>
               <ResizablePanelGroup direction="vertical" className="h-full">
                 {/* Circuit Inputs Section */}
-                <ResizablePanel defaultSize={50} minSize={25}>
+                <ResizablePanel defaultSize={65} minSize={25}>
                   <section className="h-full flex flex-col" aria-label="Inputs">
                     <header className="flex items-center justify-between px-4 py-2 min-h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
                       <div className="flex items-center gap-2">
@@ -742,7 +742,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
                     </header>
                     <div className="p-4 pt-2 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {parameterOrder.map((key) => (
                           <div key={key}>
                             <label className="font-medium mb-2 block select-none" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
@@ -773,7 +773,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 />
 
                 {/* Proof Outputs Section */}
-                <ResizablePanel defaultSize={50} minSize={30}>
+                <ResizablePanel defaultSize={35} minSize={35}>
                   <section className="h-full flex flex-col" aria-label="Proof Outputs">
                     <header className="flex items-center justify-between px-4 py-2 min-h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
                       <div className="flex items-center gap-2">
@@ -809,7 +809,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </header>
                     <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                       {proofData ? (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                             <div>
                               <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
@@ -899,7 +899,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                           <div>
                             <div className="flex items-center justify-between mb-2">
                               <h3 className="font-medium select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
