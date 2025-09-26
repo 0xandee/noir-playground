@@ -72,7 +72,7 @@ const registerNoirLanguage = (monaco: Monaco) => {
       { token: 'identifier', foreground: '9CDCFE' },
     ],
     colors: {
-      'editor.background': '#1E1E1E',
+      'editor.background': '#100E0F',
       'editor.foreground': '#D4D4D4',
       'editorLineNumber.foreground': '#858585',
       'editor.selectionBackground': '#264F78',

@@ -714,7 +714,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </div>
                   }
                 >
-                  <div className="h-full flex flex-col" style={{ backgroundColor: '#0C0E12' }}>
+                  <div className="h-full flex flex-col" style={{ backgroundColor: '#100E0F' }}>
                     <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
                       {renderConsoleContent()}
                     </div>
@@ -835,7 +835,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <h2 className="font-medium text-sm select-none">Inputs</h2>
                             </div>
                           </header>
-                          <div className="p-4 overflow-y-auto flex-1">
+                          <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                             <div className="space-y-3">
                               {parameterOrder.map((key) => (
                                 <div key={key}>
@@ -900,7 +900,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               </Button>
                             </div> */}
                           </header>
-                          <div className="p-4 overflow-y-auto flex-1">
+                          <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                             {proofData ? (
                               <div className="space-y-3">
                                 {proofData.publicInputs && proofData.publicInputs.length > 0 && (

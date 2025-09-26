@@ -62,7 +62,7 @@ export function CollapsiblePanel({
         )}
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0" style={{ backgroundColor: '#100E0F' }}>
         {children}
       </div>
     </ResizablePanel>
