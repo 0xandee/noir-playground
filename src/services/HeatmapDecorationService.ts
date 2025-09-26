@@ -175,9 +175,9 @@ export class HeatmapDecorationService {
     // Calculate total opcodes for this line (ACIR + Brillig)
     const totalOpcodes = line.acirOpcodes + line.brilligOpcodes;
 
-    // Calculate percentage based on total circuit opcodes
-    const totalCircuitOpcodes = report.totalAcirOpcodes + report.totalBrilligOpcodes;
-    const percentage = totalCircuitOpcodes > 0 ? (totalOpcodes / totalCircuitOpcodes) * 100 : 0;
+    // Use the line's percentage property which is calculated consistently with the table
+    // This ensures both inline annotations and the Complexity Analysis table show the same percentages
+    const percentage = line.percentage || 0;
 
     // Format badge text as "X opcodes, Y%"
     const badgeText = `${totalOpcodes} opcodes`;

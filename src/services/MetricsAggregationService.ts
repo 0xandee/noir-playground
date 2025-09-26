@@ -282,12 +282,43 @@ export class MetricsAggregationService {
 
       if (maxCost > 0) {
         line.normalizedHeat = line.totalCost / maxCost;
-        line.percentage = grandTotal > 0 ? (line.totalCost / grandTotal) * 100 : 0;
+
+        // Try to use aggregated originalPercentage from expressions if available
+        const aggregatedOriginalPercentage = this.getAggregatedOriginalPercentage(line);
+        if (aggregatedOriginalPercentage > 0) {
+          line.percentage = aggregatedOriginalPercentage;
+        } else {
+          // Fallback to calculated percentage
+          line.percentage = grandTotal > 0 ? (line.totalCost / grandTotal) * 100 : 0;
+        }
       } else {
         line.normalizedHeat = 0;
         line.percentage = 0;
       }
     });
+  }
+
+  /**
+   * Aggregate originalPercentage from expressions to line level
+   */
+  private getAggregatedOriginalPercentage(line: LineMetrics): number {
+    if (!line.expressions || line.expressions.length === 0) {
+      return 0;
+    }
+
+    // Sum up originalPercentage values from all expressions on this line
+    let totalOriginalPercentage = 0;
+    let hasOriginalPercentages = false;
+
+    line.expressions.forEach(expr => {
+      const exprWithOriginal = expr as ExpressionMetrics & { originalPercentage?: number };
+      if (exprWithOriginal.originalPercentage !== undefined) {
+        totalOriginalPercentage += exprWithOriginal.originalPercentage;
+        hasOriginalPercentages = true;
+      }
+    });
+
+    return hasOriginalPercentages ? totalOriginalPercentage : 0;
   }
 
   /**
