@@ -20,6 +20,8 @@ import {
   Table,
   Activity,
   RefreshCw,
+  CornerDownRight,
+  Play,
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
@@ -519,12 +521,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
     return allMessages.map((msg, i) => (
       <div key={msg.id || i} className="flex items-center gap-2">
-        <span className={`select-none ${
-          msg.type === "success" ? "text-green-400" :
+        <span className={`select-none ${msg.type === "success" ? "text-green-400" :
             msg.type === "error" ? "text-red-400" :
               msg.type === "info" ? "text-foreground" :
                 "text-foreground"
-        }`}>
+          }`}>
           {msg.message}
         </span>
       </div>
@@ -544,7 +545,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
           {/* Desktop Layout - Resizable Panels */}
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Left Panel - Code Editor and Console */}
-            <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanel defaultSize={70} minSize={30}>
               <ResizablePanelGroup direction="vertical" className="h-full">
                 {/* Code Editor Panel */}
                 <ResizablePanel defaultSize={70} minSize={50}>
@@ -552,7 +553,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     {/* Code Editor Header with File Tabs */}
                     <header className="border-b border-border bg-muted/30">
                       {/* File Tabs */}
-                      <div className="flex items-center justify-between px-4 py-1 h-[44px]">
+                      <div className="flex items-center justify-between px-4 py-1 h-[49px]">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center">
                             {snippetTitle ? (
@@ -664,8 +665,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   icon={<Terminal className="h-4 w-4 text-primary" />}
                   isExpanded={panelState.console}
                   onToggle={() => togglePanel('console')}
-                  defaultSize={40}
-                  minSize={20}
+                  defaultSize={30}
+                  minSize={30}
                   direction="vertical"
                   headerActions={
                     <div className="flex items-center gap-4">
@@ -683,8 +684,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         disabled={isRunning}
                         variant="default"
                         size="sm"
-                        className="h-7 px-8"
+                        className="h-8 px-6"
                       >
+                        <Play className="h-3 w-3" />
                         Run
                       </Button>
                       <Tooltip open={copiedItem === 'console'}>
@@ -729,33 +731,34 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             />
 
             {/* Right Panel - Circuit Inputs and Proof Outputs */}
-            <ResizablePanel defaultSize={50} minSize={30}>
+            <ResizablePanel defaultSize={25} minSize={20}>
               <ResizablePanelGroup direction="vertical" className="h-full">
                 {/* Circuit Inputs Section */}
-                <ResizablePanel defaultSize={50} minSize={30}>
+                <ResizablePanel defaultSize={50} minSize={25}>
                   <section className="h-full flex flex-col" aria-label="Inputs">
-                    <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none">
+                    <header className="flex items-center justify-between px-4 py-2 min-h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
                       <div className="flex items-center gap-2">
-                        <h2 className="font-medium text-sm select-none">Inputs</h2>
+                        <h2 className="font-medium select-none" style={{ fontSize: '13px' }}>Inputs</h2>
                       </div>
                     </header>
-                    <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
+                    <div className="p-4 pt-2 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                       <div className="space-y-3">
                         {parameterOrder.map((key) => (
                           <div key={key}>
-                            <label className="font-medium mb-2 block text-xs select-none">{key}: {formatParameterType(key)}</label>
+                            <label className="font-medium mb-2 block select-none" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
                             <input
                               type="text"
                               value={inputs[key] || ''}
                               onChange={(e) => handleInputChange(key, e.target.value)}
-                              className={`w-full px-3 py-3 text-xs bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                              className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
                                 ? 'border-red-500/50 focus:ring-red-500/50'
                                 : 'border-border focus:ring-primary/50'
                                 }`}
+                              style={{ fontSize: '13px' }}
                               disabled={isRunning}
                             />
                             {inputValidationErrors[key] && (
-                              <p className="text-red-400 mt-1 text-xs select-none">{inputValidationErrors[key]}</p>
+                              <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
                             )}
                           </div>
                         ))}
@@ -771,12 +774,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                 {/* Proof Outputs Section */}
                 <ResizablePanel defaultSize={50} minSize={30}>
-                        <section className="h-full flex flex-col" aria-label="Proof Outputs">
-                          <header className="flex items-center justify-between px-4 py-2 min-h-[44px] bg-muted/30 select-none">
-                            <div className="flex items-center gap-2">
-                              <h2 className="font-medium text-sm select-none">Outputs</h2>
-                            </div>
-                            {/* <div className="flex gap-4">
+                  <section className="h-full flex flex-col" aria-label="Proof Outputs">
+                    <header className="flex items-center justify-between px-4 py-2 min-h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
+                      <div className="flex items-center gap-2">
+                        <h2 className="font-medium select-none" style={{ fontSize: '13px' }}>Outputs</h2>
+                      </div>
+                      {/* <div className="flex gap-4">
                               <Tooltip open={copiedItem === 'full-proof'}>
                                 <TooltipTrigger asChild>
                                   <Button
@@ -803,128 +806,128 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 <Download className="h-3 w-3" />
                               </Button>
                             </div> */}
-                          </header>
-                          <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
-                            {proofData ? (
-                              <div className="space-y-3">
-                                {proofData.publicInputs && proofData.publicInputs.length > 0 && (
-                                  <div>
-                                    <h3 className="font-medium text-xs mb-2 select-none">Public Inputs</h3>
-                                    <div className="relative bg-muted/50 rounded group">
-                                      <div className="p-3 font-mono text-xs space-y-1 overflow-x-auto">
-                                        {proofData.publicInputs.map((input: string, i: number) => (
-                                          <div key={i}>{input}</div>
-                                        ))}
-                                      </div>
-                                      <Tooltip open={copiedItem === 'public-inputs'}>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                                            onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
-                                          >
-                                            <Copy className="h-3 w-3" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Copied!</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </div>
-                                  </div>
-                                )}
+                    </header>
+                    <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
+                      {proofData ? (
+                        <div className="space-y-3">
+                          {proofData.publicInputs && proofData.publicInputs.length > 0 && (
+                            <div>
+                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                              <div className="relative bg-muted/50 rounded group">
+                                <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
+                                  {proofData.publicInputs.map((input: string, i: number) => (
+                                    <div key={i}>{input}</div>
+                                  ))}
+                                </div>
+                                <Tooltip open={copiedItem === 'public-inputs'}>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                                      onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Copied!</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          )}
 
-                                {proofData.witness && proofData.witness.length > 0 && (
-                                  <div>
-                                    <h3 className="font-medium text-xs mb-2 select-none">Witness</h3>
-                                    <div className="relative bg-muted/50 rounded group">
-                                      <div className="p-3 font-mono text-xs overflow-x-auto whitespace-nowrap">
-                                        {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                                      </div>
-                                      <Tooltip open={copiedItem === 'witness'}>
-                                        <TooltipTrigger asChild>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                                            onClick={() => {
-                                              const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-                                              handleCopy(witnessHex, "witness");
-                                            }}
-                                          >
-                                            <Copy className="h-3 w-3" />
-                                          </Button>
-                                        </TooltipTrigger>
-                                        <TooltipContent>
-                                          <p>Copied!</p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </div>
-                                  </div>
-                                )}
+                          {proofData.witness && proofData.witness.length > 0 && (
+                            <div>
+                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
+                              <div className="relative bg-muted/50 rounded group">
+                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                  {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                </div>
+                                <Tooltip open={copiedItem === 'witness'}>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                                      onClick={() => {
+                                        const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
+                                        handleCopy(witnessHex, "witness");
+                                      }}
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Copied!</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </div>
+                            </div>
+                          )}
 
-                                <div>
-                                  <h3 className="font-medium text-xs mb-2 select-none">Proof</h3>
-                                  <div className="relative bg-muted/50 rounded group">
-                                    <div className="p-3 font-mono text-xs overflow-x-auto whitespace-nowrap">
-                                      {proofData.proof && proofData.proof.length > 0
+                          <div>
+                            <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
+                            <div className="relative bg-muted/50 rounded group">
+                              <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                {proofData.proof && proofData.proof.length > 0
+                                  ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                  : 'No proof generated'}
+                              </div>
+                              <Tooltip open={copiedItem === 'proof'}>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
+                                    onClick={() => {
+                                      const proofHex = proofData.proof && proofData.proof.length > 0
                                         ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                        : 'No proof generated'}
-                                    </div>
-                                    <Tooltip open={copiedItem === 'proof'}>
-                                      <TooltipTrigger asChild>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity bg-background/80 hover:bg-background"
-                                          onClick={() => {
-                                            const proofHex = proofData.proof && proofData.proof.length > 0
-                                              ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                              : '';
-                                            handleCopy(proofHex, "proof");
-                                          }}
-                                        >
-                                          <Copy className="h-3 w-3" />
-                                        </Button>
-                                      </TooltipTrigger>
-                                      <TooltipContent>
-                                        <p>Copied!</p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="space-y-3">
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium text-xs select-none">Public Inputs</h3>
-                                  </div>
-                                  <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
-                                    No public inputs
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium text-xs">Witness</h3>
-                                  </div>
-                                  <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
-                                    No witness data
-                                  </div>
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <h3 className="font-medium text-xs">Proof</h3>
-                                  </div>
-                                  <div className="bg-muted/50 p-3 rounded font-mono text-xs text-muted-foreground">
-                                    No proof generated
-                                  </div>
-                                </div>
-                              </div>
-                            )}
+                                        : '';
+                                      handleCopy(proofHex, "proof");
+                                    }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Copied!</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
                           </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                            </div>
+                            <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                              No public inputs
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium" style={{ fontSize: '13px' }}>Witness</h3>
+                            </div>
+                            <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                              No witness data
+                            </div>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="font-medium" style={{ fontSize: '13px' }}>Proof</h3>
+                            </div>
+                            <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                              No proof generated
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </section>
                 </ResizablePanel>
               </ResizablePanelGroup>
