@@ -845,7 +845,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   ) : rightPanelView === 'profiler' ? (
                     <div className="h-full flex flex-col">
                       {/* Profiler Controls */}
-                      <div className="px-2 sm:px-4 py-3 border-b border-border bg-muted/10">
+                      <div className="px-2 sm:px-4 py-3 border-b border-border bg-transparent">
                         {/* Single row layout for normal width, 2-row for narrow */}
                         <div className={`${rightPanelWidth > 320 ? 'flex' : 'hidden'} items-center justify-between`}>
                           {/* Normal width: Single row layout */}
