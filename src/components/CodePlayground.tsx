@@ -88,6 +88,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'complexity'>('inputs');
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
@@ -498,9 +499,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     return allMessages.map((msg, i) => (
       <div key={msg.id || i} className="flex items-center gap-2">
         <span className={`select-none ${msg.type === "success" ? "text-green-400" :
-            msg.type === "error" ? "text-red-400" :
-              msg.type === "info" ? "text-foreground" :
-                "text-foreground"
+          msg.type === "error" ? "text-red-400" :
+            msg.type === "info" ? "text-foreground" :
+              "text-foreground"
           }`}>
           {msg.message}
         </span>
@@ -527,9 +528,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 <ResizablePanel defaultSize={70} minSize={50}>
                   <section className="h-full flex flex-col" aria-label="Code Editor">
                     {/* Code Editor Header with File Tabs */}
-                    <header className="border-b border-border" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
+                    <header className="" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
                       {/* File Tabs */}
-                      <div className="flex items-center justify-between px-4 py-1 h-[49px]">
+                      <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
                         <div className="flex items-center gap-2">
                           <div className="flex items-center">
                             {snippetTitle ? (
@@ -641,8 +642,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   icon={<Terminal className="h-4 w-4 text-primary" />}
                   isExpanded={panelState.console}
                   onToggle={() => togglePanel('console')}
-                  defaultSize={35}
-                  minSize={35}
+                  defaultSize={30}
+                  minSize={30}
                   direction="vertical"
                   headerActions={
                     <div className="flex items-center gap-4">
@@ -682,103 +683,150 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
               className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
             />
 
-            {/* Right Panel - Circuit Inputs and Outputs */}
+            {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
             <ResizablePanel defaultSize={25} minSize={20}>
-              <section className="h-full flex flex-col" aria-label="Inputs and Outputs">
-                <header className="flex items-center justify-between px-4 py-2 min-h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
-                  <div className="flex items-center gap-2">
-                    <h2 className="font-medium select-none" style={{ fontSize: '13px' }}>Inputs & Outputs</h2>
-                  </div>
+              <section className="h-full flex flex-col" aria-label="Right Panel">
+                <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
+                    <div className="flex items-stretch h-full flex-1 bg-muted/20 rounded-sm">
+                      <button
+                        onClick={() => setRightPanelView('inputs')}
+                        className={`px-4 h-full flex items-center justify-center flex-1 rounded-sm transition-all duration-200 ${rightPanelView === 'inputs'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '13px' }}
+                      >
+                        Inputs & Outputs
+                      </button>
+                      <button
+                        onClick={() => setRightPanelView('complexity')}
+                        className={`px-4 h-full flex items-center justify-center flex-1 rounded-sm transition-all duration-200 ${rightPanelView === 'complexity'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '13px' }}
+                      >
+                        Complexity Analysis
+                      </button>
+                    </div>
                 </header>
-                <div className="p-4 overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
-                  {/* Inputs Section */}
-                  <div className="space-y-4 mb-6">
-                    {parameterOrder.map((key) => (
-                      <div key={key}>
-                        <label className="font-medium mb-2 block select-none" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
-                        <input
-                          type="text"
-                          value={inputs[key] || ''}
-                          onChange={(e) => handleInputChange(key, e.target.value)}
-                          className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors font-mono ${inputValidationErrors[key]
-                            ? 'border-red-500/50 focus:ring-red-500/50'
-                            : 'border-border focus:ring-primary/50'
-                            }`}
-                          style={{ fontSize: '13px' }}
-                          disabled={isRunning}
-                        />
-                        {inputValidationErrors[key] && (
-                          <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
-                        )}
+                <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
+                  {rightPanelView === 'inputs' ? (
+                    <div className="p-4">
+                      {/* Inputs Section */}
+                      <div className="space-y-4 mb-6">
+                        {parameterOrder.map((key) => (
+                          <div key={key}>
+                            <label className="font-medium mb-2 block select-none" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
+                            <input
+                              type="text"
+                              value={inputs[key] || ''}
+                              onChange={(e) => handleInputChange(key, e.target.value)}
+                              className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors font-mono ${inputValidationErrors[key]
+                                ? 'border-red-500/50 focus:ring-red-500/50'
+                                : 'border-border focus:ring-primary/50'
+                                }`}
+                              style={{ fontSize: '13px' }}
+                              disabled={isRunning}
+                            />
+                            {inputValidationErrors[key] && (
+                              <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
 
-                  {/* Visual Separator */}
-                  <div className="border-t border-border my-6"></div>
+                      {/* Visual Separator */}
+                      <div className="border-t border-border my-6"></div>
 
-                  {/* Outputs Section */}
-                  <div>
-                    {proofData ? (
-                      <div className="space-y-4">
-                        {proofData.publicInputs && proofData.publicInputs.length > 0 && (
-                          <div>
-                            <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
-                            <div className="bg-muted/50 rounded">
-                              <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
-                                {proofData.publicInputs.map((input: string, i: number) => (
-                                  <div key={i}>{input}</div>
-                                ))}
+                      {/* Outputs Section */}
+                      <div>
+                        {proofData ? (
+                          <div className="space-y-4">
+                            {proofData.publicInputs && proofData.publicInputs.length > 0 && (
+                              <div>
+                                <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                <div className="bg-muted/50 rounded">
+                                  <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
+                                    {proofData.publicInputs.map((input: string, i: number) => (
+                                      <div key={i}>{input}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {proofData.witness && proofData.witness.length > 0 && (
+                              <div>
+                                <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
+                                <div className="bg-muted/50 rounded">
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div>
+                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
+                              <div className="bg-muted/50 rounded">
+                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                  {proofData.proof && proofData.proof.length > 0
+                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                    : 'No proof generated'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div>
+                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                              <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No public inputs
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
+                              <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No witness data
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
+                              <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No proof generated
                               </div>
                             </div>
                           </div>
                         )}
-
-                        {proofData.witness && proofData.witness.length > 0 && (
-                          <div>
-                            <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
-                            <div className="bg-muted/50 rounded">
-                              <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
-                                {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div>
-                          <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
-                          <div className="bg-muted/50 rounded">
-                            <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
-                              {proofData.proof && proofData.proof.length > 0
-                                ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                : 'No proof generated'}
-                            </div>
-                          </div>
-                        </div>
                       </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
-                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                            No public inputs
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
-                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                            No witness data
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
-                          <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                            No proof generated
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    // Complexity Analysis View
+                    <CombinedComplexityPanel
+                      sourceCode={files[activeFile] || ''}
+                      cargoToml={files['Nargo.toml'] || ''}
+                      className="h-full"
+                      enableHeatmap={enableHeatmap}
+                      viewMode={complexityViewMode}
+                      onViewModeChange={setComplexityViewMode}
+                      isProfiling={isComplexityProfiling}
+                      onProfilingStart={() => setIsComplexityProfiling(true)}
+                      onProfilingComplete={(result) => {
+                        setComplexityProfilerResult(result);
+                        setIsComplexityProfiling(false);
+                      }}
+                      onProfilingError={() => setIsComplexityProfiling(false)}
+                      profilerResult={complexityProfilerResult}
+                      onLineClick={(lineNumber) => {
+                        if (monacoEditorRef.current) {
+                          monacoEditorRef.current.setPosition({ lineNumber, column: 1 });
+                          monacoEditorRef.current.focus();
+                        }
+                      }}
+                    />
+                  )}
                 </div>
               </section>
             </ResizablePanel>

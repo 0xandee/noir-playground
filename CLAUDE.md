@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development
-npm run dev              # Start dev server on localhost:8080 (Note: README incorrectly shows 5173)
+npm run dev              # Start dev server on localhost:8080 (may use alternative port if 8080 is busy)
 npm run build           # Production build with sitemap generation
 npm run build:dev       # Development build without sitemap
 npm run lint            # Run ESLint
