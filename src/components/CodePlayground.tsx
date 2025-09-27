@@ -21,6 +21,7 @@ import {
   Play,
   Link2,
 } from "lucide-react";
+import { BsTwitterX, BsGithub } from "react-icons/bs";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { NoirEditorWithHover } from "./NoirEditorWithHover";
@@ -978,17 +979,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
         {/* Footer */}
         <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{ fontSize: '13px' }}>
           <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
-          <span>
-            Made by{" "}
-            <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              Andee
-            </a> {" "}
-            with ☕️
-            . Contribute on{" "}
-            <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-              GitHub
+          <div className="flex items-center space-x-4">
+            <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <BsTwitterX className="h-4 w-4" />
             </a>
-          </span>
+            <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <BsGithub className="h-4 w-4" />
+            </a>
+          </div>
         </footer>
 
         <ShareDialog

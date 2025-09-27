@@ -4770,6 +4770,7 @@ __metadata:
     react-dom: "npm:^18.3.1"
     react-helmet-async: "npm:^2.0.5"
     react-hook-form: "npm:^7.53.0"
+    react-icons: "npm:^5.5.0"
     react-resizable-panels: "npm:^2.1.3"
     react-router-dom: "npm:^6.26.2"
     recharts: "npm:^2.12.7"
@@ -5180,6 +5181,15 @@ __metadata:
   peerDependencies:
     react: ^16.8.0 || ^17 || ^18 || ^19
   checksum: 10c0/dd2466359a633f873755b366d367d51ab17100566b687fb3b098f704232bc6ab1c79d29f879151e492880ca5eeac35e9425fbe5a309e2a55f7a4b5baf7826e8d
+  languageName: node
+  linkType: hard
+
+"react-icons@npm:^5.5.0":
+  version: 5.5.0
+  resolution: "react-icons@npm:5.5.0"
+  peerDependencies:
+    react: "*"
+  checksum: 10c0/a24309bfc993c19cbcbfc928157e53a137851822779977b9588f6dd41ffc4d11ebc98b447f4039b0d309a858f0a42980f6bfb4477fb19f9f2d1bc2e190fcf79c
   languageName: node
   linkType: hard
 
