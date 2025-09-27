@@ -126,7 +126,7 @@ All colors MUST be HSL.
   }
 
   .monaco-editor .margin {
-    background-color: #161616 !important;
+    /* background-color: #161616 !important; */
   }
 
   .monaco-editor-background {

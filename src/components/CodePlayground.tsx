@@ -19,6 +19,7 @@ import {
   RefreshCw,
   CornerDownRight,
   Play,
+  Link2,
 } from "lucide-react";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
@@ -622,7 +623,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             title="Share"
                             className="flex items-center gap-1 h-7 px-2"
                           >
-                            <Share className="h-4 w-4" />
+                            <Link2 className="h-4 w-4" />
                             <span className="select-none" style={{ fontSize: '13px' }}>Share</span>
                           </Button>
                         </div>
