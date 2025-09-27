@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle, useCallback } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 import { LineAnalysisService, LineAnalysisResult } from '@/services/LineAnalysisService';
@@ -201,7 +201,7 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
 
 
   // Function to generate and apply heatmap
-  const generateHeatmap = async (sourceCode: string): Promise<void> => {
+  const generateHeatmap = useCallback(async (sourceCode: string): Promise<void> => {
     if (!enableHeatmap || !sourceCode.trim()) return;
 
     setIsGeneratingHeatmap(true);
@@ -245,10 +245,10 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
     } finally {
       setIsGeneratingHeatmap(false);
     }
-  };
+  }, [enableHeatmap, cargoToml, heatmapMetricType, heatmapThreshold, showGutterHeat, showInlineMetrics, onComplexityReport]);
 
   // Debounced heatmap update
-  const scheduleHeatmapUpdate = (sourceCode: string): void => {
+  const scheduleHeatmapUpdate = useCallback((sourceCode: string): void => {
     if (updateHeatmapTimeoutRef.current) {
       clearTimeout(updateHeatmapTimeoutRef.current);
     }
@@ -256,7 +256,7 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
     updateHeatmapTimeoutRef.current = setTimeout(() => {
       generateHeatmap(sourceCode);
     }, 1000); // 1 second debounce
-  };
+  }, [generateHeatmap]);
 
   // Function to clear caches (for debugging)
   // Clear caches function removed - will be implemented later
@@ -584,9 +584,14 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
         setIsGeneratingHeatmap(false);
 
         editorRef.current.setValue(value);
+
+        // Regenerate heatmap if enabled and we have content
+        if (enableHeatmap && value.trim()) {
+          generateHeatmap(value);
+        }
       }
     }
-  }, [value, cargoToml]);
+  }, [value, cargoToml, enableHeatmap, generateHeatmap]);
 
   // Effect to handle heatmap configuration changes
   useEffect(() => {
@@ -614,7 +619,7 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
     if (enableHeatmap && value.trim()) {
       scheduleHeatmapUpdate(value);
     }
-  }, [cargoToml, enableHeatmap]);
+  }, [cargoToml, enableHeatmap, value, scheduleHeatmapUpdate]);
 
   // Cleanup caches when component unmounts
   useEffect(() => {
