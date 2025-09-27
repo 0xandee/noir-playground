@@ -1,11 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { 
-  Code, 
-  Cpu, 
-  Layers
-} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 
 export interface CircuitMetricsData {
   totalAcirOpcodes: number;
@@ -18,53 +12,45 @@ interface CircuitMetricsProps {
   className?: string;
 }
 
+interface MetricCardProps {
+  value: number;
+  label: string;
+  shouldFormat?: boolean;
+}
+
+const MetricCard: React.FC<MetricCardProps> = ({ value, label, shouldFormat = false }) => (
+  <Card className="border border-border/50 bg-card/50">
+    <CardContent className="px-3 py-3">
+      <div className="text-xl font-semibold text-foreground">
+        {shouldFormat ? value.toLocaleString() : value}
+      </div>
+      <p className="text-muted-foreground" style={{fontSize: '13px'}}>
+        {label}
+      </p>
+    </CardContent>
+  </Card>
+);
+
 export const CircuitMetrics: React.FC<CircuitMetricsProps> = ({
   metrics,
   className = ''
 }) => {
+  const metricConfig = [
+    { value: metrics.totalAcirOpcodes, label: 'ACIR Opcodes' },
+    { value: metrics.totalBrilligOpcodes, label: 'Brillig Opcodes' },
+    { value: metrics.totalGates, label: 'Proving Gates', shouldFormat: true }
+  ];
+
   return (
-    <div className={`space-y-3 ${className}`}>
-      {/* Compact Top-level Metrics */}
-      <div className="grid grid-cols-3 gap-3">
-        <Card className="border border-border/50 bg-card/50">
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="font-medium flex items-center gap-1.5 text-muted-foreground" style={{fontSize: '13px'}}>
-              <Cpu className="h-3 w-3" />
-              ACIR Opcodes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0">
-            <div className="text-xl font-semibold text-foreground">{metrics.totalAcirOpcodes}</div>
-            <p className="text-muted-foreground" style={{fontSize: '13px'}}>Total constraints</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/50 bg-card/50">
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="font-medium flex items-center gap-1.5 text-muted-foreground" style={{fontSize: '13px'}}>
-              <Code className="h-3 w-3" />
-              Brillig Opcodes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0">
-            <div className="text-xl font-semibold text-foreground">{metrics.totalBrilligOpcodes}</div>
-            <p className="text-muted-foreground" style={{fontSize: '13px'}}>Unconstrained code</p>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-border/50 bg-card/50">
-          <CardHeader className="pb-2 px-3 pt-3">
-            <CardTitle className="font-medium flex items-center gap-1.5 text-muted-foreground" style={{fontSize: '13px'}}>
-              <Layers className="h-3 w-3" />
-              Total Gates
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-3 pb-3 pt-0">
-            <div className="text-xl font-semibold text-foreground">{metrics.totalGates.toLocaleString()}</div>
-            <p className="text-muted-foreground" style={{fontSize: '13px'}}>Backend gates</p>
-          </CardContent>
-        </Card>
-      </div>
+    <div className={`grid grid-cols-3 gap-3 ${className}`}>
+      {metricConfig.map((metric, index) => (
+        <MetricCard
+          key={index}
+          value={metric.value}
+          label={metric.label}
+          shouldFormat={metric.shouldFormat}
+        />
+      ))}
     </div>
   );
 };
