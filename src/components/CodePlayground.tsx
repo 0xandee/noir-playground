@@ -585,7 +585,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             ) : (
                               // Show examples dropdown in normal mode
                               <Select value={selectedExample} onValueChange={loadExample}>
-                                <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0 bg-transparent border border-border" style={{ fontSize: '13px' }}>
+                                <SelectTrigger className="min-w-24 w-auto h-8 focus:ring-0 focus:ring-offset-0 bg-transparent border border-border gap-2" style={{ fontSize: '13px' }}>
                                   <SelectValue placeholder="Examples" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -594,7 +594,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                       <SelectItem value={example.id}>
                                         {example.name}
                                       </SelectItem>
-                                      {index === 0 && <SelectSeparator />}
                                     </div>
                                   ))}
                                 </SelectContent>
@@ -750,7 +749,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     <div className="p-4">
                       {/* Inputs Section */}
                       <div className="mb-6">
-                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '14px' }}>Inputs</h3>
+                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Inputs</h3>
                         <div className="space-y-4">
                           {parameterOrder.map((key) => (
                             <div key={key}>
@@ -775,11 +774,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
 
                       {/* Visual Separator */}
-                      <div className="border-t border-border my-6"></div>
+                      <div className="border-t border-border my-4"></div>
 
                       {/* Outputs Section */}
                       <div>
-                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '14px' }}>Outputs</h3>
+                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Outputs</h3>
                         {proofData ? (
                           <div className="space-y-4">
                             {proofData.publicInputs && proofData.publicInputs.length > 0 && (

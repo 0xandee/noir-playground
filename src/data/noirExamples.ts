@@ -81,7 +81,7 @@ export const noirExamples: NoirExample[] = [
   },
   {
     id: "cryptographic",
-    name: "Cryptographic Example",
+    name: "Cryptographic",
     description: "Pedersen hash and merkle path verification",
     code: `pub fn main(
     secret: Field,
@@ -111,7 +111,7 @@ export const noirExamples: NoirExample[] = [
   },
   {
     id: "complex-structures",
-    name: "Complex Data Structures",
+    name: "Complex",
     description: "Multiple arrays and complex data types",
     code: `pub fn main(
     balance: u64,
