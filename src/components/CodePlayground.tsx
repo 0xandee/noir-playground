@@ -536,7 +536,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 <ResizablePanel defaultSize={70} minSize={50}>
                   <section className="h-full flex flex-col" aria-label="Code Editor">
                     {/* Code Editor Header with File Tabs */}
-                    <header className="" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
+                    <header className="" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                       {/* File Tabs */}
                       <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
                         <div className="flex items-center gap-2">
@@ -550,7 +550,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             ) : (
                               // Show examples dropdown in normal mode
                               <Select value={selectedExample} onValueChange={loadExample}>
-                                <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0 bg-transparent" style={{ fontSize: '13px' }}>
+                                <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0 bg-transparent border border-border" style={{ fontSize: '13px' }}>
                                   <SelectValue placeholder="Examples" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -640,7 +640,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                 {/* Resizable Handle between Editor and Console */}
                 <ResizableHandle
-                  className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+                  className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
                 />
 
                 {/* Console Panel */}
@@ -677,7 +677,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </div>
                   }
                 >
-                  <div className="h-full flex flex-col" style={{ backgroundColor: '#100E0F' }}>
+                  <div className="h-full flex flex-col" style={{ backgroundColor: '#161616' }}>
                     <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
                       {renderConsoleContent()}
                     </div>
@@ -688,13 +688,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
             {/* Resizable Handle between Editor Area and Right Panel */}
             <ResizableHandle
-              className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
+              className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
             />
 
             {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
             <ResizablePanel defaultSize={25} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel">
-                <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
+                <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                   <div className="flex items-stretch h-full overflow-x-auto bg-muted/20 rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
                     {rightPanelTabs.map((tab) => (
                       <button
@@ -725,9 +725,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                                 type="text"
                                 value={inputs[key] || ''}
                                 onChange={(e) => handleInputChange(key, e.target.value)}
-                                className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors font-mono ${inputValidationErrors[key]
+                                className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none ring-1 transition-colors font-mono ${inputValidationErrors[key]
                                   ? 'border-red-500/50 focus:ring-red-500/50'
-                                  : 'border-border focus:ring-primary/50'
+                                  : 'border-border ring-border'
                                   }`}
                                 style={{ fontSize: '13px' }}
                                 disabled={isRunning}
@@ -751,7 +751,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                               <div>
                                 <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
-                                <div className="bg-muted/50 rounded">
+                                <div className="bg-muted/50 border border-border rounded">
                                   <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
                                     {proofData.publicInputs.map((input: string, i: number) => (
                                       <div key={i}>{input}</div>
@@ -764,7 +764,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             {proofData.witness && proofData.witness.length > 0 && (
                               <div>
                                 <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
-                                <div className="bg-muted/50 rounded">
+                                <div className="bg-muted/50 border border-border rounded">
                                   <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
                                     {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
                                   </div>
@@ -774,7 +774,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                             <div>
                               <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
-                              <div className="bg-muted/50 rounded">
+                              <div className="bg-muted/50 border border-border rounded">
                                 <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
                                   {proofData.proof && proofData.proof.length > 0
                                     ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
@@ -787,19 +787,19 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           <div className="space-y-4">
                             <div>
                               <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
-                              <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No public inputs
                               </div>
                             </div>
                             <div>
                               <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
-                              <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No witness data
                               </div>
                             </div>
                             <div>
                               <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
-                              <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No proof generated
                               </div>
                             </div>
@@ -836,15 +836,15 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     <div className="p-4">
                       <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Performance Metrics</h3>
                       <div className="space-y-3">
-                        <div className="bg-muted/50 p-3 rounded">
+                        <div className="bg-muted/50 border border-border p-3 rounded">
                           <div className="text-sm text-muted-foreground">Compilation Time</div>
                           <div className="font-mono text-lg">1.2s</div>
                         </div>
-                        <div className="bg-muted/50 p-3 rounded">
+                        <div className="bg-muted/50 border border-border p-3 rounded">
                           <div className="text-sm text-muted-foreground">Proof Generation</div>
                           <div className="font-mono text-lg">847ms</div>
                         </div>
-                        <div className="bg-muted/50 p-3 rounded">
+                        <div className="bg-muted/50 border border-border p-3 rounded">
                           <div className="text-sm text-muted-foreground">Circuit Gates</div>
                           <div className="font-mono text-lg">15,432</div>
                         </div>
@@ -879,13 +879,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     <div className="p-4">
                       <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Debug Information</h3>
                       <div className="space-y-3">
-                        <div className="bg-muted/50 p-3 rounded font-mono text-sm">
+                        <div className="bg-muted/50 border border-border p-3 rounded font-mono text-sm">
                           <div className="text-green-400">✓ Compilation successful</div>
                         </div>
-                        <div className="bg-muted/50 p-3 rounded font-mono text-sm">
+                        <div className="bg-muted/50 border border-border p-3 rounded font-mono text-sm">
                           <div className="text-blue-400">ⓘ Circuit size: 15.4k gates</div>
                         </div>
-                        <div className="bg-muted/50 p-3 rounded font-mono text-sm">
+                        <div className="bg-muted/50 border border-border p-3 rounded font-mono text-sm">
                           <div className="text-yellow-400">⚠ High constraint density in lines 12-15</div>
                         </div>
                       </div>
