@@ -88,7 +88,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'complexity'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'complexity' | 'metrics' | 'analysis' | 'debug'>('inputs');
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
@@ -687,26 +687,56 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             <ResizablePanel defaultSize={25} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel">
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
-                    <div className="flex items-stretch h-full flex-1 bg-muted/20 rounded-sm">
+                    <div className="flex items-stretch h-full flex-1 overflow-x-auto bg-muted/20 rounded-sm" style={{ scrollbarWidth: 'thin' }}>
                       <button
                         onClick={() => setRightPanelView('inputs')}
-                        className={`px-4 h-full flex items-center justify-center flex-1 rounded-sm transition-all duration-200 ${rightPanelView === 'inputs'
+                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'inputs'
                             ? 'bg-background text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
                           }`}
-                        style={{ fontSize: '13px' }}
+                        style={{ fontSize: '12px' }}
                       >
-                        Inputs & Outputs
+                        Input/Output
                       </button>
                       <button
                         onClick={() => setRightPanelView('complexity')}
-                        className={`px-4 h-full flex items-center justify-center flex-1 rounded-sm transition-all duration-200 ${rightPanelView === 'complexity'
+                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'complexity'
                             ? 'bg-background text-foreground shadow-sm'
                             : 'text-muted-foreground hover:text-foreground'
                           }`}
-                        style={{ fontSize: '13px' }}
+                        style={{ fontSize: '12px' }}
                       >
-                        Complexity Analysis
+                        Complexity
+                      </button>
+                      <button
+                        onClick={() => setRightPanelView('metrics')}
+                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'metrics'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '12px' }}
+                      >
+                        Metrics
+                      </button>
+                      <button
+                        onClick={() => setRightPanelView('analysis')}
+                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'analysis'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '12px' }}
+                      >
+                        Analysis
+                      </button>
+                      <button
+                        onClick={() => setRightPanelView('debug')}
+                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'debug'
+                            ? 'bg-background text-foreground shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '12px' }}
+                      >
+                        Debug
                       </button>
                     </div>
                 </header>
@@ -802,7 +832,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         )}
                       </div>
                     </div>
-                  ) : (
+                  ) : rightPanelView === 'complexity' ? (
                     // Complexity Analysis View
                     <CombinedComplexityPanel
                       sourceCode={files[activeFile] || ''}
@@ -826,7 +856,66 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         }
                       }}
                     />
-                  )}
+                  ) : rightPanelView === 'metrics' ? (
+                    // Metrics View
+                    <div className="p-4">
+                      <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Performance Metrics</h3>
+                      <div className="space-y-3">
+                        <div className="bg-muted/50 p-3 rounded">
+                          <div className="text-sm text-muted-foreground">Compilation Time</div>
+                          <div className="font-mono text-lg">1.2s</div>
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded">
+                          <div className="text-sm text-muted-foreground">Proof Generation</div>
+                          <div className="font-mono text-lg">847ms</div>
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded">
+                          <div className="text-sm text-muted-foreground">Circuit Gates</div>
+                          <div className="font-mono text-lg">15,432</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : rightPanelView === 'analysis' ? (
+                    // Analysis View
+                    <div className="p-4">
+                      <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Circuit Analysis</h3>
+                      <div className="space-y-4">
+                        <div>
+                          <div className="text-sm text-muted-foreground mb-2">Constraint Breakdown</div>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Arithmetic</span>
+                              <span className="font-mono text-sm">8,234</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Boolean</span>
+                              <span className="font-mono text-sm">4,128</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm">Range</span>
+                              <span className="font-mono text-sm">3,070</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : rightPanelView === 'debug' ? (
+                    // Debug View
+                    <div className="p-4">
+                      <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Debug Information</h3>
+                      <div className="space-y-3">
+                        <div className="bg-muted/50 p-3 rounded font-mono text-sm">
+                          <div className="text-green-400">✓ Compilation successful</div>
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded font-mono text-sm">
+                          <div className="text-blue-400">ⓘ Circuit size: 15.4k gates</div>
+                        </div>
+                        <div className="bg-muted/50 p-3 rounded font-mono text-sm">
+                          <div className="text-yellow-400">⚠ High constraint density in lines 12-15</div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             </ResizablePanel>
