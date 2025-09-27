@@ -118,7 +118,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       setIsProfiling(false);
       profilingQueuedRef.current = false;
     }
-  }, [sourceCode, cargoToml, profilerService, isProfiling, onProfilingStart, onProfilingComplete, onProfilingError]);
+  }, [sourceCode, cargoToml, profilerService, isProfiling, setIsProfiling, setProfilerResult, onProfilingStart, onProfilingComplete, onProfilingError]);
 
 
 
@@ -126,7 +126,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
     if (onRefresh) {
       onRefresh();
     } else {
-      if (sourceCode.trim() && enableHeatmap) {
+      if (sourceCode.trim()) {
         handleProfiling();
       }
     }
@@ -214,7 +214,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
             <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No complexity analysis available</p>
             <p className="mt-1" style={{fontSize: '13px'}}>
-              {enableHeatmap ? "Start typing or click refresh to analyze" : "Enable heatmap to start analysis"}
+              Click refresh to analyze circuit complexity
             </p>
           </div>
         </div>
@@ -231,7 +231,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {profilerResult && !isProfiling && (
-        <div className="flex-1 px-4 overflow-hidden">
+        <div className={`flex-1 overflow-hidden ${viewMode === 'flamegraph' ? 'px-4 pt-4' : ''}`}>
           {/* Content Area - Flamegraph or Table View */}
           <div className="h-full">
             {viewMode === 'flamegraph' ? (

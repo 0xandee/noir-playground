@@ -9,7 +9,7 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* ZK Proof Playground Dark Theme - Unified Monochromatic */
-    --background: 225 9% 6%;
+    --background: 300 9% 7%;
     --foreground: 0 0% 98%;
 
     --card: 0 0% 12%;
@@ -68,7 +68,7 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 225 9% 6%;
+    --background: 300 9% 7%;
     --foreground: 0 0% 98%;
 
     --card: 0 0% 12%;

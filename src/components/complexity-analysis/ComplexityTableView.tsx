@@ -9,7 +9,7 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Search, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, ArrowUp, ArrowDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ComplexityTableData } from '@/services/NoirProfilerService';
 
@@ -103,11 +103,11 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
 
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) {
-      return <ArrowUpDown className="h-3 w-3 ml-1 opacity-50" />;
+      return null;
     }
     return sortDirection === 'asc'
-      ? <ArrowUp className="h-3 w-3 ml-1" />
-      : <ArrowDown className="h-3 w-3 ml-1" />;
+      ? <ArrowUp className="h-3 w-3 ml-0.5" />
+      : <ArrowDown className="h-3 w-3 ml-0.5" />;
   };
 
   const handleRowClick = (item: ComplexityTableData) => {
@@ -146,12 +146,12 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-20">
+              <TableHead className="w-20 text-center">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort('lineNumber')}
-                  className="h-auto p-0 font-medium hover:bg-transparent"
+                  className="h-auto p-0 font-medium hover:bg-transparent gap-0"
                   style={{ fontSize: '13px' }}
                 >
                   Line
@@ -163,19 +163,19 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort('expression')}
-                  className="h-auto p-0 font-medium hover:bg-transparent"
+                  className="h-auto p-0 font-medium hover:bg-transparent gap-0"
                   style={{ fontSize: '13px' }}
                 >
                   Expression
                   {getSortIcon('expression')}
                 </Button>
               </TableHead>
-              <TableHead className="w-24">
+              <TableHead className="w-24 text-center">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort('acirOpcodes')}
-                  className="h-auto p-0 font-medium hover:bg-transparent"
+                  className="h-auto p-0 font-medium hover:bg-transparent gap-0"
                   style={{ fontSize: '13px' }}
                 >
                   ACIR
@@ -187,7 +187,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => handleSort('percentage')}
-                  className="h-auto p-0 font-medium hover:bg-transparent"
+                  className="h-auto p-0 font-medium hover:bg-transparent gap-0"
                   style={{ fontSize: '13px' }}
                 >
                   %

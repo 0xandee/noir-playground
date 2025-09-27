@@ -142,7 +142,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   }, []);
 
   const handleComplexityRefresh = useCallback(async () => {
-    if (!files["main.nr"].trim() || !enableHeatmap || isComplexityProfiling) {
+    if (!files["main.nr"].trim() || isComplexityProfiling) {
       return;
     }
 
@@ -158,7 +158,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     } finally {
       setIsComplexityProfiling(false);
     }
-  }, [files, enableHeatmap, isComplexityProfiling, addConsoleMessage]);
+  }, [files, isComplexityProfiling, addConsoleMessage]);
 
   // Trigger profiling when heatmap is enabled
   const prevEnableHeatmapRef = useRef(enableHeatmap);
@@ -171,6 +171,25 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
       handleComplexityRefresh();
     }
   }, [enableHeatmap, files, isComplexityProfiling, handleComplexityRefresh]);
+
+  // Auto-profile when switching to Profiler tab
+  const prevRightPanelViewRef = useRef(rightPanelView);
+  useEffect(() => {
+    const wasPrevProfilerTab = prevRightPanelViewRef.current === 'profiler';
+    prevRightPanelViewRef.current = rightPanelView;
+
+    // Trigger profiling when switching to profiler tab if:
+    // 1. We just switched to profiler tab (not profiler -> profiler)
+    // 2. We have code to analyze
+    // 3. We don't have existing results and are not currently profiling
+    if (!wasPrevProfilerTab &&
+        rightPanelView === 'profiler' &&
+        files["main.nr"].trim() &&
+        !complexityProfilerResult &&
+        !isComplexityProfiling) {
+      handleComplexityRefresh();
+    }
+  }, [rightPanelView, files, complexityProfilerResult, isComplexityProfiling, handleComplexityRefresh]);
 
   // Auto-scroll console to bottom when new messages arrive
   useEffect(() => {
@@ -707,6 +726,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </button>
                     ))}
                   </div>
+
                 </header>
                 <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                   {rightPanelView === 'inputs' ? (
@@ -805,29 +825,84 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
                     </div>
                   ) : rightPanelView === 'profiler' ? (
-                    // Complexity Analysis View
-                    <CombinedComplexityPanel
-                      sourceCode={files[activeFile] || ''}
-                      cargoToml={files['Nargo.toml'] || ''}
-                      className="h-full"
-                      enableHeatmap={enableHeatmap}
-                      viewMode={complexityViewMode}
-                      onViewModeChange={setComplexityViewMode}
-                      isProfiling={isComplexityProfiling}
-                      onProfilingStart={() => setIsComplexityProfiling(true)}
-                      onProfilingComplete={(result) => {
-                        setComplexityProfilerResult(result);
-                        setIsComplexityProfiling(false);
-                      }}
-                      onProfilingError={() => setIsComplexityProfiling(false)}
-                      profilerResult={complexityProfilerResult}
-                      onLineClick={(lineNumber) => {
-                        if (monacoEditorRef.current) {
-                          monacoEditorRef.current.setPosition({ lineNumber, column: 1 });
-                          monacoEditorRef.current.focus();
-                        }
-                      }}
-                    />
+                    <div className="h-full flex flex-col">
+                      {/* Profiler Controls */}
+                      <div className="px-4 py-3 border-b border-border bg-muted/10">
+                        <div className="flex items-center justify-between">
+                          {/* Left: Heatmap Toggle */}
+                          <label className="flex items-center gap-2 cursor-pointer select-none" style={{ fontSize: '13px' }}>
+                            <input
+                              type="checkbox"
+                              checked={enableHeatmap}
+                              onChange={(e) => setEnableHeatmap(e.target.checked)}
+                              className="rounded"
+                            />
+                            Heatmap
+                          </label>
+
+                          {/* Center: View Mode Toggle */}
+                          <div className="flex items-stretch h-8 bg-muted/20 rounded-sm overflow-hidden">
+                            <button
+                              onClick={() => setComplexityViewMode('table')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'table'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'table' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Table
+                            </button>
+                            <button
+                              onClick={() => setComplexityViewMode('flamegraph')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                              }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Flamegraph
+                            </button>
+                          </div>
+
+                          {/* Right: Refresh Button */}
+                          <Button
+                            onClick={handleComplexityRefresh}
+                            disabled={isComplexityProfiling}
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2"
+                          >
+                            <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Complexity Analysis Panel */}
+                      <div className="flex-1">
+                        <CombinedComplexityPanel
+                          sourceCode={files[activeFile] || ''}
+                          cargoToml={files['Nargo.toml'] || ''}
+                          className="h-full"
+                          enableHeatmap={enableHeatmap}
+                          viewMode={complexityViewMode}
+                          onViewModeChange={setComplexityViewMode}
+                          isProfiling={isComplexityProfiling}
+                          onProfilingStart={() => setIsComplexityProfiling(true)}
+                          onProfilingComplete={(result) => {
+                            setComplexityProfilerResult(result);
+                            setIsComplexityProfiling(false);
+                          }}
+                          onProfilingError={() => setIsComplexityProfiling(false)}
+                          profilerResult={complexityProfilerResult}
+                          onLineClick={(lineNumber) => {
+                            if (monacoEditorRef.current) {
+                              monacoEditorRef.current.setPosition({ lineNumber, column: 1 });
+                              monacoEditorRef.current.focus();
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
                   ) : null}
                 </div>
               </section>
