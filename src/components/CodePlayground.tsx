@@ -88,14 +88,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'complexity' | 'metrics' | 'analysis' | 'debug'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler'>('inputs');
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
-    { value: 'complexity' as const, label: 'Complexity' },
-    { value: 'metrics' as const, label: 'Metrics' },
-    { value: 'analysis' as const, label: 'Analysis' },
-    { value: 'debug' as const, label: 'Debug' }
+    { value: 'profiler' as const, label: 'Profiler' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -692,7 +689,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             />
 
             {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
-            <ResizablePanel defaultSize={25} minSize={20}>
+            <ResizablePanel defaultSize={41} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel">
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                   <div className="flex items-stretch h-full overflow-x-auto bg-muted/20 rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
@@ -807,7 +804,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         )}
                       </div>
                     </div>
-                  ) : rightPanelView === 'complexity' ? (
+                  ) : rightPanelView === 'profiler' ? (
                     // Complexity Analysis View
                     <CombinedComplexityPanel
                       sourceCode={files[activeFile] || ''}
@@ -831,65 +828,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         }
                       }}
                     />
-                  ) : rightPanelView === 'metrics' ? (
-                    // Metrics View
-                    <div className="p-4">
-                      <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Performance Metrics</h3>
-                      <div className="space-y-3">
-                        <div className="bg-muted/50 border border-border p-3 rounded">
-                          <div className="text-sm text-muted-foreground">Compilation Time</div>
-                          <div className="font-mono text-lg">1.2s</div>
-                        </div>
-                        <div className="bg-muted/50 border border-border p-3 rounded">
-                          <div className="text-sm text-muted-foreground">Proof Generation</div>
-                          <div className="font-mono text-lg">847ms</div>
-                        </div>
-                        <div className="bg-muted/50 border border-border p-3 rounded">
-                          <div className="text-sm text-muted-foreground">Circuit Gates</div>
-                          <div className="font-mono text-lg">15,432</div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : rightPanelView === 'analysis' ? (
-                    // Analysis View
-                    <div className="p-4">
-                      <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Circuit Analysis</h3>
-                      <div className="space-y-4">
-                        <div>
-                          <div className="text-sm text-muted-foreground mb-2">Constraint Breakdown</div>
-                          <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Arithmetic</span>
-                              <span className="font-mono text-sm">8,234</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Boolean</span>
-                              <span className="font-mono text-sm">4,128</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm">Range</span>
-                              <span className="font-mono text-sm">3,070</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ) : rightPanelView === 'debug' ? (
-                    // Debug View
-                    <div className="p-4">
-                      <h3 className="font-medium mb-4" style={{ fontSize: '14px' }}>Debug Information</h3>
-                      <div className="space-y-3">
-                        <div className="bg-muted/50 border border-border p-3 rounded font-mono text-sm">
-                          <div className="text-green-400">✓ Compilation successful</div>
-                        </div>
-                        <div className="bg-muted/50 border border-border p-3 rounded font-mono text-sm">
-                          <div className="text-blue-400">ⓘ Circuit size: 15.4k gates</div>
-                        </div>
-                        <div className="bg-muted/50 border border-border p-3 rounded font-mono text-sm">
-                          <div className="text-yellow-400">⚠ High constraint density in lines 12-15</div>
-                        </div>
-                      </div>
-                    </div>
                   ) : null}
                 </div>
               </section>

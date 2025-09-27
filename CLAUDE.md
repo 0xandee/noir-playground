@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Development
-npm run dev              # Start dev server on localhost:8080 (may use alternative port if 8080 is busy)
+npm run dev              # Start dev server on localhost:5173 (Vite default port)
 npm run build           # Production build with sitemap generation
 npm run build:dev       # Development build without sitemap
 npm run lint            # Run ESLint
@@ -139,7 +139,7 @@ Uses path aliases (`@/` maps to `src/`) and ES2022 target for modern browser fea
 - **Mobile limitations**: Monaco editor performance constraints show mobile warning
 
 ### Package Manager
-This project uses Yarn 4.8.1+ with Plug'n'Play (PnP) enabled. Files `.pnp.cjs`, `.pnp.loader.mjs`, and `.yarn/` directory are part of the PnP system. Use `yarn` instead of `npm` for all package operations.
+This project uses Yarn 4.8.1+ with node_modules linker (not PnP). The `.yarnrc.yml` configures `nodeLinker: node-modules` for compatibility. Use `yarn` instead of `npm` for all package operations.
 
 ### Key Service Classes
 
