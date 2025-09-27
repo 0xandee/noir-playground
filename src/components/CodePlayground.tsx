@@ -550,7 +550,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             ) : (
                               // Show examples dropdown in normal mode
                               <Select value={selectedExample} onValueChange={loadExample}>
-                                <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0" style={{ fontSize: '13px' }}>
+                                <SelectTrigger className="w-36 h-8 focus:ring-0 focus:ring-offset-0 bg-transparent" style={{ fontSize: '13px' }}>
                                   <SelectValue placeholder="Examples" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -695,21 +695,21 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             <ResizablePanel defaultSize={25} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel">
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
-                    <div className="flex items-stretch h-full flex-1 overflow-x-auto bg-muted/20 rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
-                      {rightPanelTabs.map((tab) => (
-                        <button
-                          key={tab.value}
-                          onClick={() => setRightPanelView(tab.value)}
-                          className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === tab.value
-                              ? 'bg-background text-foreground shadow-sm'
-                              : 'text-muted-foreground hover:text-foreground'
-                            }`}
-                          style={{ fontSize: '13px', minWidth: tab.minWidth }}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
+                  <div className="flex items-stretch h-full overflow-x-auto bg-muted/20 rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
+                    {rightPanelTabs.map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setRightPanelView(tab.value)}
+                        className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === tab.value
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '13px', minWidth: tab.minWidth }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
                 </header>
                 <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                   {rightPanelView === 'inputs' ? (
