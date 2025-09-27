@@ -551,7 +551,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                 <ResizablePanel defaultSize={70} minSize={50}>
                   <section className="h-full flex flex-col" aria-label="Code Editor">
                     {/* Code Editor Header with File Tabs */}
-                    <header className="border-b border-border bg-muted/30">
+                    <header className="border-b border-border" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
                       {/* File Tabs */}
                       <div className="flex items-center justify-between px-4 py-1 h-[49px]">
                         <div className="flex items-center gap-2">
@@ -750,7 +750,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               type="text"
                               value={inputs[key] || ''}
                               onChange={(e) => handleInputChange(key, e.target.value)}
-                              className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
+                              className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors font-mono ${inputValidationErrors[key]
                                 ? 'border-red-500/50 focus:ring-red-500/50'
                                 : 'border-border focus:ring-primary/50'
                                 }`}
