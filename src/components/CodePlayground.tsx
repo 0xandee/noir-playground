@@ -89,6 +89,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [rightPanelView, setRightPanelView] = useState<'inputs' | 'complexity' | 'metrics' | 'analysis' | 'debug'>('inputs');
+
+  const rightPanelTabs = [
+    { value: 'inputs' as const, label: 'Input/Output', minWidth: '120px' },
+    { value: 'complexity' as const, label: 'Complexity', minWidth: '100px' },
+    { value: 'metrics' as const, label: 'Metrics', minWidth: '80px' },
+    { value: 'analysis' as const, label: 'Analysis', minWidth: '80px' },
+    { value: 'debug' as const, label: 'Debug', minWidth: '80px' }
+  ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
@@ -687,83 +695,49 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             <ResizablePanel defaultSize={25} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel">
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(16, 14, 15)' }}>
-                    <div className="flex items-stretch h-full flex-1 overflow-x-auto bg-muted/20 rounded-sm" style={{ scrollbarWidth: 'thin' }}>
-                      <button
-                        onClick={() => setRightPanelView('inputs')}
-                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'inputs'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        style={{ fontSize: '12px' }}
-                      >
-                        Input/Output
-                      </button>
-                      <button
-                        onClick={() => setRightPanelView('complexity')}
-                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'complexity'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        style={{ fontSize: '12px' }}
-                      >
-                        Complexity
-                      </button>
-                      <button
-                        onClick={() => setRightPanelView('metrics')}
-                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'metrics'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        style={{ fontSize: '12px' }}
-                      >
-                        Metrics
-                      </button>
-                      <button
-                        onClick={() => setRightPanelView('analysis')}
-                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'analysis'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        style={{ fontSize: '12px' }}
-                      >
-                        Analysis
-                      </button>
-                      <button
-                        onClick={() => setRightPanelView('debug')}
-                        className={`px-4 h-full flex items-center justify-center min-w-[80px] whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === 'debug'
-                            ? 'bg-background text-foreground shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        style={{ fontSize: '12px' }}
-                      >
-                        Debug
-                      </button>
+                    <div className="flex items-stretch h-full flex-1 overflow-x-auto bg-muted/20 rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
+                      {rightPanelTabs.map((tab) => (
+                        <button
+                          key={tab.value}
+                          onClick={() => setRightPanelView(tab.value)}
+                          className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === tab.value
+                              ? 'bg-background text-foreground shadow-sm'
+                              : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                          style={{ fontSize: '13px', minWidth: tab.minWidth }}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
                     </div>
                 </header>
                 <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
                   {rightPanelView === 'inputs' ? (
                     <div className="p-4">
                       {/* Inputs Section */}
-                      <div className="space-y-4 mb-6">
-                        {parameterOrder.map((key) => (
-                          <div key={key}>
-                            <label className="font-medium mb-2 block select-none" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
-                            <input
-                              type="text"
-                              value={inputs[key] || ''}
-                              onChange={(e) => handleInputChange(key, e.target.value)}
-                              className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors font-mono ${inputValidationErrors[key]
-                                ? 'border-red-500/50 focus:ring-red-500/50'
-                                : 'border-border focus:ring-primary/50'
-                                }`}
-                              style={{ fontSize: '13px' }}
-                              disabled={isRunning}
-                            />
-                            {inputValidationErrors[key] && (
-                              <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
-                            )}
-                          </div>
-                        ))}
+                      <div className="mb-6">
+                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '14px' }}>Inputs</h3>
+                        <div className="space-y-4">
+                          {parameterOrder.map((key) => (
+                            <div key={key}>
+                              <label className="font-medium mb-2 block select-none text-muted-foreground" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
+                              <input
+                                type="text"
+                                value={inputs[key] || ''}
+                                onChange={(e) => handleInputChange(key, e.target.value)}
+                                className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none focus:ring-1 transition-colors font-mono ${inputValidationErrors[key]
+                                  ? 'border-red-500/50 focus:ring-red-500/50'
+                                  : 'border-border focus:ring-primary/50'
+                                  }`}
+                                style={{ fontSize: '13px' }}
+                                disabled={isRunning}
+                              />
+                              {inputValidationErrors[key] && (
+                                <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
 
                       {/* Visual Separator */}
@@ -771,11 +745,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                       {/* Outputs Section */}
                       <div>
+                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '14px' }}>Outputs</h3>
                         {proofData ? (
                           <div className="space-y-4">
                             {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                               <div>
-                                <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
                                 <div className="bg-muted/50 rounded">
                                   <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
                                     {proofData.publicInputs.map((input: string, i: number) => (
@@ -788,7 +763,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                             {proofData.witness && proofData.witness.length > 0 && (
                               <div>
-                                <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
+                                <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
                                 <div className="bg-muted/50 rounded">
                                   <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
                                     {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
@@ -798,7 +773,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             )}
 
                             <div>
-                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
                               <div className="bg-muted/50 rounded">
                                 <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
                                   {proofData.proof && proofData.proof.length > 0
@@ -811,19 +786,19 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         ) : (
                           <div className="space-y-4">
                             <div>
-                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
                               <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No public inputs
                               </div>
                             </div>
                             <div>
-                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Witness</h3>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
                               <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No witness data
                               </div>
                             </div>
                             <div>
-                              <h3 className="font-medium mb-2 select-none" style={{ fontSize: '13px' }}>Proof</h3>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
                               <div className="bg-muted/50 p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No proof generated
                               </div>
