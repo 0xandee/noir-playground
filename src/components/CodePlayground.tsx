@@ -183,10 +183,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     // 2. We have code to analyze
     // 3. We don't have existing results and are not currently profiling
     if (!wasPrevProfilerTab &&
-        rightPanelView === 'profiler' &&
-        files["main.nr"].trim() &&
-        !complexityProfilerResult &&
-        !isComplexityProfiling) {
+      rightPanelView === 'profiler' &&
+      files["main.nr"].trim() &&
+      !complexityProfilerResult &&
+      !isComplexityProfiling) {
       handleComplexityRefresh();
     }
   }, [rightPanelView, files, complexityProfilerResult, isComplexityProfiling, handleComplexityRefresh]);
@@ -671,15 +671,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   direction="vertical"
                   headerActions={
                     <div className="flex items-center gap-4">
-                      <label className="flex items-center gap-2 cursor-pointer select-none" style={{ fontSize: '14px' }}>
-                        <input
-                          type="checkbox"
+                      <div className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
+                        <Switch
                           checked={proveAndVerify}
-                          onChange={(e) => setProveAndVerify(e.target.checked)}
-                          className="rounded"
+                          onCheckedChange={setProveAndVerify}
+                          className="scale-75"
                         />
-                        Prove & Verify
-                      </label>
+                        <span className="text-foreground">Prove & Verify</span>
+                      </div>
                       <Button
                         onClick={handleRun}
                         disabled={isRunning}
@@ -687,7 +686,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         size="sm"
                         className="h-8 px-6"
                       >
-                        <Play className="h-3 w-3" />
                         Run
                       </Button>
                     </div>
@@ -711,7 +709,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
             <ResizablePanel defaultSize={41} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel">
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
-                  <div className="flex items-stretch h-full overflow-x-auto bg-muted/20 rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40">
+                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
                     {rightPanelTabs.map((tab) => (
                       <button
                         key={tab.value}
@@ -828,43 +826,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     <div className="h-full flex flex-col">
                       {/* Profiler Controls */}
                       <div className="px-4 py-3 border-b border-border bg-muted/10">
-                        <div className="flex items-center justify-between">
-                          {/* Left: Heatmap Toggle */}
-                          <label className="flex items-center gap-2 cursor-pointer select-none" style={{ fontSize: '13px' }}>
-                            <input
-                              type="checkbox"
-                              checked={enableHeatmap}
-                              onChange={(e) => setEnableHeatmap(e.target.checked)}
-                              className="rounded"
-                            />
-                            Heatmap
-                          </label>
-
-                          {/* Center: View Mode Toggle */}
-                          <div className="flex items-stretch h-8 bg-muted/20 rounded-sm overflow-hidden">
-                            <button
-                              onClick={() => setComplexityViewMode('table')}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'table'
-                                ? 'text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                              style={{ fontSize: '13px', ...(complexityViewMode === 'table' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                            >
-                              Table
-                            </button>
-                            <button
-                              onClick={() => setComplexityViewMode('flamegraph')}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
-                                ? 'text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                              }`}
-                              style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                            >
-                              Flamegraph
-                            </button>
-                          </div>
-
-                          {/* Right: Refresh Button */}
+                        <div className="flex items-center justify-between relative">
+                          {/* Left: Refresh Button */}
                           <Button
                             onClick={handleComplexityRefresh}
                             disabled={isComplexityProfiling}
@@ -874,6 +837,40 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           >
                             <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
                           </Button>
+
+                          {/* Center: View Mode Toggle */}
+                          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
+                            <button
+                              onClick={() => setComplexityViewMode('table')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'table'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'table' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Table
+                            </button>
+                            <button
+                              onClick={() => setComplexityViewMode('flamegraph')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Flamegraph
+                            </button>
+                          </div>
+
+                          {/* Right: Heatmap Toggle */}
+                          <div className="flex items-center gap-2 select-none" style={{ fontSize: '13px' }}>
+                            <Switch
+                              checked={enableHeatmap}
+                              onCheckedChange={setEnableHeatmap}
+                              className="scale-75"
+                            />
+                            <span className="text-foreground">Heatmap</span>
+                          </div>
                         </div>
                       </div>
 
