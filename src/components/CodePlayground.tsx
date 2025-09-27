@@ -28,9 +28,11 @@ import { NoirEditorWithHover } from "./NoirEditorWithHover";
 import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
+import { AcirDagViewer } from "./complexity-analysis/AcirDagViewer";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
+import { ProgramCompilationArtifacts } from '@noir-lang/noir_wasm';
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -90,13 +92,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'dag'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
-    { value: 'profiler' as const, label: 'Profiler' }
+    { value: 'profiler' as const, label: 'Profiler' },
+    { value: 'dag' as const, label: 'DAG' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -108,6 +111,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [heatmapMetricType, setHeatmapMetricType] = useState<MetricType>('acir');
   const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
   const [selectedHotspotLine, setSelectedHotspotLine] = useState<number | undefined>(undefined);
+  const [compilationArtifacts, setCompilationArtifacts] = useState<ProgramCompilationArtifacts | null>(null);
 
   // Panel collapse state
   const { panelState, togglePanel } = usePanelState();
@@ -180,6 +184,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const prevRightPanelViewRef = useRef(rightPanelView);
   useEffect(() => {
     const wasPrevProfilerTab = prevRightPanelViewRef.current === 'profiler';
+    const wasPrevDagTab = prevRightPanelViewRef.current === 'dag';
     prevRightPanelViewRef.current = rightPanelView;
 
     // Trigger profiling when switching to profiler tab if:
@@ -193,6 +198,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
       !isComplexityProfiling) {
       handleComplexityRefresh();
     }
+
+    // Note: DAG compilation will be implemented when NoirService is updated
+    // to expose compilation artifacts
   }, [rightPanelView, files, complexityProfilerResult, isComplexityProfiling, handleComplexityRefresh]);
 
   // Auto-scroll console to bottom when new messages arrive
@@ -249,6 +257,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     // Reset execution state
     setExecutionSteps([]);
     setProofData(null);
+    setCompilationArtifacts(null);
     setConsoleMessages([]);
     setSelectedExample(exampleId);
 
@@ -312,6 +321,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
       // NoirService handles error display through steps, just set proof data if successful
       if (!result.error) {
         setProofData(result);
+        // Capture compilation artifacts for DAG visualization
+        if (result.compilationArtifacts) {
+          setCompilationArtifacts(result.compilationArtifacts);
+        }
       }
     } catch (error) {
       addConsoleMessage('error', `Execution Error: ${error instanceof Error ? error.message : "Unknown error occurred"}`);
@@ -968,6 +981,24 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           }}
                         />
                       </div>
+                    </div>
+                  ) : rightPanelView === 'dag' ? (
+                    <div className="h-full">
+                      <AcirDagViewer
+                        compilationArtifacts={compilationArtifacts}
+                        sourceCode={files[activeFile] || ''}
+                        onNodeClick={(nodeId, sourceLocation) => {
+                          if (sourceLocation && monacoEditorRef.current) {
+                            monacoEditorRef.current.setPosition({
+                              lineNumber: sourceLocation.line,
+                              column: sourceLocation.column || 1
+                            });
+                            monacoEditorRef.current.focus();
+                          }
+                        }}
+                        className="h-full"
+                        isVisible={rightPanelView === 'dag'}
+                      />
                     </div>
                   ) : null}
                 </div>

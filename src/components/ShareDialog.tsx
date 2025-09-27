@@ -119,7 +119,12 @@ export function ShareDialog({
       setButtonText('Shared!');
 
       // Automatically copy to clipboard
-      await navigator.clipboard.writeText(url);
+      try {
+        await navigator.clipboard.writeText(url);
+      } catch (clipboardError) {
+        // Clipboard operation failed - continue without copying
+        console.warn('Failed to copy URL to clipboard:', clipboardError);
+      }
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to share snippet';
@@ -147,12 +152,20 @@ export function ShareDialog({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopyFeedback(true);
-      
+
       // Show brief feedback
       setTimeout(() => setCopyFeedback(false), 1500);
-      
+
     } catch (err) {
-      // Failed to copy URL
+      // Failed to copy URL - fallback to manual selection
+      console.warn('Failed to copy URL to clipboard:', err);
+
+      // Try to select the text in the input field as fallback
+      const urlInput = document.getElementById('share-url') as HTMLInputElement;
+      if (urlInput) {
+        urlInput.select();
+        urlInput.setSelectionRange(0, 99999); // For mobile devices
+      }
     }
   };
 

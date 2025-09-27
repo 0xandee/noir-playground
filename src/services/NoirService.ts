@@ -16,6 +16,7 @@ export interface NoirExecutionResult {
   error?: string;
   returnValue?: string;
   witness?: Uint8Array;
+  compilationArtifacts?: any; // ProgramCompilationArtifacts from @noir-lang/noir_wasm
 }
 
 /**
@@ -163,7 +164,8 @@ export class NoirService {
           executionTime,
           returnValue,
           witness,
-          publicInputs
+          publicInputs,
+          compilationArtifacts: compilationResult.program
         };
       }
       
@@ -202,7 +204,8 @@ export class NoirService {
         publicInputs: proof.publicInputs?.map((input: any) => `${input.toString(16).padStart(64, '0')}`),
         executionTime,
         returnValue,
-        witness
+        witness,
+        compilationArtifacts: compilationResult.program
       };
     } catch (error) {
       // Handle constraint violations and other execution errors
