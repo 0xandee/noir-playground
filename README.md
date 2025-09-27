@@ -93,7 +93,7 @@ npm run preview  # Preview production build
 
 ## UI Inspiration
 
--   Inspired by the excellent [Cairo VM Playground](https://cairovm.codes/).
+-   Inspired by the excellent [Cairo VM Playground](https://cairovm.codes/) and [Walnut](https://app.walnut.dev/).
 
 ## Contributing
 
