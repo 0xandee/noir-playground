@@ -89,6 +89,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler'>('inputs');
+  const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
+  const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
@@ -208,6 +210,23 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
     return () => clearTimeout(timeoutId);
   }, [panelState]);
+
+  // Track right panel width with ResizeObserver
+  useEffect(() => {
+    if (!rightPanelRef.current) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setRightPanelWidth(entry.contentRect.width);
+      }
+    });
+
+    resizeObserver.observe(rightPanelRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
 
   const loadExample = (exampleId: string) => {
     const example = noirExamples.find(ex => ex.id === exampleId);
@@ -707,7 +726,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
             {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
             <ResizablePanel defaultSize={41} minSize={20}>
-              <section className="h-full flex flex-col" aria-label="Right Panel">
+              <section className="h-full flex flex-col" aria-label="Right Panel" ref={rightPanelRef}>
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                   <div className="flex items-stretch h-full overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
                     {rightPanelTabs.map((tab) => (
@@ -825,21 +844,21 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   ) : rightPanelView === 'profiler' ? (
                     <div className="h-full flex flex-col">
                       {/* Profiler Controls */}
-                      <div className="px-4 py-3 border-b border-border bg-muted/10">
-                        <div className="flex items-center justify-between relative">
-                          {/* Left: Refresh Button */}
+                      <div className="px-2 sm:px-4 py-3 border-b border-border bg-muted/10">
+                        {/* Single row layout for normal width, 2-row for narrow */}
+                        <div className={`${rightPanelWidth > 320 ? 'flex' : 'hidden'} items-center justify-between`}>
+                          {/* Normal width: Single row layout */}
                           <Button
                             onClick={handleComplexityRefresh}
                             disabled={isComplexityProfiling}
                             variant="ghost"
                             size="sm"
-                            className="h-7 px-2"
+                            className="h-7 px-2 flex-shrink-0"
                           >
                             <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
                           </Button>
 
-                          {/* Center: View Mode Toggle */}
-                          <div className="absolute left-1/2 transform -translate-x-1/2 flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
+                          <div className="flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
                             <button
                               onClick={() => setComplexityViewMode('metrics')}
                               className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
@@ -862,14 +881,63 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             </button>
                           </div>
 
-                          {/* Right: Heatmap Toggle */}
-                          <div className="flex items-center gap-2 select-none" style={{ fontSize: '13px' }}>
+                          <div className="flex items-center gap-2 select-none flex-shrink-0" style={{ fontSize: '13px' }}>
                             <Switch
                               checked={enableHeatmap}
                               onCheckedChange={setEnableHeatmap}
                               className="scale-75"
                             />
                             <span className="text-foreground">Heatmap</span>
+                          </div>
+                        </div>
+
+                        {/* Narrow width: Two row layout */}
+                        <div className={`${rightPanelWidth <= 320 ? 'block' : 'hidden'} space-y-2`}>
+                          <div className="flex items-center justify-between">
+                            <Button
+                              onClick={handleComplexityRefresh}
+                              disabled={isComplexityProfiling}
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                            >
+                              <RefreshCw className={`h-3 w-3 mr-1 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
+                              <span className="text-xs">Refresh</span>
+                            </Button>
+
+                            <div className="flex items-center gap-2 select-none" style={{ fontSize: '13px' }}>
+                              <Switch
+                                checked={enableHeatmap}
+                                onCheckedChange={setEnableHeatmap}
+                                className="scale-75"
+                              />
+                              <span className="text-foreground">Heatmap</span>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-center">
+                            <div className="flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
+                              <button
+                                onClick={() => setComplexityViewMode('metrics')}
+                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
+                                  ? 'text-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                              >
+                                Metrics
+                              </button>
+                              <button
+                                onClick={() => setComplexityViewMode('flamegraph')}
+                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
+                                  ? 'text-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                              >
+                                Flamegraph
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>
