@@ -15,9 +15,9 @@ interface CombinedComplexityPanelProps {
   onFunctionClick?: (functionName: string) => void;
   className?: string;
   enableHeatmap?: boolean;
-  onViewModeChange?: (viewMode: 'table' | 'flamegraph') => void;
+  onViewModeChange?: (viewMode: 'metrics' | 'flamegraph') => void;
   onRefresh?: () => void;
-  viewMode?: 'table' | 'flamegraph';
+  viewMode?: 'metrics' | 'flamegraph';
   isProfiling?: boolean;
   profilerResult?: ProfilerResult | null;
   onProfilingStart?: () => void;
@@ -41,7 +41,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   onProfilingComplete,
   onProfilingError
 }) => {
-  const [internalViewMode, setInternalViewMode] = useState<'table' | 'flamegraph'>('table');
+  const [internalViewMode, setInternalViewMode] = useState<'metrics' | 'flamegraph'>('metrics');
   const [internalProfilerResult, setInternalProfilerResult] = useState<ProfilerResult | null>(null);
   const [internalIsProfiling, setInternalIsProfiling] = useState(false);
 
@@ -50,7 +50,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   const profilerResult = externalProfilerResult ?? internalProfilerResult;
   const isProfiling = externalIsProfiling ?? internalIsProfiling;
 
-  const setViewMode = (mode: 'table' | 'flamegraph') => {
+  const setViewMode = (mode: 'metrics' | 'flamegraph') => {
     if (onViewModeChange) {
       onViewModeChange(mode);
     } else {
@@ -232,20 +232,11 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
       {profilerResult && !isProfiling && (
         <div className={`flex-1 overflow-hidden ${viewMode === 'flamegraph' ? 'px-4 pt-4' : ''}`}>
-          {/* Content Area - Flamegraph or Table View */}
+          {/* Content Area - Flamegraph or Metrics View */}
           <div className="h-full">
             {viewMode === 'flamegraph' ? (
               /* Dual SVG Viewers - Vertical Stack */
               <div className="flex flex-col gap-4 h-full">
-                {/* Circuit Metrics - Show only on Flamegraph tab */}
-                {profilerResult.circuitMetrics && (
-                  <div className="mb-4">
-                    <CircuitMetrics
-                      metrics={profilerResult.circuitMetrics}
-                      className="w-full"
-                    />
-                  </div>
-                )}
                 {/* ACIR Opcodes Flamegraph */}
                 <div className="flex-1 min-h-0">
                   <SVGFlamegraphViewer
@@ -269,13 +260,24 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
                 </div>
               </div>
             ) : (
-              /* Table View */
-              <div className="h-full">
-                <ComplexityTableView
-                  data={tableData}
-                  onLineClick={handleLineClick}
-                  className="h-full"
-                />
+              /* Metrics View */
+              <div className="h-full flex flex-col">
+                {/* Circuit Metrics - Show in metrics view */}
+                {profilerResult.circuitMetrics && (
+                  <div className="p-4 border-b border-border">
+                    <CircuitMetrics
+                      metrics={profilerResult.circuitMetrics}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <ComplexityTableView
+                    data={tableData}
+                    onLineClick={handleLineClick}
+                    className="h-full"
+                  />
+                </div>
               </div>
             )}
           </div>

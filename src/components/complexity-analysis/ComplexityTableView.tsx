@@ -143,7 +143,7 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
 
       {/* Table */}
       <div className="flex-1 overflow-auto">
-        <Table>
+        <Table className="border-b">
           <TableHeader>
             <TableRow>
               <TableHead className="w-20 text-center">
@@ -204,15 +204,15 @@ export const ComplexityTableView: React.FC<ComplexityTableViewProps> = ({
                 onClick={() => handleRowClick(item)}
                 title="Click to jump to line in code"
               >
-                <TableCell className="font-mono text-center" style={{ fontSize: '13px' }}>
+                <TableCell className="font-mono text-center border-r" style={{ fontSize: '13px' }}>
                   {item.lineNumber}
                 </TableCell>
-                <TableCell className="font-mono max-w-md" style={{ fontSize: '13px' }}>
+                <TableCell className="font-mono max-w-md border-r" style={{ fontSize: '13px' }}>
                   <span title={decodeHtmlEntities(item.expression)}>
                     {truncateExpression(item.expression)}
                   </span>
                 </TableCell>
-                <TableCell className="text-center">
+                <TableCell className="text-center border-r">
                   {item.acirOpcodes}
                 </TableCell>
                 <TableCell className="text-center">

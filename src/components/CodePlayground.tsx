@@ -109,7 +109,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const { panelState, togglePanel } = usePanelState();
 
   // Complexity panel state
-  const [complexityViewMode, setComplexityViewMode] = useState<'table' | 'flamegraph'>('table');
+  const [complexityViewMode, setComplexityViewMode] = useState<'metrics' | 'flamegraph'>('metrics');
   const [complexityProfilerResult, setComplexityProfilerResult] = useState<ProfilerResult | null>(null);
   const [isComplexityProfiling, setIsComplexityProfiling] = useState(false);
 
@@ -546,7 +546,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
           {/* Desktop Layout - Resizable Panels */}
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Left Panel - Code Editor and Console */}
-            <ResizablePanel defaultSize={70} minSize={30}>
+            <ResizablePanel defaultSize={59} minSize={30}>
               <ResizablePanelGroup direction="vertical" className="h-full">
                 {/* Code Editor Panel */}
                 <ResizablePanel defaultSize={70} minSize={50}>
@@ -841,14 +841,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           {/* Center: View Mode Toggle */}
                           <div className="absolute left-1/2 transform -translate-x-1/2 flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
                             <button
-                              onClick={() => setComplexityViewMode('table')}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'table'
+                              onClick={() => setComplexityViewMode('metrics')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
                                 ? 'text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
                                 }`}
-                              style={{ fontSize: '13px', ...(complexityViewMode === 'table' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
                             >
-                              Table
+                              Metrics
                             </button>
                             <button
                               onClick={() => setComplexityViewMode('flamegraph')}
