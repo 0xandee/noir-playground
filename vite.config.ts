@@ -24,14 +24,10 @@ export default defineConfig(({ mode }) => ({
       // Redirect WASM requests from deps to public directory
       server.middlewares.use((req, res, next) => {
         if (req.url && req.url.endsWith('.wasm')) {
-          console.log(`[VITE] WASM request intercepted: ${req.url}`);
-          
           // Redirect Vite dependency WASM requests to public directory
           if (req.url.includes('node_modules/.vite/deps/noirc_abi_wasm_bg.wasm')) {
-            console.log('[VITE] Redirecting noirc_abi_wasm_bg.wasm to public directory');
             req.url = '/wasm/noirc_abi_wasm_bg.wasm';
           } else if (req.url.includes('node_modules/.vite/deps/acvm_js_bg.wasm')) {
-            console.log('[VITE] Redirecting acvm_js_bg.wasm to public directory');
             req.url = '/wasm/acvm_js_bg.wasm';
           }
         }

@@ -115,6 +115,21 @@ export default async function handler(req, res) {
     return res.status(200).send(html);
   }
   
+<<<<<<< HEAD
+  // For regular users, serve the React app directly
+  // This prevents redirect loops by serving the SPA instead of redirecting
+  try {
+    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    const indexHtml = fs.readFileSync(indexPath, 'utf8');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=0');
+    return res.status(200).send(indexHtml);
+  } catch (error) {
+    // Fallback to redirect if we can't read the file
+    return res.redirect(302, '/');
+  }
+=======
   // For regular users, redirect to the React app
   res.redirect(302, `https://noir-playground.app/share/${id}`);
+>>>>>>> origin/dev
 }

@@ -23,7 +23,7 @@ class SnippetService {
   private static instance: SnippetService;
 
   constructor() {
-    console.log('SnippetService initialized');
+    // Service initialized
   }
 
   /**
@@ -44,12 +44,10 @@ class SnippetService {
    * @throws Error if validation fails or database operation fails
    */
   async saveSnippet(snippetData: CreateSnippetData): Promise<SharedSnippet> {
-    console.log('SnippetService: Saving snippet with title:', snippetData.title);
     
     try {
       // Serialize the data for database storage
       const serializedData = serializeSnippetForDatabase(snippetData);
-      console.log('SnippetService: Data serialized successfully');
 
       // Insert into database
       const { data, error } = await supabase
@@ -59,7 +57,6 @@ class SnippetService {
         .single();
 
       if (error) {
-        console.error('SnippetService: Database error during insert:', error);
         throw new Error(`Failed to save snippet: ${error.message}`);
       }
 
@@ -67,15 +64,12 @@ class SnippetService {
         throw new Error('Failed to save snippet: No data returned from database');
       }
 
-      console.log('SnippetService: Snippet saved successfully with ID:', data.id);
-
       // Validate and deserialize the returned data
       validateDatabaseRow(data);
       const deserializedSnippet = deserializeSnippetFromDatabase(data as DatabaseSnippetRow);
       
       return deserializedSnippet;
     } catch (error) {
-      console.error('SnippetService: Error saving snippet:', error);
       throw new Error(`Failed to save snippet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -88,7 +82,6 @@ class SnippetService {
    * @throws Error if database operation fails
    */
   async getSnippet(id: string): Promise<SharedSnippet | null> {
-    console.log('SnippetService: Fetching snippet with ID:', id);
 
     if (!id || typeof id !== 'string' || id.trim().length === 0) {
       throw new Error('Snippet ID is required and must be a non-empty string');
@@ -103,19 +96,14 @@ class SnippetService {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          console.log('SnippetService: Snippet not found with ID:', id);
           return null;
         }
-        console.error('SnippetService: Database error during fetch:', error);
         throw new Error(`Failed to fetch snippet: ${error.message}`);
       }
 
       if (!data) {
-        console.log('SnippetService: No snippet found with ID:', id);
         return null;
       }
-
-      console.log('SnippetService: Snippet fetched successfully');
 
       // Validate and deserialize the data
       validateDatabaseRow(data);
@@ -123,7 +111,6 @@ class SnippetService {
       
       return deserializedSnippet;
     } catch (error) {
-      console.error('SnippetService: Error fetching snippet:', error);
       throw new Error(`Failed to fetch snippet: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -137,7 +124,6 @@ class SnippetService {
    * @throws Error if validation fails or database operation fails
    */
   async listSnippets(limit: number = 20, offset: number = 0): Promise<SharedSnippet[]> {
-    console.log(`SnippetService: Fetching snippets with limit: ${limit}, offset: ${offset}`);
 
     // Validate pagination parameters
     if (typeof limit !== 'number' || limit < 1 || limit > 100) {
@@ -156,16 +142,12 @@ class SnippetService {
         .range(offset, offset + limit - 1);
 
       if (error) {
-        console.error('SnippetService: Database error during list fetch:', error);
         throw new Error(`Failed to fetch snippets: ${error.message}`);
       }
 
       if (!data || !Array.isArray(data)) {
-        console.log('SnippetService: No snippets found');
         return [];
       }
-
-      console.log(`SnippetService: Fetched ${data.length} snippets successfully`);
 
       // Validate and deserialize all snippets
       const deserializedSnippets: SharedSnippet[] = [];
@@ -175,14 +157,12 @@ class SnippetService {
           const deserializedSnippet = deserializeSnippetFromDatabase(row as DatabaseSnippetRow);
           deserializedSnippets.push(deserializedSnippet);
         } catch (deserializeError) {
-          console.warn('SnippetService: Failed to deserialize snippet:', row.id, deserializeError);
           // Skip invalid snippets but continue processing others
         }
       }
 
       return deserializedSnippets;
     } catch (error) {
-      console.error('SnippetService: Error fetching snippets:', error);
       throw new Error(`Failed to fetch snippets: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -199,14 +179,11 @@ class SnippetService {
         .select('count', { count: 'exact', head: true });
       
       if (error) {
-        console.error('SnippetService: Service not ready:', error);
         return false;
       }
-      
-      console.log('SnippetService: Service is ready');
+
       return true;
     } catch (error) {
-      console.error('SnippetService: Error checking service readiness:', error);
       return false;
     }
   }

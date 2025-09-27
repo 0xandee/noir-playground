@@ -8,6 +8,28 @@ export interface NoirExample {
 
 export const noirExamples: NoirExample[] = [
   {
+    id: "playground",
+    name: "Playground",
+    description: "The default playground with assertions",
+    code: `pub fn main(x: Field, y: pub Field) -> pub Field {
+    // Verify that x and y are both non-zero
+    assert(x != 0);
+    assert(y != 0);
+    
+    // Compute the sum and verify it's greater than both inputs
+    let sum = x + y;
+    assert(sum as u64 > x as u64);
+    assert(sum as u64 > y as u64);
+    
+    // Return the sum as proof output
+    sum
+}`,
+    inputs: {
+      x: "10",
+      y: "25"
+    }
+  },
+  {
     id: "basic-types",
     name: "Basic Types",
     description: "Simple function with Field, u32, and boolean parameters",
@@ -59,22 +81,29 @@ export const noirExamples: NoirExample[] = [
   },
   {
     id: "cryptographic",
-    name: "Cryptographic Example",
+    name: "Cryptographic",
     description: "Pedersen hash and merkle path verification",
     code: `pub fn main(
     secret: Field,
-    pub_hash: pub Field,
     nonce: u32,
     merkle_path: [Field; 8],
     pub_root: pub Field
 ) -> pub Field {
+    // Compute hash of secret and nonce
     let computed_hash = std::hash::pedersen_hash([secret, nonce as Field]);
-    assert(computed_hash[0] == pub_hash);
-    pub_root
+    
+    // Simple merkle path verification (compute hash with first element)
+    let path_hash = std::hash::pedersen_hash([computed_hash, merkle_path[0]]);
+    
+    // Basic constraints
+    assert(secret != 0);
+    assert(path_hash != 0);
+    
+    // Return the computed hash as proof
+    computed_hash
 }`,
     inputs: {
       secret: "777888999",
-      pub_hash: "123",
       nonce: "12345", 
       merkle_path: "[1, 2, 3, 4, 5, 6, 7, 8]",
       pub_root: "999888777"
@@ -82,7 +111,7 @@ export const noirExamples: NoirExample[] = [
   },
   {
     id: "complex-structures",
-    name: "Complex Data Structures",
+    name: "Complex",
     description: "Multiple arrays and complex data types",
     code: `pub fn main(
     balance: u64,
@@ -100,28 +129,6 @@ export const noirExamples: NoirExample[] = [
       pub_total: "5000000",
       valid_txs: "[1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1]",
       timestamp: "1640995200"
-    }
-  },
-  {
-    id: "current-example",
-    name: "Current Example",
-    description: "The default playground example with assertions",
-    code: `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
-}`,
-    inputs: {
-      x: "10",
-      y: "25"
     }
   }
 ];

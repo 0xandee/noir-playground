@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Editor, { Monaco } from '@monaco-editor/react';
 import * as monaco from 'monaco-editor';
 
@@ -72,7 +72,7 @@ const registerNoirLanguage = (monaco: Monaco) => {
       { token: 'identifier', foreground: '9CDCFE' },
     ],
     colors: {
-      'editor.background': '#1E1E1E',
+      'editor.background': '#100e0f',
       'editor.foreground': '#D4D4D4',
       'editorLineNumber.foreground': '#858585',
       'editor.selectionBackground': '#264F78',
@@ -108,8 +108,11 @@ const registerNoirLanguage = (monaco: Monaco) => {
   });
 };
 
-export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disabled = false, language = 'noir' }) => {
+export const NoirEditor = forwardRef<monaco.editor.IStandaloneCodeEditor | null, NoirEditorProps>(({ value, onChange, disabled = false, language = 'noir' }, ref) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  // Expose editor ref to parent
+  useImperativeHandle(ref, () => editorRef.current);
 
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
@@ -138,7 +141,7 @@ export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disable
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         automaticLayout: true,
-        fontSize: 14,
+        fontSize: 13,
         fontFamily: 'Consolas, Monaco, "Courier New", monospace',
         lineHeight: 21,
         tabSize: 2,
@@ -156,4 +159,4 @@ export const NoirEditor: React.FC<NoirEditorProps> = ({ value, onChange, disable
       }}
     />
   );
-};
+});

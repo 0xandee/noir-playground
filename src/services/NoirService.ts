@@ -32,15 +32,12 @@ export class NoirService {
     
     try {
       // Initialize WASM modules - this should be done before using Noir or bb.js
-      console.log('[NoirService] Initializing WASM modules...');
       
       // Create a test instance to ensure WASM is loaded
       await new Promise(resolve => setTimeout(resolve, 100));
       
       this.wasmInitialized = true;
-      console.log('[NoirService] WASM modules initialized successfully');
     } catch (error) {
-      console.error('[NoirService] WASM initialization failed:', error);
       throw new Error('Failed to initialize WASM modules');
     }
   }
@@ -114,17 +111,9 @@ export class NoirService {
     }
 
     try {
-      console.log('[NoirService] Program structure:', {
-        hasProgram: !!compilationResult.program,
-        programKeys: compilationResult.program ? Object.keys(compilationResult.program) : [],
-        hasBytecode: !!(compilationResult.program as any)?.bytecode,
-        hasCircuitBytecode: !!(compilationResult.program as any)?.circuit?.bytecode
-      });
-      
       // The Noir instance expects the inner program object, not the wrapper
       const program = (compilationResult.program as any).program;
       this.noir = new Noir(program);
-      console.log('[NoirService] Noir instance created successfully');
       
       // Initialize UltraHonkBackend for proof generation
       // UltraHonkBackend needs the bytecode from the program
@@ -133,17 +122,9 @@ export class NoirService {
         throw new Error('No bytecode found in compiled program');
       }
       
-      console.log('[NoirService] Initializing UltraHonkBackend with bytecode:', { 
-        hasBytecode: !!bytecode,
-        bytecodeType: typeof bytecode,
-        bytecodeLength: bytecode?.length || 'N/A'
-      });
-      
       this.backend = new UltraHonkBackend(bytecode);
-      console.log('[NoirService] UltraHonkBackend initialized successfully');
     } catch (initError) {
-      console.error('[NoirService] Initialization error:', initError);
-      throw new Error(`Failed to initialize Noir circuit: ${initError instanceof Error ? initError.message : 'Unknown error'}`);
+      throw new Error(`Failed to initialize Noir circuit: ${initError instanceof Error ? initError.message : 'Unknown error'}`);;
     }
 
     const initStep = this.createStep('success', 'Circuit initialized');
@@ -164,9 +145,7 @@ export class NoirService {
     }
 
     try {
-      console.log('[NoirService] Executing with inputs:', processedInputs);
       const { witness, returnValue } = await this.noir.execute(processedInputs);
-      console.log('[NoirService] Execution successful, witness generated');
       
       const executeStep = this.createStep('success', `Execution successful. Return value: ${returnValue || 'None'}`);
       steps.push(executeStep);
@@ -196,7 +175,6 @@ export class NoirService {
       }
       
       const proof = await this.backend.generateProof(witness);
-      console.log('[NoirService] Proof generation successful');
       
       const proofStep = this.createStep('success', 'Proof generated successfully');
       steps.push(proofStep);
@@ -206,7 +184,6 @@ export class NoirService {
       onStep(this.createStep('running', 'Verifying proof...'));
       
       const isValid = await this.backend.verifyProof(proof);
-      console.log('[NoirService] Proof verification result:', isValid);
       
       const verifyStep = this.createStep(
         isValid ? 'success' : 'error', 
@@ -229,7 +206,6 @@ export class NoirService {
       };
     } catch (error) {
       // Handle constraint violations and other execution errors
-      console.error('[NoirService] Circuit execution error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown execution error';
       throw new Error(`Circuit execution failed: ${errorMessage}`);
     }
@@ -280,7 +256,7 @@ export class NoirService {
       }
       
     } catch (error) {
-      console.warn('[NoirService] Error extracting public inputs:', error);
+      // Error extracting public inputs
     }
     
     return publicInputs;

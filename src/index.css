@@ -8,45 +8,45 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* ZK Proof Playground Dark Theme */
-    --background: 220 23% 6%;
-    --foreground: 210 40% 98%;
+    /* ZK Proof Playground Dark Theme - Unified Monochromatic */
+    --background: 300 9% 7%;
+    --foreground: 210 13% 91%;
 
-    --card: 222 20% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 210 13% 91%;
 
-    --popover: 222 20% 8%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 210 13% 91%;
 
     --primary: 195 100% 65%;
-    --primary-foreground: 220 23% 6%;
+    --primary-foreground: 225 9% 6%;
 
-    --secondary: 222 20% 12%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 210 13% 91%;
 
-    --muted: 222 20% 12%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 41%;
 
-    --accent: 222 20% 15%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 210 13% 91%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 210 13% 91%;
 
-    --border: 222 20% 15%;
-    --input: 222 20% 12%;
+    --border: 0 0% 13%;
+    --input: 0 0% 13%;
     --ring: 195 100% 65%;
 
     --success: 142 76% 36%;
-    --success-foreground: 210 40% 98%;
+    --success-foreground: 60 6% 95%;
 
     --warning: 38 92% 50%;
-    --warning-foreground: 220 23% 6%;
+    --warning-foreground: 225 9% 13%;
 
-    --editor-bg: 222 23% 7%;
+    --editor-bg: 0 0% 12%;
     --code-highlight: 195 100% 65%;
     --gradient-primary: linear-gradient(135deg, hsl(195 100% 65%), hsl(220 100% 70%));
-    --gradient-accent: linear-gradient(135deg, hsl(222 20% 12%), hsl(222 20% 8%));
+    --gradient-accent: linear-gradient(135deg, hsl(0 0% 12%), hsl(0 0% 12%));
 
     --radius: 0.75rem;
 
@@ -56,7 +56,7 @@ All colors MUST be HSL.
 
     --sidebar-primary: 240 5.9% 10%;
 
-    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-primary-foreground: 210 13% 91%;
 
     --sidebar-accent: 240 4.8% 95.9%;
 
@@ -68,40 +68,40 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 300 9% 7%;
+    --foreground: 210 13% 91%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 12%;
+    --card-foreground: 210 13% 91%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 210 13% 91%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 225 9% 6%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 210 13% 91%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 210 13% 91%;
 
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 210 13% 91%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 0 0% 13%;
+    --input: 0 0% 13%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-background: 225 9% 6%;
+    --sidebar-foreground: 210 13% 91%;
     --sidebar-primary: 224.3 76.3% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 13%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
@@ -111,20 +111,25 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html, body {
+    overflow-x: hidden;
+    overscroll-behavior: none;
+  }
+
   body {
     @apply bg-background text-foreground;
   }
 
   /* Monaco Editor dark theme fix */
   .monaco-editor {
-    background-color: #1E1E1E !important;
+    background-color: #161616 !important;
   }
-  
+
   .monaco-editor .margin {
-    background-color: #1E1E1E !important;
+    /* background-color: #161616 !important; */
   }
-  
+
   .monaco-editor-background {
-    background-color: #1E1E1E !important;
+    background-color: #161616 !important;
   }
 }

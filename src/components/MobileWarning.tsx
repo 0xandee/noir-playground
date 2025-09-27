@@ -19,12 +19,12 @@ const MobileWarning = () => {
           <div className="flex items-center justify-center gap-4 text-muted-foreground">
             <div className="flex flex-col items-center gap-2">
               <Smartphone className="h-6 w-6 opacity-50" />
-              <span className="text-xs">Mobile</span>
+              <span style={{fontSize: '13px'}}>Mobile</span>
             </div>
             <div className="text-2xl">→</div>
             <div className="flex flex-col items-center gap-2">
               <Monitor className="h-6 w-6 text-primary" />
-              <span className="text-xs">Desktop</span>
+              <span style={{fontSize: '13px'}}>Desktop</span>
             </div>
           </div>
           <p className="text-sm text-muted-foreground">

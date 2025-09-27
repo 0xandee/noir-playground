@@ -62,7 +62,6 @@ export class PreviewService {
         cached: false
       };
     } catch (error) {
-      console.error('Failed to generate snippet preview:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -114,7 +113,6 @@ export class PreviewService {
         cached: false
       };
     } catch (error) {
-      console.error('Failed to generate code preview:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error occurred'
@@ -131,7 +129,6 @@ export class PreviewService {
       const result = await this.generateSnippetPreview(snippet);
       return result.success;
     } catch (error) {
-      console.warn('Failed to pre-generate share preview:', error);
       return false;
     }
   }
@@ -150,7 +147,6 @@ export class PreviewService {
       
       return result.success ? result.dataUrl || null : null;
     } catch (error) {
-      console.error('Failed to get share preview URL:', error);
       return null;
     }
   }
@@ -169,7 +165,6 @@ export class PreviewService {
       
       return result.success ? result.dataUrl || null : null;
     } catch (error) {
-      console.error('Failed to get Twitter preview URL:', error);
       return null;
     }
   }
@@ -180,7 +175,6 @@ export class PreviewService {
   clearCache(): void {
     // This is handled by the codePreviewGenerator cache functions
     // In a production environment, you might want to implement more sophisticated cache management
-    console.log('Preview cache cleared');
   }
 }
 
