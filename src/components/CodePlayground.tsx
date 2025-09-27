@@ -91,11 +91,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [rightPanelView, setRightPanelView] = useState<'inputs' | 'complexity' | 'metrics' | 'analysis' | 'debug'>('inputs');
 
   const rightPanelTabs = [
-    { value: 'inputs' as const, label: 'Input/Output', minWidth: '120px' },
-    { value: 'complexity' as const, label: 'Complexity', minWidth: '100px' },
-    { value: 'metrics' as const, label: 'Metrics', minWidth: '80px' },
-    { value: 'analysis' as const, label: 'Analysis', minWidth: '80px' },
-    { value: 'debug' as const, label: 'Debug', minWidth: '80px' }
+    { value: 'inputs' as const, label: 'Input/Output' },
+    { value: 'complexity' as const, label: 'Complexity' },
+    { value: 'metrics' as const, label: 'Metrics' },
+    { value: 'analysis' as const, label: 'Analysis' },
+    { value: 'debug' as const, label: 'Debug' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -704,7 +704,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           ? 'bg-background text-foreground shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
                           }`}
-                        style={{ fontSize: '13px', minWidth: tab.minWidth }}
+                        style={{ fontSize: '13px' }}
                       >
                         {tab.label}
                       </button>
