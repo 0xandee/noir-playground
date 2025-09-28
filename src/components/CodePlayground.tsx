@@ -31,6 +31,7 @@ import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexit
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
+import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -90,13 +91,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
-    { value: 'profiler' as const, label: 'Profiler' }
+    { value: 'profiler' as const, label: 'Profiler' },
+    { value: 'benchmark' as const, label: 'Benchmark' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -536,14 +538,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     if (allMessages.length === 0) {
       return (
         <div className="flex items-center gap-2">
-          <span className="text-foreground select-none">Ready to execute...</span>
+          <span className="text-foreground select-text">Ready to execute...</span>
         </div>
       );
     }
 
     return allMessages.map((msg, i) => (
       <div key={msg.id || i} className="flex items-center gap-2">
-        <span className={`select-none ${msg.type === "success" ? "text-green-400" :
+        <span className={`select-text ${msg.type === "success" ? "text-green-400" :
           msg.type === "error" ? "text-red-400" :
             msg.type === "info" ? "text-foreground" :
               "text-foreground"
@@ -969,6 +971,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         />
                       </div>
                     </div>
+                  ) : rightPanelView === 'benchmark' ? (
+                    <BenchmarkPanel
+                      sourceCode={files["main.nr"]}
+                      inputs={inputs}
+                      cargoToml={files["Nargo.toml"]}
+                      onConsoleMessage={addConsoleMessage}
+                    />
                   ) : null}
                 </div>
               </section>
