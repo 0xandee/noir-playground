@@ -6,7 +6,6 @@
 export interface StageMetrics {
   name: string;
   time: number; // milliseconds
-  memory: number; // MB
   percentage: number; // percentage of total time
   status: 'pending' | 'running' | 'success' | 'error';
   details?: string;
@@ -16,13 +15,11 @@ export interface SingleRunMetrics {
   runId: number;
   stages: {
     compile: StageMetrics;
-    init: StageMetrics;
     witness: StageMetrics;
     proof: StageMetrics;
     verify: StageMetrics;
   };
   totalTime: number;
-  peakMemory: number;
   proofSize: number;
   timestamp: Date;
   circuitName: string;
@@ -34,9 +31,6 @@ export interface StageStatistics {
   avgTime: number;
   minTime: number;
   maxTime: number;
-  avgMemory: number;
-  minMemory: number;
-  maxMemory: number;
   avgPercentage: number;
   stdDevTime: number;
   successRate: number; // percentage of successful runs
@@ -50,7 +44,6 @@ export interface BenchmarkSummary {
   minTotalTime: number;
   maxTotalTime: number;
   stdDevTime: number;
-  avgPeakMemory: number;
   avgProofSize: number;
 }
 
@@ -60,7 +53,6 @@ export interface BenchmarkResult {
   summary: BenchmarkSummary;
   stages: {
     compile: StageStatistics;
-    init: StageStatistics;
     witness: StageStatistics;
     proof: StageStatistics;
     verify: StageStatistics;
@@ -80,7 +72,6 @@ export interface BenchmarkConfig {
   verbose: boolean;
   backend: 'UltraHonk' | 'Barretenberg';
   circuitName?: string;
-  enableMemoryTracking: boolean;
   enableComparison: boolean;
 }
 
@@ -110,14 +101,12 @@ export const DEFAULT_BENCHMARK_CONFIG: BenchmarkConfig = {
   numberOfRuns: 1,
   verbose: false,
   backend: 'UltraHonk',
-  enableMemoryTracking: true,
   enableComparison: false,
 };
 
 // Stage names for consistent referencing
 export const STAGE_NAMES = {
   COMPILE: 'compile',
-  INIT: 'init',
   WITNESS: 'witness',
   PROOF: 'proof',
   VERIFY: 'verify',
@@ -137,7 +126,6 @@ export const PERFORMANCE_THRESHOLDS = {
 // Visual display configuration
 export interface BenchmarkDisplayConfig {
   showProgressBars: boolean;
-  showMemoryUsage: boolean;
   showPercentages: boolean;
   compactMode: boolean;
   animateStages: boolean;
@@ -145,7 +133,6 @@ export interface BenchmarkDisplayConfig {
 
 export const DEFAULT_DISPLAY_CONFIG: BenchmarkDisplayConfig = {
   showProgressBars: true,
-  showMemoryUsage: true,
   showPercentages: true,
   compactMode: false,
   animateStages: true,

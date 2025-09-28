@@ -125,18 +125,16 @@ export class BenchmarkService {
     onStageChange?: (stageName: string) => void
   ): Promise<SingleRunMetrics> {
     const startTime = performance.now();
-    const initialMemory = this.getMemoryUsage();
 
     const stages: Record<StageName, StageMetrics> = {
       compile: this.createEmptyStage('Compile'),
-      init: this.createEmptyStage('Initialize'),
       witness: this.createEmptyStage('Generate Witness'),
       proof: this.createEmptyStage('Generate Proof'),
       verify: this.createEmptyStage('Verify Proof'),
     };
 
-    let peakMemory = initialMemory;
     let proofSize = 0;
+    let lastCumulativeTime = 0; // Track last cumulative time to calculate stage durations
 
     // Reset NoirService for clean measurement
     this.noirService.reset();
@@ -162,13 +160,7 @@ export class BenchmarkService {
           const stageName = this.mapExecutionStepToStage(step.message);
           if (stageName && stages[stageName]) {
             onStageChange?.(stages[stageName].name);
-            this.updateStageFromStep(stages[stageName], step);
-
-            // Track peak memory during execution
-            const currentMemory = this.getMemoryUsage();
-            if (currentMemory > peakMemory) {
-              peakMemory = currentMemory;
-            }
+            lastCumulativeTime = this.updateStageFromStep(stages[stageName], step, lastCumulativeTime);
           }
         },
         cargoToml,
@@ -194,7 +186,6 @@ export class BenchmarkService {
         runId,
         stages,
         totalTime,
-        peakMemory,
         proofSize,
         timestamp: new Date(),
         circuitName: config.circuitName || 'main.nr',
@@ -242,7 +233,6 @@ export class BenchmarkService {
     const lowerMessage = message.toLowerCase();
 
     if (lowerMessage.includes('compil')) return STAGE_NAMES.COMPILE;
-    if (lowerMessage.includes('initializ')) return STAGE_NAMES.INIT;
     if (lowerMessage.includes('witness') || lowerMessage.includes('execut')) return STAGE_NAMES.WITNESS;
     if (lowerMessage.includes('proof') && lowerMessage.includes('generat')) return STAGE_NAMES.PROOF;
     if (lowerMessage.includes('verif')) return STAGE_NAMES.VERIFY;
@@ -252,56 +242,53 @@ export class BenchmarkService {
 
   /**
    * Update stage metrics from execution step
+   * Returns the new cumulative time for next stage calculation
    */
-  private updateStageFromStep(stage: StageMetrics, step: ExecutionStep): void {
+  private updateStageFromStep(
+    stage: StageMetrics,
+    step: ExecutionStep,
+    lastCumulativeTime: number
+  ): number {
     // Safety check to ensure step and stage are defined
     if (!step || !stage) {
       console.warn('BenchmarkService: Invalid step or stage provided to updateStageFromStep');
-      return;
+      return lastCumulativeTime;
     }
 
     // Safety check for step.status
     if (!step.status) {
       console.warn('BenchmarkService: ExecutionStep missing status property', step);
-      return;
+      return lastCumulativeTime;
     }
 
     if (step.status === 'running') {
       stage.status = 'running';
     } else if (step.status === 'success') {
       stage.status = 'success';
-      // Extract timing from step details if available
+
+      // Extract cumulative timing from step details if available
       if (step.time) {
         const timeMatch = step.time.match(/(\d+(?:\.\d+)?)(ms|s)/);
         if (timeMatch) {
           const value = parseFloat(timeMatch[1]);
           const unit = timeMatch[2];
-          stage.time = unit === 's' ? value * 1000 : value;
+          const cumulativeTimeMs = unit === 's' ? value * 1000 : value;
+
+          // Calculate actual stage duration by subtracting previous cumulative time
+          stage.time = cumulativeTimeMs - lastCumulativeTime;
+
+          // Return current cumulative time for next stage
+          return cumulativeTimeMs;
         }
       }
-      stage.memory = this.getMemoryUsage();
     } else if (step.status === 'error') {
       stage.status = 'error';
       stage.details = step.details;
     }
+
+    return lastCumulativeTime;
   }
 
-  /**
-   * Get current memory usage in MB
-   */
-  private getMemoryUsage(): number {
-    try {
-      if (typeof window !== 'undefined' && 'memory' in performance) {
-        const memory = (performance as any).memory;
-        if (memory && typeof memory.usedJSHeapSize === 'number') {
-          return Math.round(memory.usedJSHeapSize / 1024 / 1024 * 100) / 100;
-        }
-      }
-    } catch (error) {
-      console.warn('BenchmarkService: Unable to access memory API', error);
-    }
-    return 0; // Fallback for environments without memory API
-  }
 
   /**
    * Calculate summary statistics from multiple runs
@@ -325,7 +312,6 @@ export class BenchmarkService {
       minTotalTime: Math.min(...times),
       maxTotalTime: Math.max(...times),
       stdDevTime,
-      avgPeakMemory: successfulRuns.reduce((sum, run) => sum + run.peakMemory, 0) / successfulRuns.length,
       avgProofSize: successfulRuns.reduce((sum, run) => sum + run.proofSize, 0) / successfulRuns.length,
     };
   }
@@ -348,9 +334,6 @@ export class BenchmarkService {
           avgTime: 0,
           minTime: 0,
           maxTime: 0,
-          avgMemory: 0,
-          minMemory: 0,
-          maxMemory: 0,
           avgPercentage: 0,
           stdDevTime: 0,
           successRate: 0,
@@ -359,7 +342,6 @@ export class BenchmarkService {
       }
 
       const times = stageData.map(s => s.time);
-      const memories = stageData.map(s => s.memory);
       const percentages = stageData.map(s => s.percentage);
 
       const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
@@ -372,9 +354,6 @@ export class BenchmarkService {
         avgTime,
         minTime: Math.min(...times),
         maxTime: Math.max(...times),
-        avgMemory: memories.reduce((a, b) => a + b, 0) / memories.length,
-        minMemory: Math.min(...memories),
-        maxMemory: Math.max(...memories),
         avgPercentage: percentages.reduce((a, b) => a + b, 0) / percentages.length,
         stdDevTime,
         successRate: (stageData.length / runs.length) * 100,
@@ -431,9 +410,25 @@ export class BenchmarkService {
    * Compare current benchmark with baseline
    */
   compareBenchmarks(current: BenchmarkResult, baseline: BenchmarkResult): BenchmarkComparison {
-    const improvements = Object.keys(STAGE_NAMES).map(stageName => {
+    const improvements = Object.values(STAGE_NAMES).map(stageName => {
       const currentStage = current.stages[stageName as StageName];
       const baselineStage = baseline.stages[stageName as StageName];
+
+      // Safety check to ensure stages exist and have avgTime property
+      if (!currentStage || !baselineStage ||
+          typeof currentStage.avgTime !== 'number' ||
+          typeof baselineStage.avgTime !== 'number') {
+        console.warn(`BenchmarkService: Invalid stage data for comparison: ${stageName}`, {
+          currentStage,
+          baselineStage
+        });
+        return {
+          stage: stageName,
+          timeDelta: 0,
+          percentageChange: 0,
+          isImprovement: false,
+        };
+      }
 
       const timeDelta = currentStage.avgTime - baselineStage.avgTime;
       const percentageChange = baselineStage.avgTime > 0

@@ -91,7 +91,6 @@ const MultiRunStats = ({ result }: { result: BenchmarkResult }) => {
 const StageBreakdown = ({ result }: { result: BenchmarkResult }) => {
   const stages = [
     { key: STAGE_NAMES.COMPILE, name: 'Compilation', stage: result.stages.compile, icon: <Target className="h-4 w-4" /> },
-    { key: STAGE_NAMES.INIT, name: 'Initialization', stage: result.stages.init, icon: <Zap className="h-4 w-4" /> },
     { key: STAGE_NAMES.WITNESS, name: 'Witness Generation', stage: result.stages.witness, icon: <Clock className="h-4 w-4" /> },
     { key: STAGE_NAMES.PROOF, name: 'Proof Generation', stage: result.stages.proof, icon: <Target className="h-4 w-4 text-yellow-500" /> },
     { key: STAGE_NAMES.VERIFY, name: 'Verification', stage: result.stages.verify, icon: <Clock className="h-4 w-4" /> },
@@ -213,7 +212,6 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
 const DetailedMetricsTable = ({ result }: { result: BenchmarkResult }) => {
   const stages = [
     { key: STAGE_NAMES.COMPILE, name: 'Compile', stage: result.stages.compile },
-    { key: STAGE_NAMES.INIT, name: 'Init', stage: result.stages.init },
     { key: STAGE_NAMES.WITNESS, name: 'Witness', stage: result.stages.witness },
     { key: STAGE_NAMES.PROOF, name: 'Proof', stage: result.stages.proof },
     { key: STAGE_NAMES.VERIFY, name: 'Verify', stage: result.stages.verify },
@@ -233,7 +231,6 @@ const DetailedMetricsTable = ({ result }: { result: BenchmarkResult }) => {
               <tr className="border-b border-border">
                 <th className="text-left py-2 text-muted-foreground" style={{ fontSize: '12px' }}>Stage</th>
                 <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>Time</th>
-                <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>Memory</th>
                 <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>%</th>
                 {result.summary.totalRuns > 1 && (
                   <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>±</th>
@@ -248,9 +245,6 @@ const DetailedMetricsTable = ({ result }: { result: BenchmarkResult }) => {
                   </td>
                   <td className="py-2 text-right font-mono text-foreground" style={{ fontSize: '13px' }}>
                     {stage.stage.avgTime.toFixed(1)}ms
-                  </td>
-                  <td className="py-2 text-right font-mono text-foreground" style={{ fontSize: '13px' }}>
-                    {stage.stage.avgMemory.toFixed(1)}MB
                   </td>
                   <td className="py-2 text-right font-mono text-foreground" style={{ fontSize: '13px' }}>
                     {stage.stage.avgPercentage.toFixed(1)}%

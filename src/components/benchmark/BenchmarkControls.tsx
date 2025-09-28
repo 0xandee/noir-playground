@@ -54,15 +54,6 @@ export const BenchmarkControls = ({
 
   return (
     <div className="border-b border-border bg-transparent">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-yellow-500" />
-          <h3 className="font-semibold text-foreground select-none" style={{ fontSize: '14px' }}>
-            Benchmark Controls
-          </h3>
-        </div>
-      </div>
 
       {/* Primary Controls */}
       <div className="px-4 py-4 space-y-4">
@@ -187,12 +178,6 @@ export const BenchmarkControls = ({
               <div className="flex items-center gap-1">
                 <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
                 <span>Baseline Set</span>
-              </div>
-            )}
-            {hasResults && (
-              <div className="flex items-center gap-1">
-                <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                <span>Results Available</span>
               </div>
             )}
           </div>

@@ -78,7 +78,6 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
 const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
   const stages = [
     { key: STAGE_NAMES.COMPILE, name: 'COMPILE', stage: result.stages.compile },
-    { key: STAGE_NAMES.INIT, name: 'INIT', stage: result.stages.init },
     { key: STAGE_NAMES.WITNESS, name: 'WITNESS', stage: result.stages.witness },
     { key: STAGE_NAMES.PROOF, name: 'PROOF', stage: result.stages.proof },
     { key: STAGE_NAMES.VERIFY, name: 'VERIFY', stage: result.stages.verify },
@@ -159,7 +158,7 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
 
       {/* Performance Summary */}
       <div className="bg-muted/20 rounded-lg p-4">
-        <div className="grid grid-cols-2 gap-4 text-center">
+        <div className="grid grid-cols-3 gap-4 text-center">
           <div className="space-y-1">
             <div className="flex items-center justify-center gap-1">
               <Zap className="h-4 w-4 text-blue-500" />
@@ -167,16 +166,6 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
             </div>
             <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
               {result.summary.avgTotalTime.toFixed(0)}ms
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center justify-center gap-1">
-              <MemoryStick className="h-4 w-4 text-green-500" />
-              <span className="text-muted-foreground" style={{ fontSize: '12px' }}>PEAK MEMORY</span>
-            </div>
-            <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
-              {result.summary.avgPeakMemory.toFixed(1)}MB
             </div>
           </div>
 
@@ -226,7 +215,7 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
 };
 
 const PipelineStages = ({ currentStage }: { currentStage: string }) => {
-  const stages = ['Compile', 'Initialize', 'Generate Witness', 'Generate Proof', 'Verify Proof'];
+  const stages = ['Compile', 'Generate Witness', 'Generate Proof', 'Verify Proof'];
   const currentIndex = stages.findIndex(stage =>
     currentStage.toLowerCase().includes(stage.toLowerCase().split(' ')[0])
   );

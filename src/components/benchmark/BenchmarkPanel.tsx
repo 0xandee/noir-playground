@@ -1,11 +1,9 @@
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { BenchmarkControls } from "./BenchmarkControls";
-import { BenchmarkVisualizer } from "./BenchmarkVisualizer";
-import { BenchmarkStats } from "./BenchmarkStats";
+import { BenchmarkCombinedView } from "./BenchmarkCombinedView";
 import {
   BenchmarkResult,
   BenchmarkConfig,
@@ -34,7 +32,6 @@ export const BenchmarkPanel = ({
   const [comparison, setComparison] = useState<BenchmarkComparison | null>(null);
   const [progress, setProgress] = useState<BenchmarkProgress | null>(null);
   const [isRunning, setIsRunning] = useState(false);
-  const [activeTab, setActiveTab] = useState<'visualization' | 'statistics'>('visualization');
 
   const handleRunBenchmark = useCallback(async () => {
     if (!sourceCode.trim()) {
@@ -84,7 +81,7 @@ export const BenchmarkPanel = ({
 
       // Success message with key metrics
       const successMessage = config.numberOfRuns === 1
-        ? `Benchmark completed! Total time: ${result.summary.avgTotalTime.toFixed(0)}ms, Peak memory: ${result.summary.avgPeakMemory.toFixed(1)}MB`
+        ? `Benchmark completed! Total time: ${result.summary.avgTotalTime.toFixed(0)}ms`
         : `Benchmark completed! Average time: ${result.summary.avgTotalTime.toFixed(0)}ms ± ${result.summary.stdDevTime.toFixed(0)}ms over ${result.summary.totalRuns} runs`;
 
       onConsoleMessage?.('success', successMessage);
@@ -162,42 +159,17 @@ export const BenchmarkPanel = ({
         hasBaseline={!!baselineResult}
       />
 
-      {/* Content Tabs */}
+      {/* Combined View */}
       <div className="flex-1 overflow-hidden">
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'visualization' | 'statistics')} className="h-full flex flex-col">
-          <div className="px-4 py-2 border-b border-border">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="visualization" style={{ fontSize: '13px' }}>
-                Pipeline View
-              </TabsTrigger>
-              <TabsTrigger value="statistics" style={{ fontSize: '13px' }}>
-                Detailed Stats
-              </TabsTrigger>
-            </TabsList>
-          </div>
-
-          <div className="flex-1 overflow-hidden">
-            <TabsContent value="visualization" className="h-full m-0">
-              <ScrollArea className="h-full">
-                <BenchmarkVisualizer
-                  result={currentResult || undefined}
-                  progress={progress || undefined}
-                  isRunning={isRunning}
-                />
-              </ScrollArea>
-            </TabsContent>
-
-            <TabsContent value="statistics" className="h-full m-0">
-              <ScrollArea className="h-full">
-                <BenchmarkStats
-                  result={currentResult || undefined}
-                  comparison={comparison || undefined}
-                  showComparison={config.enableComparison && !!baselineResult}
-                />
-              </ScrollArea>
-            </TabsContent>
-          </div>
-        </Tabs>
+        <ScrollArea className="h-full">
+          <BenchmarkCombinedView
+            result={currentResult || undefined}
+            progress={progress || undefined}
+            isRunning={isRunning}
+            comparison={comparison || undefined}
+            showComparison={config.enableComparison && !!baselineResult}
+          />
+        </ScrollArea>
       </div>
 
       {/* Bottom status bar (if running) */}
