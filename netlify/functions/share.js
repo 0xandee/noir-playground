@@ -1,13 +1,17 @@
-// Vercel Serverless Function for dynamic meta tags
-export default async function handler(req, res) {
-  const { id } = req.query;
+// Netlify Function for dynamic meta tags
+exports.handler = async (event, context) => {
+  const { path } = event;
+  const id = path.split('/').pop();
   
   if (!id) {
-    return res.status(404).json({ error: 'Not Found' });
+    return {
+      statusCode: 404,
+      body: 'Not Found'
+    };
   }
 
   // Check if this is a crawler/bot request
-  const userAgent = req.headers['user-agent'] || '';
+  const userAgent = event.headers['user-agent'] || '';
   const isCrawler = /facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegram|slackbot|bot|crawler|spider/i.test(userAgent);
   
   if (isCrawler) {
@@ -110,26 +114,21 @@ export default async function handler(req, res) {
   </body>
 </html>`;
 
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, max-age=300');
-    return res.status(200).send(html);
+    return {
+      statusCode: 200,
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'public, max-age=300'
+      },
+      body: html
+    };
   }
   
-<<<<<<< HEAD
-  // For regular users, serve the React app directly
-  // This prevents redirect loops by serving the SPA instead of redirecting
-  try {
-    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
-    const indexHtml = fs.readFileSync(indexPath, 'utf8');
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, max-age=0');
-    return res.status(200).send(indexHtml);
-  } catch (error) {
-    // Fallback to redirect if we can't read the file
-    return res.redirect(302, '/');
-  }
-=======
   // For regular users, redirect to the React app
-  res.redirect(302, `https://noir-playground.app/share/${id}`);
->>>>>>> origin/dev
-}
+  return {
+    statusCode: 302,
+    headers: {
+      'Location': `https://noir-playground.app/share/${id}`
+    }
+  };
+};
