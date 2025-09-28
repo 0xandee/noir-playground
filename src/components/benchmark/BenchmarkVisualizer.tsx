@@ -78,9 +78,9 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
 const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
   const stages = [
     { key: STAGE_NAMES.COMPILE, name: 'COMPILE', stage: result.stages.compile },
-    { key: STAGE_NAMES.WITNESS, name: 'WITNESS', stage: result.stages.witness },
-    { key: STAGE_NAMES.PROOF, name: 'PROOF', stage: result.stages.proof },
-    { key: STAGE_NAMES.VERIFY, name: 'VERIFY', stage: result.stages.verify },
+    { key: STAGE_NAMES.WITNESS, name: 'WITNESS GENERATION', stage: result.stages.witness },
+    { key: STAGE_NAMES.PROOF, name: 'PROOF GENERATION', stage: result.stages.proof },
+    { key: STAGE_NAMES.VERIFY, name: 'VERIFY PROOF', stage: result.stages.verify },
   ];
 
   // Find the main event (highest percentage)
@@ -215,7 +215,7 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
 };
 
 const PipelineStages = ({ currentStage }: { currentStage: string }) => {
-  const stages = ['Compile', 'Generate Witness', 'Generate Proof', 'Verify Proof'];
+  const stages = ['COMPILE', 'WITNESS GENERATION', 'PROOF GENERATION', 'VERIFY PROOF'];
   const currentIndex = stages.findIndex(stage =>
     currentStage.toLowerCase().includes(stage.toLowerCase().split(' ')[0])
   );

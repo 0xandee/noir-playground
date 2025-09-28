@@ -58,24 +58,19 @@ export const BenchmarkControls = ({
       {/* Primary Controls */}
       <div className="px-4 py-4 space-y-4">
         {/* Run Configuration */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-end gap-4">
           <div className="flex-1">
             <Label htmlFor="runs-select" className="text-muted-foreground select-none" style={{ fontSize: '13px' }}>
               Number of Runs
             </Label>
             <Select value={config.numberOfRuns.toString()} onValueChange={handleRunsChange}>
-              <SelectTrigger className="w-full h-8 mt-1" style={{ fontSize: '13px' }}>
-                <SelectValue />
+              <SelectTrigger className="w-full h-8 mt-1 flex items-center justify-center" style={{ fontSize: '13px' }}>
+                <SelectValue className="text-center" />
               </SelectTrigger>
               <SelectContent>
                 {runOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <div className="flex flex-col">
-                      <span style={{ fontSize: '13px' }}>{option.label}</span>
-                      <span className="text-muted-foreground" style={{ fontSize: '11px' }}>
-                        {option.description}
-                      </span>
-                    </div>
+                    <span style={{ fontSize: '13px' }}>{option.label}</span>
                   </SelectItem>
                 ))}
               </SelectContent>

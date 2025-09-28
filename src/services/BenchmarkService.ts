@@ -127,10 +127,10 @@ export class BenchmarkService {
     const startTime = performance.now();
 
     const stages: Record<StageName, StageMetrics> = {
-      compile: this.createEmptyStage('Compile'),
-      witness: this.createEmptyStage('Generate Witness'),
-      proof: this.createEmptyStage('Generate Proof'),
-      verify: this.createEmptyStage('Verify Proof'),
+      compile: this.createEmptyStage('COMPILE'),
+      witness: this.createEmptyStage('WITNESS GENERATION'),
+      proof: this.createEmptyStage('PROOF GENERATION'),
+      verify: this.createEmptyStage('VERIFY PROOF'),
     };
 
     let proofSize = 0;
