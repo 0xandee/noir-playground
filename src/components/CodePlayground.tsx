@@ -143,7 +143,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   const addConsoleMessage = useCallback((type: 'error' | 'success' | 'info', message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    const id = Date.now().toString();
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setConsoleMessages(prev => [...prev, { id, type, message, timestamp }]);
   }, []);
 
