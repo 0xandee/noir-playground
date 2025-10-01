@@ -93,9 +93,9 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
 const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
   const stages = [
     { key: STAGE_NAMES.COMPILE, name: 'COMPILE', stage: result.stages.compile },
-    { key: STAGE_NAMES.WITNESS, name: 'WITNESS', stage: result.stages.witness },
-    { key: STAGE_NAMES.PROOF, name: 'PROOF', stage: result.stages.proof },
-    { key: STAGE_NAMES.VERIFY, name: 'VERIFY', stage: result.stages.verify },
+    { key: STAGE_NAMES.WITNESS, name: 'WITNESS GENERATION', stage: result.stages.witness },
+    { key: STAGE_NAMES.PROOF, name: 'PROOF GENERATION', stage: result.stages.proof },
+    { key: STAGE_NAMES.VERIFY, name: 'VERIFY PROOF', stage: result.stages.verify },
   ];
 
   // Find the main event (highest percentage)
