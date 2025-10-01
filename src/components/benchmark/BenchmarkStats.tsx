@@ -2,6 +2,7 @@ import React from "react";
 import { BenchmarkResult, BenchmarkComparison, STAGE_NAMES } from "@/types/benchmark";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TrendingUp, TrendingDown, Minus, Clock, MemoryStick, Zap, Target } from "lucide-react";
 
 interface BenchmarkStatsProps {
@@ -13,7 +14,7 @@ interface BenchmarkStatsProps {
 export const BenchmarkStats = ({ result, comparison, showComparison = false }: BenchmarkStatsProps) => {
   if (!result) {
     return (
-      <div className="px-4 py-8 text-center text-muted-foreground" style={{ fontSize: '14px' }}>
+      <div className="px-4 py-8 text-center text-muted-foreground text-sm">
         No benchmark data available
       </div>
     );
@@ -42,33 +43,33 @@ const MultiRunStats = ({ result }: { result: BenchmarkResult }) => {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-foreground" style={{ fontSize: '14px' }}>
+        <CardTitle className="text-foreground text-sm">
           Multi-Run Statistics ({result.summary.totalRuns} runs)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Average Time</div>
-            <div className="font-mono text-foreground font-bold" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Average Time</div>
+            <div className="font-mono text-foreground font-bold text-sm">
               {result.summary.avgTotalTime.toFixed(1)}ms
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Std Deviation</div>
-            <div className="font-mono text-foreground" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Std Deviation</div>
+            <div className="font-mono text-foreground text-sm">
               ±{result.summary.stdDevTime.toFixed(1)}ms
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Min Time</div>
-            <div className="font-mono text-green-600" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Min Time</div>
+            <div className="font-mono text-green-600 text-sm">
               {result.summary.minTotalTime.toFixed(1)}ms
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Max Time</div>
-            <div className="font-mono text-red-500" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Max Time</div>
+            <div className="font-mono text-red-500 text-sm">
               {result.summary.maxTotalTime.toFixed(1)}ms
             </div>
           </div>
@@ -77,7 +78,7 @@ const MultiRunStats = ({ result }: { result: BenchmarkResult }) => {
         {/* Consistency indicator */}
         <div className="pt-2 border-t border-border">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground" style={{ fontSize: '12px' }}>Consistency</span>
+            <span className="text-muted-foreground text-xs">Consistency</span>
             <Badge variant={cv < 5 ? 'default' : cv < 15 ? 'secondary' : 'destructive'}>
               {cv < 5 ? 'Excellent' : cv < 15 ? 'Good' : 'Variable'} ({cv.toFixed(1)}% CV)
             </Badge>
@@ -99,7 +100,7 @@ const StageBreakdown = ({ result }: { result: BenchmarkResult }) => {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-foreground" style={{ fontSize: '14px' }}>
+        <CardTitle className="text-foreground text-sm">
           Pipeline Stage Breakdown
         </CardTitle>
       </CardHeader>
@@ -110,19 +111,19 @@ const StageBreakdown = ({ result }: { result: BenchmarkResult }) => {
               <div className="flex items-center gap-3">
                 {stage.icon}
                 <div>
-                  <div className="text-foreground font-medium" style={{ fontSize: '13px' }}>
+                  <div className="text-foreground font-medium text-[13px]">
                     {stage.name}
                   </div>
-                  <div className="text-muted-foreground" style={{ fontSize: '11px' }}>
+                  <div className="text-muted-foreground text-[11px]">
                     {stage.stage.successRate.toFixed(1)}% success rate
                   </div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-mono text-foreground font-bold" style={{ fontSize: '13px' }}>
+                <div className="font-mono text-foreground font-bold text-[13px]">
                   {stage.stage.avgTime.toFixed(1)}ms
                 </div>
-                <div className="text-muted-foreground font-mono" style={{ fontSize: '11px' }}>
+                <div className="text-muted-foreground font-mono text-[11px]">
                   {stage.stage.avgPercentage.toFixed(1)}%
                 </div>
               </div>
@@ -141,7 +142,7 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-foreground flex items-center gap-2" style={{ fontSize: '14px' }}>
+        <CardTitle className="text-foreground flex items-center gap-2 text-sm">
           {isImprovement ? (
             <TrendingUp className="h-4 w-4 text-green-500" />
           ) : overallImprovement < 0 ? (
@@ -155,7 +156,7 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
       <CardContent className="space-y-4">
         {/* Overall Change */}
         <div className="text-center p-3 rounded-lg bg-muted/30">
-          <div className="text-muted-foreground mb-1" style={{ fontSize: '12px' }}>
+          <div className="text-muted-foreground mb-1 text-xs">
             Overall Performance Change
           </div>
           <div
@@ -165,19 +166,19 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
           >
             {isImprovement ? '+' : ''}{overallImprovement.toFixed(1)}%
           </div>
-          <div className="text-muted-foreground mt-1" style={{ fontSize: '11px' }}>
+          <div className="text-muted-foreground mt-1 text-[11px]">
             {comparison.summary}
           </div>
         </div>
 
         {/* Stage-by-stage comparison */}
         <div className="space-y-2">
-          <div className="text-muted-foreground" style={{ fontSize: '12px' }}>
+          <div className="text-muted-foreground text-xs">
             Stage-by-Stage Changes
           </div>
           {comparison.improvements.map((improvement) => (
             <div key={improvement.stage} className="flex items-center justify-between py-2">
-              <span className="text-foreground capitalize" style={{ fontSize: '13px' }}>
+              <span className="text-foreground capitalize text-[13px]">
                 {improvement.stage}
               </span>
               <div className="flex items-center gap-2">
@@ -189,14 +190,13 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
                   <Minus className="h-3 w-3 text-muted-foreground" />
                 )}
                 <span
-                  className={`font-mono ${
+                  className={`font-mono text-xs ${
                     improvement.isImprovement
                       ? 'text-green-500'
                       : improvement.percentageChange < 0
                         ? 'text-red-500'
                         : 'text-muted-foreground'
                   }`}
-                  style={{ fontSize: '12px' }}
                 >
                   {improvement.percentageChange > 0 ? '+' : ''}{improvement.percentageChange.toFixed(1)}%
                 </span>
@@ -220,45 +220,43 @@ const DetailedMetricsTable = ({ result }: { result: BenchmarkResult }) => {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-foreground" style={{ fontSize: '14px' }}>
+        <CardTitle className="text-foreground text-sm">
           Detailed Metrics
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2 text-muted-foreground" style={{ fontSize: '12px' }}>Stage</th>
-                <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>Time</th>
-                <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>%</th>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="text-left">Stage</TableHead>
+              <TableHead className="text-right">Time</TableHead>
+              <TableHead className="text-right">%</TableHead>
+              {result.summary.totalRuns > 1 && (
+                <TableHead className="text-right">±</TableHead>
+              )}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {stages.map((stage) => (
+              <TableRow key={stage.key}>
+                <TableCell className="text-foreground text-[13px]">
+                  {stage.name}
+                </TableCell>
+                <TableCell className="text-right font-mono text-foreground text-[13px]">
+                  {stage.stage.avgTime.toFixed(1)}ms
+                </TableCell>
+                <TableCell className="text-right font-mono text-foreground text-[13px]">
+                  {stage.stage.avgPercentage.toFixed(1)}%
+                </TableCell>
                 {result.summary.totalRuns > 1 && (
-                  <th className="text-right py-2 text-muted-foreground" style={{ fontSize: '12px' }}>±</th>
+                  <TableCell className="text-right font-mono text-muted-foreground text-xs">
+                    ±{stage.stage.stdDevTime.toFixed(1)}
+                  </TableCell>
                 )}
-              </tr>
-            </thead>
-            <tbody>
-              {stages.map((stage) => (
-                <tr key={stage.key} className="border-b border-border/50">
-                  <td className="py-2 text-foreground" style={{ fontSize: '13px' }}>
-                    {stage.name}
-                  </td>
-                  <td className="py-2 text-right font-mono text-foreground" style={{ fontSize: '13px' }}>
-                    {stage.stage.avgTime.toFixed(1)}ms
-                  </td>
-                  <td className="py-2 text-right font-mono text-foreground" style={{ fontSize: '13px' }}>
-                    {stage.stage.avgPercentage.toFixed(1)}%
-                  </td>
-                  {result.summary.totalRuns > 1 && (
-                    <td className="py-2 text-right font-mono text-muted-foreground" style={{ fontSize: '12px' }}>
-                      ±{stage.stage.stdDevTime.toFixed(1)}
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       </CardContent>
     </Card>
   );

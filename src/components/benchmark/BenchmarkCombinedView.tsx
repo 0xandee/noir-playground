@@ -3,7 +3,7 @@ import { BenchmarkResult, BenchmarkProgress, BenchmarkComparison, StageName, STA
 import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Zap, Clock, MemoryStick, HardDrive, Target, CheckCircle, XCircle, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Zap, HardDrive, Target, CheckCircle, Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
 
 interface BenchmarkCombinedViewProps {
   result?: BenchmarkResult;
@@ -23,7 +23,7 @@ export const BenchmarkCombinedView = ({
   if (!result && !isRunning) {
     return (
       <div className="px-4 py-8 text-center">
-        <div className="text-muted-foreground" style={{ fontSize: '14px' }}>
+        <div className="text-muted-foreground text-sm">
           <Zap className="h-8 w-8 mx-auto mb-3 opacity-50" />
           <p>Run a benchmark to see performance analysis</p>
         </div>
@@ -51,42 +51,34 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
   const progressPercentage = ((progress.currentRun - 1) / progress.totalRuns + (1 / progress.totalRuns) * 0.5) * 100;
 
   return (
-    <div className="px-4 py-6 space-y-6">
-      {/* Header */}
-      <div className="text-center">
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
-          <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-          <span className="text-blue-500 font-medium" style={{ fontSize: '13px' }}>
-            Running Benchmark - Run {progress.currentRun} of {progress.totalRuns}
-          </span>
+    <Card className="mx-4 my-6">
+      <CardContent className="pt-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
+            <span className="text-sm font-medium">
+              Run {progress.currentRun} of {progress.totalRuns}
+            </span>
+          </div>
+          <Badge variant="secondary" className="text-xs">
+            {progress.currentStage}
+          </Badge>
         </div>
-      </div>
 
-      {/* Overall Progress */}
-      <div className="space-y-2">
-        <div className="flex justify-between text-muted-foreground" style={{ fontSize: '12px' }}>
-          <span>Overall Progress</span>
-          <span>{Math.round(progressPercentage)}%</span>
+        {/* Overall Progress */}
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>Progress</span>
+            <span>{Math.round(progressPercentage)}%</span>
+          </div>
+          <Progress value={progressPercentage} className="h-2" />
         </div>
-        <Progress value={progressPercentage} className="h-2" />
-      </div>
 
-      {/* Current Stage */}
-      <div className="text-center">
-        <div className="text-foreground font-medium mb-2" style={{ fontSize: '14px' }}>
-          Current Stage: {progress.currentStage}
-        </div>
-        <div className="inline-flex items-center gap-1 text-muted-foreground" style={{ fontSize: '12px' }}>
-          <Clock className="h-3 w-3" />
-          Processing...
-        </div>
-      </div>
-
-      {/* Simple Pipeline Preview */}
-      <div className="mt-6">
+        {/* Pipeline Stages */}
         <PipelineStages currentStage={progress.currentStage} />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
@@ -124,14 +116,14 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
                         }
                       `}
                     >
-                      <div className="font-mono font-bold text-foreground" style={{ fontSize: '11px' }}>
+                      <div className="font-mono font-bold text-foreground text-[11px]">
                         {stage.name}
                       </div>
                     </div>
-                    <div className="text-foreground font-mono mt-1" style={{ fontSize: '12px' }}>
+                    <div className="text-foreground font-mono mt-1 text-xs">
                       {stage.stage.avgTime.toFixed(0)}ms
                     </div>
-                    <div className="text-muted-foreground font-mono" style={{ fontSize: '11px' }}>
+                    <div className="text-muted-foreground font-mono text-[11px]">
                       {stage.stage.avgPercentage.toFixed(1)}%
                     </div>
                   </div>
@@ -155,9 +147,9 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <Zap className="h-4 w-4 text-blue-500" />
-                <span className="text-muted-foreground" style={{ fontSize: '12px' }}>TOTAL TIME</span>
+                <span className="text-muted-foreground text-xs">TOTAL TIME</span>
               </div>
-              <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
+              <div className="font-mono text-foreground font-bold text-base">
                 {result.summary.avgTotalTime.toFixed(0)}ms
               </div>
             </div>
@@ -165,9 +157,9 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <HardDrive className="h-4 w-4 text-purple-500" />
-                <span className="text-muted-foreground" style={{ fontSize: '12px' }}>PROOF SIZE</span>
+                <span className="text-muted-foreground text-xs">PROOF SIZE</span>
               </div>
-              <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
+              <div className="font-mono text-foreground font-bold text-base">
                 {(result.summary.avgProofSize / 1024).toFixed(1)}KB
               </div>
             </div>
@@ -175,9 +167,9 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
             <div className="space-y-1">
               <div className="flex items-center justify-center gap-1">
                 <Target className="h-4 w-4 text-orange-500" />
-                <span className="text-muted-foreground" style={{ fontSize: '12px' }}>SUCCESS RATE</span>
+                <span className="text-muted-foreground text-xs">SUCCESS RATE</span>
               </div>
-              <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
+              <div className="font-mono text-foreground font-bold text-base">
                 {((result.summary.successfulRuns / result.summary.totalRuns) * 100).toFixed(1)}%
               </div>
             </div>
@@ -217,33 +209,33 @@ const MultiRunStats = ({ result }: { result: BenchmarkResult }) => {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-foreground" style={{ fontSize: '14px' }}>
+        <CardTitle className="text-foreground text-sm">
           Multi-Run Statistics ({result.summary.totalRuns} runs)
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Average Time</div>
-            <div className="font-mono text-foreground font-bold" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Average Time</div>
+            <div className="font-mono text-foreground font-bold text-sm">
               {result.summary.avgTotalTime.toFixed(1)}ms
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Std Deviation</div>
-            <div className="font-mono text-foreground" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Std Deviation</div>
+            <div className="font-mono text-foreground text-sm">
               ±{result.summary.stdDevTime.toFixed(1)}ms
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Min Time</div>
-            <div className="font-mono text-green-600" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Min Time</div>
+            <div className="font-mono text-green-600 text-sm">
               {result.summary.minTotalTime.toFixed(1)}ms
             </div>
           </div>
           <div className="space-y-1">
-            <div className="text-muted-foreground" style={{ fontSize: '12px' }}>Max Time</div>
-            <div className="font-mono text-red-500" style={{ fontSize: '14px' }}>
+            <div className="text-muted-foreground text-xs">Max Time</div>
+            <div className="font-mono text-red-500 text-sm">
               {result.summary.maxTotalTime.toFixed(1)}ms
             </div>
           </div>
@@ -252,7 +244,7 @@ const MultiRunStats = ({ result }: { result: BenchmarkResult }) => {
         {/* Consistency indicator */}
         <div className="pt-2 border-t border-border">
           <div className="flex items-center justify-between">
-            <span className="text-muted-foreground" style={{ fontSize: '12px' }}>Consistency</span>
+            <span className="text-muted-foreground text-xs">Consistency</span>
             <Badge variant={cv < 5 ? 'default' : cv < 15 ? 'secondary' : 'destructive'}>
               {cv < 5 ? 'Excellent' : cv < 15 ? 'Good' : 'Variable'} ({cv.toFixed(1)}% CV)
             </Badge>
@@ -271,7 +263,7 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
   return (
     <Card>
       <CardHeader className="pb-3">
-        <CardTitle className="text-foreground flex items-center gap-2" style={{ fontSize: '14px' }}>
+        <CardTitle className="text-foreground flex items-center gap-2 text-sm">
           {isImprovement ? (
             <TrendingUp className="h-4 w-4 text-green-500" />
           ) : overallImprovement < 0 ? (
@@ -285,7 +277,7 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
       <CardContent className="space-y-4">
         {/* Overall Change */}
         <div className="text-center p-3 rounded-lg bg-muted/30">
-          <div className="text-muted-foreground mb-1" style={{ fontSize: '12px' }}>
+          <div className="text-muted-foreground mb-1 text-xs">
             Overall Performance Change
           </div>
           <div
@@ -295,19 +287,19 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
           >
             {isImprovement ? '+' : ''}{overallImprovement.toFixed(1)}%
           </div>
-          <div className="text-muted-foreground mt-1" style={{ fontSize: '11px' }}>
+          <div className="text-muted-foreground mt-1 text-[11px]">
             {comparison.summary}
           </div>
         </div>
 
         {/* Stage-by-stage comparison */}
         <div className="space-y-2">
-          <div className="text-muted-foreground" style={{ fontSize: '12px' }}>
+          <div className="text-muted-foreground text-xs">
             Stage-by-Stage Changes
           </div>
           {comparison.improvements.map((improvement) => (
             <div key={improvement.stage} className="flex items-center justify-between py-2">
-              <span className="text-foreground capitalize" style={{ fontSize: '13px' }}>
+              <span className="text-foreground capitalize text-[13px]">
                 {improvement.stage}
               </span>
               <div className="flex items-center gap-2">
@@ -319,14 +311,13 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
                   <Minus className="h-3 w-3 text-muted-foreground" />
                 )}
                 <span
-                  className={`font-mono ${
+                  className={`font-mono text-xs ${
                     improvement.isImprovement
                       ? 'text-green-500'
                       : improvement.percentageChange < 0
                         ? 'text-red-500'
                         : 'text-muted-foreground'
                   }`}
-                  style={{ fontSize: '12px' }}
                 >
                   {improvement.percentageChange > 0 ? '+' : ''}{improvement.percentageChange.toFixed(1)}%
                 </span>
@@ -341,51 +332,54 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
 
 
 const PipelineStages = ({ currentStage }: { currentStage: string }) => {
-  const stages = ['COMPILE', 'WITNESS GENERATION', 'PROOF GENERATION', 'VERIFY PROOF'];
+  const stages = [
+    { name: 'Compile', key: 'compile' },
+    { name: 'Witness', key: 'witness' },
+    { name: 'Proof', key: 'proof' },
+    { name: 'Verify', key: 'verify' }
+  ];
+
   const currentIndex = stages.findIndex(stage =>
-    currentStage.toLowerCase().includes(stage.toLowerCase().split(' ')[0])
+    currentStage.toLowerCase().includes(stage.key.toLowerCase())
   );
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between gap-2">
       {stages.map((stage, index) => (
-        <React.Fragment key={stage}>
-          <div className="flex flex-col items-center">
+        <React.Fragment key={stage.key}>
+          <div className="flex flex-col items-center gap-1 flex-1">
             <div
               className={`
-                w-12 h-12 rounded-full flex items-center justify-center border-2
+                w-8 h-8 rounded-full flex items-center justify-center border-2 transition-colors
                 ${index < currentIndex
-                  ? 'border-green-500 bg-green-500/20'
+                  ? 'border-green-500 bg-green-500/10'
                   : index === currentIndex
-                    ? 'border-blue-500 bg-blue-500/20'
-                    : 'border-muted-foreground/30 bg-muted/20'
+                    ? 'border-blue-500 bg-blue-500/10'
+                    : 'border-muted-foreground/30 bg-muted/10'
                 }
               `}
             >
               {index < currentIndex ? (
-                <CheckCircle className="h-5 w-5 text-green-500" />
+                <CheckCircle className="h-4 w-4 text-green-500" />
               ) : index === currentIndex ? (
-                <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
+                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
               ) : (
-                <div className="h-3 w-3 rounded-full bg-muted-foreground/30" />
+                <div className="h-2 w-2 rounded-full bg-muted-foreground/30" />
               )}
             </div>
-            <div
-              className={`
-                text-center mt-1 font-mono
-                ${index <= currentIndex ? 'text-foreground' : 'text-muted-foreground'}
-              `}
-              style={{ fontSize: '10px' }}
+            <span
+              className={`text-[10px] font-mono text-center ${
+                index <= currentIndex ? 'text-foreground' : 'text-muted-foreground'
+              }`}
             >
-              {stage.split(' ').join('\n')}
-            </div>
+              {stage.name}
+            </span>
           </div>
           {index < stages.length - 1 && (
             <div
-              className={`
-                flex-1 h-px mx-2
-                ${index < currentIndex ? 'bg-green-500' : 'bg-muted-foreground/30'}
-              `}
+              className={`h-px flex-1 transition-colors ${
+                index < currentIndex ? 'bg-green-500' : 'bg-muted-foreground/20'
+              }`}
             />
           )}
         </React.Fragment>

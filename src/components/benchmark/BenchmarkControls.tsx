@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -60,17 +61,17 @@ export const BenchmarkControls = ({
         {/* Run Configuration */}
         <div className="flex items-end gap-4">
           <div className="flex-1">
-            <Label htmlFor="runs-select" className="text-muted-foreground select-none" style={{ fontSize: '13px' }}>
+            <Label htmlFor="runs-select" className="text-muted-foreground select-none text-[13px]">
               Number of Runs
             </Label>
             <Select value={config.numberOfRuns.toString()} onValueChange={handleRunsChange}>
-              <SelectTrigger className="w-full h-8 mt-1 flex items-center justify-center" style={{ fontSize: '13px' }}>
+              <SelectTrigger className="w-full h-8 mt-1 flex items-center justify-center text-[13px]">
                 <SelectValue className="text-center" />
               </SelectTrigger>
               <SelectContent>
                 {runOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <span style={{ fontSize: '13px' }}>{option.label}</span>
+                    <span className="text-[13px]">{option.label}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -82,8 +83,7 @@ export const BenchmarkControls = ({
             disabled={isRunning}
             variant="default"
             size="sm"
-            className="h-8 px-4 flex items-center gap-2"
-            style={{ fontSize: '13px' }}
+            className="h-8 px-4 flex items-center gap-2 text-[13px]"
           >
             {isRunning ? (
               <>
@@ -109,7 +109,7 @@ export const BenchmarkControls = ({
               disabled={isRunning}
               className="scale-75"
             />
-            <Label htmlFor="verbose-mode" className="text-foreground select-none" style={{ fontSize: '13px' }}>
+            <Label htmlFor="verbose-mode" className="text-foreground select-none text-[13px]">
               Verbose Mode
             </Label>
           </div>
@@ -122,7 +122,7 @@ export const BenchmarkControls = ({
               disabled={isRunning || !hasBaseline}
               className="scale-75"
             />
-            <Label htmlFor="comparison-mode" className="text-foreground select-none" style={{ fontSize: '13px' }}>
+            <Label htmlFor="comparison-mode" className="text-foreground select-none text-[13px]">
               Compare vs Baseline
             </Label>
           </div>
@@ -135,8 +135,7 @@ export const BenchmarkControls = ({
             disabled={!hasResults || isRunning}
             variant="outline"
             size="sm"
-            className="h-7 px-3 flex items-center gap-2"
-            style={{ fontSize: '12px' }}
+            className="h-7 px-3 flex items-center gap-2 text-xs"
           >
             <BarChart3 className="h-3 w-3" />
             Set as Baseline
@@ -147,8 +146,7 @@ export const BenchmarkControls = ({
             disabled={!hasResults || isRunning}
             variant="outline"
             size="sm"
-            className="h-7 px-3 flex items-center gap-2"
-            style={{ fontSize: '12px' }}
+            className="h-7 px-3 flex items-center gap-2 text-xs"
           >
             <Download className="h-3 w-3" />
             Export JSON
@@ -159,8 +157,7 @@ export const BenchmarkControls = ({
             disabled={!hasResults || isRunning}
             variant="outline"
             size="sm"
-            className="h-7 px-3"
-            style={{ fontSize: '12px' }}
+            className="h-7 px-3 text-xs"
           >
             Clear Results
           </Button>
@@ -168,12 +165,12 @@ export const BenchmarkControls = ({
 
         {/* Status Indicators */}
         {(hasBaseline || hasResults) && (
-          <div className="flex items-center gap-4 pt-2 text-muted-foreground" style={{ fontSize: '12px' }}>
+          <div className="flex items-center gap-2 pt-2">
             {hasBaseline && (
-              <div className="flex items-center gap-1">
+              <Badge variant="secondary" className="text-xs gap-1">
                 <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                <span>Baseline Set</span>
-              </div>
+                Baseline Set
+              </Badge>
             )}
           </div>
         )}

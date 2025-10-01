@@ -1,7 +1,8 @@
 import React from "react";
 import { BenchmarkResult, BenchmarkProgress, StageName, STAGE_NAMES } from "@/types/benchmark";
 import { Progress } from "@/components/ui/progress";
-import { Zap, Clock, MemoryStick, HardDrive, Target, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Zap, Clock, MemoryStick, HardDrive, Target, CheckCircle, XCircle, Loader2, Lightbulb } from "lucide-react";
 
 interface BenchmarkVisualizerProps {
   result?: BenchmarkResult;
@@ -13,7 +14,7 @@ export const BenchmarkVisualizer = ({ result, progress, isRunning }: BenchmarkVi
   if (!result && !isRunning) {
     return (
       <div className="px-4 py-8 text-center">
-        <div className="text-muted-foreground" style={{ fontSize: '14px' }}>
+        <div className="text-muted-foreground text-sm">
           <Zap className="h-8 w-8 mx-auto mb-3 opacity-50" />
           <p>Run a benchmark to see performance visualization</p>
         </div>
@@ -41,7 +42,7 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
       <div className="text-center">
         <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 rounded-lg border border-blue-500/20">
           <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-          <span className="text-blue-500 font-medium" style={{ fontSize: '13px' }}>
+          <span className="text-blue-500 font-medium text-[13px]">
             Running Benchmark - Run {progress.currentRun} of {progress.totalRuns}
           </span>
         </div>
@@ -49,7 +50,7 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
 
       {/* Overall Progress */}
       <div className="space-y-2">
-        <div className="flex justify-between text-muted-foreground" style={{ fontSize: '12px' }}>
+        <div className="flex justify-between text-muted-foreground text-xs">
           <span>Overall Progress</span>
           <span>{Math.round(progressPercentage)}%</span>
         </div>
@@ -58,10 +59,10 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
 
       {/* Current Stage */}
       <div className="text-center">
-        <div className="text-foreground font-medium mb-2" style={{ fontSize: '14px' }}>
+        <div className="text-foreground font-medium mb-2 text-sm">
           Current Stage: {progress.currentStage}
         </div>
-        <div className="inline-flex items-center gap-1 text-muted-foreground" style={{ fontSize: '12px' }}>
+        <div className="inline-flex items-center gap-1 text-muted-foreground text-xs">
           <Clock className="h-3 w-3" />
           Processing...
         </div>
@@ -92,7 +93,7 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
     <div className="px-4 py-6 space-y-6">
       {/* Header */}
       <div className="text-center">
-        <div className="font-mono text-foreground" style={{ fontSize: '14px', lineHeight: '1.2' }}>
+        <div className="font-mono text-foreground text-sm leading-tight">
           ╔═══════════════════════════════════════╗<br />
           ║    NOIR BENCHMARK PIPELINE v1.0      ║<br />
           ║   Zero-Knowledge Proof Performance   ║<br />
@@ -102,7 +103,7 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
 
       {/* Pipeline Summary */}
       <div className="text-center">
-        <div className="text-muted-foreground mb-2" style={{ fontSize: '13px' }}>
+        <div className="text-muted-foreground mb-2 text-[13px]">
           📊 Circuit: {result.config.circuitName || 'main.nr'} | Backend: {result.config.backend} | Runs: {result.summary.totalRuns}
         </div>
       </div>
@@ -124,14 +125,14 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
                       }
                     `}
                   >
-                    <div className="font-mono font-bold text-foreground" style={{ fontSize: '11px' }}>
+                    <div className="font-mono font-bold text-foreground text-[11px]">
                       {stage.name}
                     </div>
                   </div>
-                  <div className="text-foreground font-mono mt-1" style={{ fontSize: '12px' }}>
+                  <div className="text-foreground font-mono mt-1 text-xs">
                     {stage.stage.avgTime.toFixed(0)}ms
                   </div>
-                  <div className="text-muted-foreground font-mono" style={{ fontSize: '11px' }}>
+                  <div className="text-muted-foreground font-mono text-[11px]">
                     {stage.stage.avgPercentage.toFixed(1)}%
                   </div>
                 </div>
@@ -148,7 +149,7 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
 
           {/* THE MAIN EVENT indicator */}
           {mainEventStage.stage.avgPercentage > 50 && (
-            <div className="text-center text-yellow-500 font-mono" style={{ fontSize: '12px' }}>
+            <div className="text-center text-yellow-500 font-mono text-xs">
               ⭐ THE MAIN EVENT! ⭐<br />
               ({mainEventStage.stage.avgPercentage.toFixed(1)}% of execution time)
             </div>
@@ -162,9 +163,9 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
           <div className="space-y-1">
             <div className="flex items-center justify-center gap-1">
               <Zap className="h-4 w-4 text-blue-500" />
-              <span className="text-muted-foreground" style={{ fontSize: '12px' }}>TOTAL TIME</span>
+              <span className="text-muted-foreground text-xs">TOTAL TIME</span>
             </div>
-            <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
+            <div className="font-mono text-foreground font-bold text-base">
               {result.summary.avgTotalTime.toFixed(0)}ms
             </div>
           </div>
@@ -172,9 +173,9 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
           <div className="space-y-1">
             <div className="flex items-center justify-center gap-1">
               <HardDrive className="h-4 w-4 text-purple-500" />
-              <span className="text-muted-foreground" style={{ fontSize: '12px' }}>PROOF SIZE</span>
+              <span className="text-muted-foreground text-xs">PROOF SIZE</span>
             </div>
-            <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
+            <div className="font-mono text-foreground font-bold text-base">
               {(result.summary.avgProofSize / 1024).toFixed(1)}KB
             </div>
           </div>
@@ -182,9 +183,9 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
           <div className="space-y-1">
             <div className="flex items-center justify-center gap-1">
               <Target className="h-4 w-4 text-orange-500" />
-              <span className="text-muted-foreground" style={{ fontSize: '12px' }}>SUCCESS RATE</span>
+              <span className="text-muted-foreground text-xs">SUCCESS RATE</span>
             </div>
-            <div className="font-mono text-foreground font-bold" style={{ fontSize: '16px' }}>
+            <div className="font-mono text-foreground font-bold text-base">
               {((result.summary.successfulRuns / result.summary.totalRuns) * 100).toFixed(1)}%
             </div>
           </div>
@@ -192,24 +193,21 @@ const ResultVisualization = ({ result }: { result: BenchmarkResult }) => {
       </div>
 
       {/* Performance Insight */}
-      <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3">
-        <div className="flex items-start gap-2">
-          <div className="text-blue-500 mt-0.5">🏆</div>
-          <div>
-            <div className="text-blue-500 font-medium mb-1" style={{ fontSize: '13px' }}>
-              PERFORMANCE INSIGHT
+      <Alert className="bg-blue-500/10 border-blue-500/20">
+        <Zap className="h-4 w-4 text-blue-500" />
+        <AlertTitle className="text-blue-500 text-[13px]">
+          Performance Insight
+        </AlertTitle>
+        <AlertDescription className="text-foreground text-[13px]">
+          {result.performanceInsight}
+          {result.bottleneck.recommendation && (
+            <div className="flex items-start gap-1 mt-2 text-muted-foreground text-xs">
+              <Lightbulb className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>{result.bottleneck.recommendation}</span>
             </div>
-            <div className="text-foreground" style={{ fontSize: '13px' }}>
-              {result.performanceInsight}
-            </div>
-            {result.bottleneck.recommendation && (
-              <div className="text-muted-foreground mt-1" style={{ fontSize: '12px' }}>
-                💡 {result.bottleneck.recommendation}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+          )}
+        </AlertDescription>
+      </Alert>
     </div>
   );
 };
@@ -246,10 +244,9 @@ const PipelineStages = ({ currentStage }: { currentStage: string }) => {
             </div>
             <div
               className={`
-                text-center mt-1 font-mono
+                text-center mt-1 font-mono text-[10px]
                 ${index <= currentIndex ? 'text-foreground' : 'text-muted-foreground'}
               `}
-              style={{ fontSize: '10px' }}
             >
               {stage.split(' ').join('\n')}
             </div>
