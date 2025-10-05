@@ -20,6 +20,7 @@ import {
   CornerDownRight,
   Play,
   Link2,
+  Copy,
 } from "lucide-react";
 import { BsTwitterX, BsGithub } from "react-icons/bs";
 import { noirService, ExecutionStep } from "@/services/NoirService";
@@ -328,7 +329,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     setShareDialogOpen(true);
   };
 
-
+  const handleCopyField = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleInputChange = (key: string, value: string) => {
     setInputs(prev => ({ ...prev, [key]: value }));
@@ -787,9 +794,18 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           <div className="space-y-4">
                             {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                               <div>
-                                <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                  <button
+                                    onClick={() => handleCopyField(proofData.publicInputs!.join('\n'))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                                 <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
+                                  <div className="p-3 font-mono space-y-1 overflow-x-auto output-scrollbar" style={{ fontSize: '13px' }}>
                                     {proofData.publicInputs.map((input: string, i: number) => (
                                       <div key={i}>{input}</div>
                                     ))}
@@ -800,9 +816,18 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                             {proofData.witness && proofData.witness.length > 0 && (
                               <div>
-                                <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
+                                  <button
+                                    onClick={() => handleCopyField(Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                                 <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
                                     {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
                                   </div>
                                 </div>
@@ -810,9 +835,20 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             )}
 
                             <div>
-                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
+                                {proofData.proof && proofData.proof.length > 0 && (
+                                  <button
+                                    onClick={() => handleCopyField(Array.from(proofData.proof!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
                               <div className="bg-muted/50 border border-border rounded">
-                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
                                   {proofData.proof && proofData.proof.length > 0
                                     ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
                                     : 'No proof generated'}

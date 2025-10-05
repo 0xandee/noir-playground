@@ -132,4 +132,28 @@ All colors MUST be HSL.
   .monaco-editor-background {
     background-color: #161616 !important;
   }
+
+  /* Output fields scrollbar - no hover effect */
+  .output-scrollbar::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .output-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .output-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.3);
+    border-radius: 4px;
+  }
+
+  .output-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(128, 128, 128, 0.3);
+    pointer-events: none;
+  }
+
+  .output-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
+  }
 }
