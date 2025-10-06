@@ -377,7 +377,7 @@ export class BenchmarkService {
     } else if (summary.avgTotalTime > PERFORMANCE_THRESHOLDS.SLOW_PROOF_MS) {
       return `Consider optimizing circuit complexity - execution time is ${summary.avgTotalTime.toFixed(0)}ms`;
     } else {
-      return `Good performance with balanced execution across pipeline stages`;
+      return '';
     }
   }
 
