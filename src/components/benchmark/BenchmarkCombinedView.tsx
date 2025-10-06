@@ -137,12 +137,16 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
     },
   } satisfies ChartConfig;
 
+  // Calculate total time for percentage calculations
+  const totalTime = stageTimes.compile + stageTimes.witness + stageTimes.proof + stageTimes.verify;
+
   // Custom label renderer for bar segments
   const renderLabel = (
     props: { x?: string | number; y?: string | number; width?: string | number; height?: string | number },
     stageName: string,
     color: string,
-    actualTime: number
+    actualTime: number,
+    totalTime: number
   ) => {
     const { x, y, width, height } = props;
 
@@ -151,6 +155,9 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
     const numX = typeof x === 'string' ? parseFloat(x) : (x ?? 0);
     const numY = typeof y === 'string' ? parseFloat(y) : (y ?? 0);
     const numHeight = typeof height === 'string' ? parseFloat(height) : (height ?? 0);
+
+    // Calculate percentage
+    const percentage = (actualTime / totalTime) * 100;
 
     // Always render labels for all segments
     const centerX = numX + numWidth / 2;
@@ -161,22 +168,33 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
         <circle cx={centerX} cy={labelY} r={3} fill={color} />
         <text
           x={centerX}
-          y={labelY + 12}
+          y={labelY + 16}
           textAnchor="middle"
           fontSize="11"
-          fill="hsl(var(--muted-foreground))"
+          fontWeight="bold"
+          fill="hsl(var(--foreground))"
         >
           {stageName}
         </text>
         <text
           x={centerX}
-          y={labelY + 24}
+          y={labelY + 32}
           textAnchor="middle"
           fontSize="11"
           fontFamily="monospace"
           fill="hsl(var(--foreground))"
         >
           {Math.round(actualTime)}ms
+        </text>
+        <text
+          x={centerX}
+          y={labelY + 48}
+          textAnchor="middle"
+          fontSize="11"
+          fontFamily="monospace"
+          fill="hsl(var(--muted-foreground))"
+        >
+          {percentage.toFixed(1)}%
         </text>
       </g>
     );
@@ -186,13 +204,13 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
     <Card>
       <CardContent className="pt-6 space-y-4">
         {/* Interactive Stacked Bar Chart */}
-        <ChartContainer config={chartConfig} className="h-20 w-full block">
+        <ChartContainer config={chartConfig} className="h-36 w-full block">
           <BarChart
             data={chartData}
             layout="vertical"
-            margin={{ left: 0, right: 0, top: 0, bottom: 40 }}
+            margin={{ left: 0, right: 0, top: 0, bottom: 60 }}
             width={undefined}
-            height={80}
+            height={144}
             barCategoryGap={0}
           >
             <XAxis type="number" hide domain={[0, 'dataMax']} />
@@ -235,7 +253,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               onMouseEnter={() => setActiveSegment('compile')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Compile', chartConfig.compile.color, stageTimes.compile)} />
+              <LabelList content={(props) => renderLabel(props, 'Compile', chartConfig.compile.color, stageTimes.compile, totalTime)} />
             </Bar>
             <Bar
               dataKey="witness"
@@ -245,7 +263,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               onMouseEnter={() => setActiveSegment('witness')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Witness', chartConfig.witness.color, stageTimes.witness)} />
+              <LabelList content={(props) => renderLabel(props, 'Witness', chartConfig.witness.color, stageTimes.witness, totalTime)} />
             </Bar>
             <Bar
               dataKey="proof"
@@ -255,7 +273,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               onMouseEnter={() => setActiveSegment('proof')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Proof', chartConfig.proof.color, stageTimes.proof)} />
+              <LabelList content={(props) => renderLabel(props, 'Proof', chartConfig.proof.color, stageTimes.proof, totalTime)} />
             </Bar>
             <Bar
               dataKey="verify"
@@ -266,7 +284,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               onMouseEnter={() => setActiveSegment('verify')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Verify', chartConfig.verify.color, stageTimes.verify)} />
+              <LabelList content={(props) => renderLabel(props, 'Verify', chartConfig.verify.color, stageTimes.verify, totalTime)} />
             </Bar>
           </BarChart>
         </ChartContainer>

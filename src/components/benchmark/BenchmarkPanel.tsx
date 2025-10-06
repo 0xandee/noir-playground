@@ -125,11 +125,8 @@ export const BenchmarkPanel = ({
         config={config}
         onConfigChange={handleConfigChange}
         onRunBenchmark={handleRunBenchmark}
-        onClearResults={handleClearResults}
-        onSetBaseline={handleSetBaseline}
         isRunning={isRunning}
-        hasResults={!!currentResult}
-        hasBaseline={!!baselineResult}
+        progress={progress || undefined}
       />
 
       {/* Combined View */}
