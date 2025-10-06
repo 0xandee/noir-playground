@@ -81,13 +81,40 @@ const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => 
 const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
   const [activeSegment, setActiveSegment] = React.useState<string | null>(null);
 
+  // Extract raw times from result
+  const rawTimes = {
+    compile: result.stages.compile.avgTime,
+    witness: result.stages.witness.avgTime,
+    proof: result.stages.proof.avgTime,
+    verify: result.stages.verify.avgTime,
+  };
+
+  // Check if times are cumulative by comparing witness to compile
+  // If witness > compile, they're likely cumulative
+  const areCumulative = rawTimes.witness > rawTimes.compile &&
+                        rawTimes.proof > rawTimes.witness &&
+                        rawTimes.verify > rawTimes.proof;
+
+  // Calculate individual stage times (handle both cumulative and individual data)
+  const stageTimes = areCumulative ? {
+    compile: rawTimes.compile,
+    witness: rawTimes.witness - rawTimes.compile,
+    proof: rawTimes.proof - rawTimes.witness,
+    verify: rawTimes.verify - rawTimes.proof,
+  } : rawTimes;
+
+  // Apply logarithmic scaling for better visual distribution of small values
+  // Use log1p (log(1 + x)) to handle 0 and small values gracefully
+  // Apply scaling exponent to reduce expansion of small values
+  const logScale = (value: number) => Math.pow(Math.log1p(value), 2);
+
   const chartData = [
     {
       stage: "pipeline",
-      compile: result.stages.compile.avgTime,
-      witness: result.stages.witness.avgTime,
-      proof: result.stages.proof.avgTime,
-      verify: result.stages.verify.avgTime,
+      compile: logScale(stageTimes.compile),
+      witness: logScale(stageTimes.witness),
+      proof: logScale(stageTimes.proof),
+      verify: logScale(stageTimes.verify),
     }
   ];
 
@@ -111,18 +138,27 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
   } satisfies ChartConfig;
 
   // Custom label renderer for bar segments
-  const renderLabel = (props: any, stageName: string, color: string) => {
-    const { x, y, width, height, value } = props;
-    if (!width || width < 20) return null; // Don't render if segment too small
+  const renderLabel = (
+    props: { x?: string | number; y?: string | number; width?: string | number; height?: string | number },
+    stageName: string,
+    color: string,
+    actualTime: number
+  ) => {
+    const { x, y, width, height } = props;
 
-    const centerX = x + width / 2;
-    const labelY = y + height + 10; // Position below the bar
+    // Convert to numbers
+    const numWidth = typeof width === 'string' ? parseFloat(width) : (width ?? 0);
+    const numX = typeof x === 'string' ? parseFloat(x) : (x ?? 0);
+    const numY = typeof y === 'string' ? parseFloat(y) : (y ?? 0);
+    const numHeight = typeof height === 'string' ? parseFloat(height) : (height ?? 0);
+
+    // Always render labels for all segments
+    const centerX = numX + numWidth / 2;
+    const labelY = numY + numHeight + 10; // Position below the bar
 
     return (
       <g>
-        {/* Color indicator dot */}
         <circle cx={centerX} cy={labelY} r={3} fill={color} />
-        {/* Stage name */}
         <text
           x={centerX}
           y={labelY + 12}
@@ -132,7 +168,6 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
         >
           {stageName}
         </text>
-        {/* Time value */}
         <text
           x={centerX}
           y={labelY + 24}
@@ -141,7 +176,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
           fontFamily="monospace"
           fill="hsl(var(--foreground))"
         >
-          {Math.round(value)}ms
+          {Math.round(actualTime)}ms
         </text>
       </g>
     );
@@ -170,6 +205,9 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
                 const hoveredItem = payload.find(item => item.dataKey === activeSegment);
                 if (!hoveredItem) return null;
 
+                // Get actual time from stageTimes instead of log-scaled value
+                const actualTime = stageTimes[hoveredItem.dataKey as keyof typeof stageTimes];
+
                 return (
                   <div className="rounded-lg border border-border/50 bg-background px-2.5 py-1.5 text-xs shadow-xl">
                     <div className="flex items-center gap-2">
@@ -181,7 +219,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
                         {chartConfig[hoveredItem.dataKey as keyof typeof chartConfig]?.label}
                       </span>
                       <span className="font-mono font-medium ml-auto">
-                        {Number(hoveredItem.value).toFixed(0)}ms
+                        {Math.round(actualTime)}ms
                       </span>
                     </div>
                   </div>
@@ -193,44 +231,48 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               stackId="a"
               fill="var(--color-compile)"
               radius={[4, 0, 0, 4]}
+              minPointSize={3}
               onMouseEnter={() => setActiveSegment('compile')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Compile', chartConfig.compile.color)} />
+              <LabelList content={(props) => renderLabel(props, 'Compile', chartConfig.compile.color, stageTimes.compile)} />
             </Bar>
             <Bar
               dataKey="witness"
               stackId="a"
               fill="var(--color-witness)"
+              minPointSize={3}
               onMouseEnter={() => setActiveSegment('witness')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Witness', chartConfig.witness.color)} />
+              <LabelList content={(props) => renderLabel(props, 'Witness', chartConfig.witness.color, stageTimes.witness)} />
             </Bar>
             <Bar
               dataKey="proof"
               stackId="a"
               fill="var(--color-proof)"
+              minPointSize={3}
               onMouseEnter={() => setActiveSegment('proof')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Proof', chartConfig.proof.color)} />
+              <LabelList content={(props) => renderLabel(props, 'Proof', chartConfig.proof.color, stageTimes.proof)} />
             </Bar>
             <Bar
               dataKey="verify"
               stackId="a"
               fill="var(--color-verify)"
               radius={[0, 4, 4, 0]}
+              minPointSize={3}
               onMouseEnter={() => setActiveSegment('verify')}
               onMouseLeave={() => setActiveSegment(null)}
             >
-              <LabelList content={(props) => renderLabel(props, 'Verify', chartConfig.verify.color)} />
+              <LabelList content={(props) => renderLabel(props, 'Verify', chartConfig.verify.color, stageTimes.verify)} />
             </Bar>
           </BarChart>
         </ChartContainer>
 
         {/* Performance Summary */}
-        <div className="grid grid-cols-3 gap-4 pt-2 border-t">
+        <div className="grid grid-cols-2 gap-4 pt-2 border-t">
           <div className="text-center space-y-1">
             <div className="text-muted-foreground text-xs">Total Time</div>
             <div className="font-mono text-foreground font-bold">
@@ -242,13 +284,6 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
             <div className="text-muted-foreground text-xs">Proof Size</div>
             <div className="font-mono text-foreground font-bold">
               {(result.summary.avgProofSize / 1024).toFixed(1)}KB
-            </div>
-          </div>
-
-          <div className="text-center space-y-1">
-            <div className="text-muted-foreground text-xs">Success Rate</div>
-            <div className="font-mono text-foreground font-bold">
-              {((result.summary.successfulRuns / result.summary.totalRuns) * 100).toFixed(1)}%
             </div>
           </div>
         </div>
