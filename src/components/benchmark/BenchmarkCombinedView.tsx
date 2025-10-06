@@ -105,7 +105,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
             {/* Stage Boxes */}
             <div className="flex items-center justify-between mb-4">
               {stages.map((stage, index) => (
-                <React.Fragment key={stage.key}>
+                <div key={stage.key} className="contents">
                   <div className="flex flex-col items-center">
                     <div
                       className={`
@@ -134,7 +134,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
                       </div>
                     </div>
                   )}
-                </React.Fragment>
+                </div>
               ))}
             </div>
 
@@ -346,7 +346,7 @@ const PipelineStages = ({ currentStage }: { currentStage: string }) => {
   return (
     <div className="flex items-center justify-between gap-2">
       {stages.map((stage, index) => (
-        <React.Fragment key={stage.key}>
+        <div key={stage.key} className="contents">
           <div className="flex flex-col items-center gap-1 flex-1">
             <div
               className={`
@@ -382,7 +382,7 @@ const PipelineStages = ({ currentStage }: { currentStage: string }) => {
               }`}
             />
           )}
-        </React.Fragment>
+        </div>
       ))}
     </div>
   );
