@@ -720,7 +720,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </div>
                   }
                 >
-                  <div className="h-full flex flex-col" style={{ backgroundColor: '#161616' }}>
+                  <div className="h-full flex flex-col" style={{ backgroundColor: '#100E0F' }}>
                     <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
                       {renderConsoleContent()}
                     </div>
