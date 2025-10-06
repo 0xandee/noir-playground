@@ -56,15 +56,6 @@ export const BenchmarkPanel = ({
         config,
         (progressUpdate) => {
           setProgress(progressUpdate);
-
-          // Verbose progress logging
-          if (config.verbose) {
-            if (progressUpdate.currentStage !== 'Starting' && progressUpdate.currentStage !== 'Complete') {
-              onConsoleMessage?.('info',
-                `Run ${progressUpdate.currentRun}/${progressUpdate.totalRuns}: ${progressUpdate.currentStage}`
-              );
-            }
-          }
         },
         cargoToml
       );
@@ -102,28 +93,6 @@ export const BenchmarkPanel = ({
     }
   }, [sourceCode, inputs, cargoToml, config, baselineResult, onConsoleMessage]);
 
-  const handleExportResults = useCallback(() => {
-    if (!currentResult) return;
-
-    try {
-      const jsonData = benchmarkService.exportToJson(currentResult);
-      const blob = new Blob([jsonData], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `noir-benchmark-${currentResult.id}.json`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      onConsoleMessage?.('success', 'Benchmark results exported successfully');
-    } catch (error) {
-      onConsoleMessage?.('error', 'Failed to export benchmark results');
-    }
-  }, [currentResult, onConsoleMessage]);
-
   const handleClearResults = useCallback(() => {
     setCurrentResult(null);
     setComparison(null);
@@ -151,7 +120,6 @@ export const BenchmarkPanel = ({
         config={config}
         onConfigChange={handleConfigChange}
         onRunBenchmark={handleRunBenchmark}
-        onExportResults={handleExportResults}
         onClearResults={handleClearResults}
         onSetBaseline={handleSetBaseline}
         isRunning={isRunning}

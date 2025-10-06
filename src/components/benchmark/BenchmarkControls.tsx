@@ -1,17 +1,14 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Download, Play, RefreshCw, BarChart3, Zap } from "lucide-react";
-import { BenchmarkConfig, DEFAULT_BENCHMARK_CONFIG } from "@/types/benchmark";
+import { Play, RefreshCw, BarChart3 } from "lucide-react";
+import { BenchmarkConfig } from "@/types/benchmark";
 
 interface BenchmarkControlsProps {
   config: BenchmarkConfig;
   onConfigChange: (config: BenchmarkConfig) => void;
   onRunBenchmark: () => void;
-  onExportResults: () => void;
   onClearResults: () => void;
   onSetBaseline: () => void;
   isRunning: boolean;
@@ -23,23 +20,15 @@ export const BenchmarkControls = ({
   config,
   onConfigChange,
   onRunBenchmark,
-  onExportResults,
   onClearResults,
   onSetBaseline,
   isRunning,
   hasResults,
   hasBaseline,
 }: BenchmarkControlsProps) => {
-  const [isVerbose, setIsVerbose] = useState(config.verbose);
-
   const handleRunsChange = (value: string) => {
     const numberOfRuns = parseInt(value);
     onConfigChange({ ...config, numberOfRuns });
-  };
-
-  const handleVerboseChange = (checked: boolean) => {
-    setIsVerbose(checked);
-    onConfigChange({ ...config, verbose: checked });
   };
 
   const handleComparisonChange = (checked: boolean) => {
@@ -100,32 +89,17 @@ export const BenchmarkControls = ({
         </div>
 
         {/* Options */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="verbose-mode"
-              checked={isVerbose}
-              onCheckedChange={handleVerboseChange}
-              disabled={isRunning}
-              className="scale-75"
-            />
-            <Label htmlFor="verbose-mode" className="text-foreground select-none text-[13px]">
-              Verbose Mode
-            </Label>
-          </div>
-
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="comparison-mode"
-              checked={config.enableComparison}
-              onCheckedChange={handleComparisonChange}
-              disabled={isRunning || !hasBaseline}
-              className="scale-75"
-            />
-            <Label htmlFor="comparison-mode" className="text-foreground select-none text-[13px]">
-              Compare vs Baseline
-            </Label>
-          </div>
+        <div className="flex items-center space-x-2">
+          <Switch
+            id="comparison-mode"
+            checked={config.enableComparison}
+            onCheckedChange={handleComparisonChange}
+            disabled={isRunning || !hasBaseline}
+            className="scale-75"
+          />
+          <Label htmlFor="comparison-mode" className="text-foreground select-none text-[13px]">
+            Compare vs Baseline
+          </Label>
         </div>
 
         {/* Action Buttons */}
@@ -142,17 +116,6 @@ export const BenchmarkControls = ({
           </Button>
 
           <Button
-            onClick={onExportResults}
-            disabled={!hasResults || isRunning}
-            variant="outline"
-            size="sm"
-            className="h-7 px-3 flex items-center gap-2 text-xs"
-          >
-            <Download className="h-3 w-3" />
-            Export JSON
-          </Button>
-
-          <Button
             onClick={onClearResults}
             disabled={!hasResults || isRunning}
             variant="outline"
@@ -162,18 +125,6 @@ export const BenchmarkControls = ({
             Clear Results
           </Button>
         </div>
-
-        {/* Status Indicators */}
-        {(hasBaseline || hasResults) && (
-          <div className="flex items-center gap-2 pt-2">
-            {hasBaseline && (
-              <Badge variant="secondary" className="text-xs gap-1">
-                <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
-                Baseline Set
-              </Badge>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );

@@ -69,7 +69,6 @@ export interface BenchmarkResult {
 
 export interface BenchmarkConfig {
   numberOfRuns: number;
-  verbose: boolean;
   backend: 'UltraHonk' | 'Barretenberg';
   circuitName?: string;
   enableComparison: boolean;
@@ -99,7 +98,6 @@ export interface BenchmarkProgress {
 // Default configuration
 export const DEFAULT_BENCHMARK_CONFIG: BenchmarkConfig = {
   numberOfRuns: 1,
-  verbose: false,
   backend: 'UltraHonk',
   enableComparison: false,
 };
