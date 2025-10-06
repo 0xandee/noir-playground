@@ -148,6 +148,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     setConsoleMessages(prev => [...prev, { id, type, message, timestamp }]);
   }, []);
 
+  const clearConsoleMessages = useCallback(() => {
+    setConsoleMessages([]);
+  }, []);
+
   const handleComplexityRefresh = useCallback(async () => {
     if (!files["main.nr"].trim() || isComplexityProfiling) {
       return;
@@ -1013,6 +1017,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       inputs={inputs}
                       cargoToml={files["Nargo.toml"]}
                       onConsoleMessage={addConsoleMessage}
+                      onClearConsole={clearConsoleMessages}
                     />
                   ) : null}
                 </div>

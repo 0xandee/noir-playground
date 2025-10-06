@@ -18,13 +18,15 @@ interface BenchmarkPanelProps {
   inputs: Record<string, unknown>;
   cargoToml?: string;
   onConsoleMessage?: (type: 'error' | 'success' | 'info', message: string) => void;
+  onClearConsole?: () => void;
 }
 
 export const BenchmarkPanel = ({
   sourceCode,
   inputs,
   cargoToml,
-  onConsoleMessage
+  onConsoleMessage,
+  onClearConsole
 }: BenchmarkPanelProps) => {
   const [config, setConfig] = useState<BenchmarkConfig>(DEFAULT_BENCHMARK_CONFIG);
   const [currentResult, setCurrentResult] = useState<BenchmarkResult | null>(null);
@@ -38,6 +40,9 @@ export const BenchmarkPanel = ({
       onConsoleMessage?.('error', 'No source code to benchmark');
       return;
     }
+
+    // Clear console before starting benchmark
+    onClearConsole?.();
 
     setIsRunning(true);
     setProgress({
@@ -91,7 +96,7 @@ export const BenchmarkPanel = ({
       setIsRunning(false);
       setProgress(null);
     }
-  }, [sourceCode, inputs, cargoToml, config, baselineResult, onConsoleMessage]);
+  }, [sourceCode, inputs, cargoToml, config, baselineResult, onConsoleMessage, onClearConsole]);
 
   const handleClearResults = useCallback(() => {
     setCurrentResult(null);

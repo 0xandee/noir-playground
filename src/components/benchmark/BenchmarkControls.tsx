@@ -46,33 +46,35 @@ export const BenchmarkControls = ({
     <div className="border-b border-border bg-transparent">
 
       {/* Primary Controls */}
-      <div className="px-4 py-4 space-y-4">
-        {/* Run Configuration */}
-        <div className="flex items-end gap-4">
-          <div className="flex-1">
-            <Label htmlFor="runs-select" className="text-muted-foreground select-none text-[13px]">
-              Number of Runs
+      <div className="px-4 py-3 space-y-3">
+        {/* Main Control Row - Run Configuration + Comparison */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Number of Runs */}
+          <div className="flex items-center gap-2">
+            <Label htmlFor="runs-select" className="text-muted-foreground select-none text-xs whitespace-nowrap">
+              Runs:
             </Label>
             <Select value={config.numberOfRuns.toString()} onValueChange={handleRunsChange}>
-              <SelectTrigger className="w-full h-8 mt-1 flex items-center justify-center text-[13px]">
+              <SelectTrigger className="w-[90px] h-7 flex items-center justify-center text-xs">
                 <SelectValue className="text-center" />
               </SelectTrigger>
               <SelectContent>
                 {runOptions.map((option) => (
                   <SelectItem key={option.value} value={option.value}>
-                    <span className="text-[13px]">{option.label}</span>
+                    <span className="text-xs">{option.label}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Run Button */}
           <Button
             onClick={onRunBenchmark}
             disabled={isRunning}
             variant="default"
             size="sm"
-            className="h-8 px-4 flex items-center gap-2 text-[13px]"
+            className="h-7 px-4 flex items-center gap-2 text-xs"
           >
             {isRunning ? (
               <>
@@ -86,24 +88,24 @@ export const BenchmarkControls = ({
               </>
             )}
           </Button>
+
+          {/* Comparison Toggle - Inline */}
+          <div className="flex items-center gap-2 ml-auto">
+            <Switch
+              id="comparison-mode"
+              checked={config.enableComparison}
+              onCheckedChange={handleComparisonChange}
+              disabled={isRunning || !hasBaseline}
+              className="scale-75"
+            />
+            <Label htmlFor="comparison-mode" className="text-foreground select-none text-xs whitespace-nowrap">
+              Compare vs Baseline
+            </Label>
+          </div>
         </div>
 
-        {/* Options */}
-        <div className="flex items-center space-x-2">
-          <Switch
-            id="comparison-mode"
-            checked={config.enableComparison}
-            onCheckedChange={handleComparisonChange}
-            disabled={isRunning || !hasBaseline}
-            className="scale-75"
-          />
-          <Label htmlFor="comparison-mode" className="text-foreground select-none text-[13px]">
-            Compare vs Baseline
-          </Label>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-2 pt-2">
+        {/* Action Buttons Row */}
+        <div className="flex items-center gap-2">
           <Button
             onClick={onSetBaseline}
             disabled={!hasResults || isRunning}
