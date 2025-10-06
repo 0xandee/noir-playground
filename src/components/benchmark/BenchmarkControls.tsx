@@ -36,10 +36,12 @@ export const BenchmarkControls = ({
   };
 
   const runOptions = [
-    { value: "1", label: "1 Run", description: "Quick benchmark" },
-    { value: "3", label: "3 Runs", description: "Basic statistics" },
-    { value: "5", label: "5 Runs", description: "Reliable average" },
-    { value: "10", label: "10 Runs", description: "Detailed analysis" },
+    { value: "1", label: "1", description: "Quick benchmark" },
+    { value: "3", label: "3", description: "Basic statistics" },
+    { value: "5", label: "5", description: "Reliable average" },
+    { value: "10", label: "10", description: "Detailed analysis" },
+    { value: "50", label: "50", description: "High precision" },
+    { value: "100", label: "100", description: "Publication grade" },
   ];
 
   return (
