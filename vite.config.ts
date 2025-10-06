@@ -47,12 +47,26 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
       buffer: 'buffer',
       process: 'process/browser',
+      'pino': 'pino/browser.js',
     },
   },
   optimizeDeps: {
-    include: ['@noir-lang/noir_js', '@aztec/bb.js', 'buffer', 'process'],
-    exclude: ['@noir-lang/noir_wasm', '@noir-lang/noirc_abi', '@noir-lang/acvm_js'],
+    include: ['buffer', 'process'],
+    exclude: [
+      '@noir-lang/noir_wasm',
+      '@noir-lang/noirc_abi',
+      '@noir-lang/acvm_js',
+      '@noir-lang/noir_js',
+      '@aztec/bb.js'
+    ],
     force: true,
+  },
+  worker: {
+    format: 'es',
+    plugins: () => [
+      wasm(),
+      topLevelAwait()
+    ],
   },
   assetsInclude: ['**/*.wasm'],
   build: {

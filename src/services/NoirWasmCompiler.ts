@@ -24,7 +24,7 @@ export class NoirWasmCompiler {
 name = "playground"
 type = "bin"
 authors = [""]
-compiler_version = ">=0.31.0"
+compiler_version = ">=1.0.0-beta.11"
 
 [dependencies]`;
   }

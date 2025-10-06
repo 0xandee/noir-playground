@@ -1023,7 +1023,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
         {/* Footer */}
         <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{ fontSize: '13px' }}>
-          <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
+          <span>Noir v1.0.0-beta.11 | Barretenberg v1.0.0</span>
           <div className="flex items-center space-x-4">
             <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
               <BsTwitterX className="h-4 w-4" />
