@@ -87,9 +87,9 @@ export const BenchmarkPanel = ({
       onConsoleMessage?.('success', successMessage);
 
       // Show performance insight
-      if (result.performanceInsight) {
-        onConsoleMessage?.('info', `💡 ${result.performanceInsight}`);
-      }
+      // if (result.performanceInsight) {
+      //   onConsoleMessage?.('info', `💡 ${result.performanceInsight}`);
+      // }
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

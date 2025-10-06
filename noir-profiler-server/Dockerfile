@@ -68,7 +68,7 @@ ENV BB_HOME="/usr/local"
 ENV PATH="/usr/local/bin:$PATH"
 
 RUN curl -L https://raw.githubusercontent.com/AztecProtocol/aztec-packages/refs/heads/master/barretenberg/bbup/install | bash && \
-    /root/.bb/bbup --version 0.84.0 && \
+    /root/.bb/bbup --version 1.0.0 && \
     echo "=== Contents of /root/.bb ===" && \
     ls -la /root/.bb/ && \
     echo "=== Copying BB binaries ===" && \
