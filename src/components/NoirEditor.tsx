@@ -117,9 +117,9 @@ export const NoirEditor = forwardRef<monaco.editor.IStandaloneCodeEditor | null,
   const handleEditorDidMount = (editor: monaco.editor.IStandaloneCodeEditor, monaco: Monaco) => {
     editorRef.current = editor;
     registerNoirLanguage(monaco);
-    
+
     // Force set the theme after registration
-    monaco.editor.setTheme(language === 'noir' ? 'noir-dark' : 'vs-dark');
+    monaco.editor.setTheme('noir-dark');
   };
 
   const handleEditorChange = (value: string | undefined) => {
@@ -132,7 +132,7 @@ export const NoirEditor = forwardRef<monaco.editor.IStandaloneCodeEditor | null,
     <Editor
       height="100%"
       language={language}
-      theme={language === 'noir' ? 'noir-dark' : 'vs-dark'}
+      theme='noir-dark'
       value={value}
       onChange={handleEditorChange}
       onMount={handleEditorDidMount}

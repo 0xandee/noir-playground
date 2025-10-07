@@ -4,6 +4,7 @@ export interface NoirExample {
   description: string;
   code: string;
   inputs: Record<string, string>;
+  cargoToml?: string;
 }
 
 export const noirExamples: NoirExample[] = [
@@ -130,5 +131,38 @@ export const noirExamples: NoirExample[] = [
       valid_txs: "[1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1]",
       timestamp: "1640995200"
     }
+  },
+  {
+    id: "with-dependencies",
+    name: "External Library",
+    description: "Example using an external Noir library from GitHub",
+    code: `// Example showing how to use external dependencies
+// Uncomment the use statement below after adding the dependency to Nargo.toml
+
+// use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    // For now, this is a simple example
+    // To use external libraries:
+    // 1. Switch to the Nargo.toml tab
+    // 2. Add dependencies under [dependencies]
+    // Example: bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+
+    x + y
+}`,
+    inputs: {
+      x: "100",
+      y: "200"
+    },
+    cargoToml: `[package]
+name = "playground"
+type = "bin"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+# Example: Add external dependencies here
+# bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+# aztec = { tag = "v1.0.0", git = "https://github.com/AztecProtocol/aztec-packages", directory = "noir-projects/noir-protocol-circuits/crates/aztec" }`
   }
 ];
