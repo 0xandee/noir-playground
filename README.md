@@ -29,6 +29,7 @@ npm run dev
 -   **Dynamic input forms** generated from function signatures
 -   **Multi-file support** (main.nr + Nargo.toml)
 -   **Zero-knowledge proof** generation and verification
+-   **Circuit complexity profiling** with real-time heatmaps (requires [profiler server](https://github.com/0xandee/noir-playground-server))
 -   **Professional UI** with dark theme optimization
 
 ## Example
@@ -70,6 +71,10 @@ npm run preview  # Preview production build
 -   **WASM Compilation**: @noir-lang/noir_wasm ^1.0.0-beta.9
 
 > 📖 Learn more about the [NoirJS + Barretenberg integration](./docs/noirjs-barretenberg-integration.md) that powers this playground's zero-knowledge proof capabilities.
+
+## Related Repositories
+
+-   **[noir-playground-server](https://github.com/0xandee/noir-playground-server)** - NestJS-based profiler server for circuit complexity analysis and heatmap generation
 
 ## Use Cases
 
