@@ -1,6 +1,7 @@
 import { parse } from 'smol-toml';
 import { dependencyCacheService } from './DependencyCacheService';
 import { CachedDependency } from '@/types/dependencyCache';
+import { formatBytes, formatDuration } from '@/lib/utils';
 
 export interface GitDependency {
   name: string;
@@ -204,6 +205,17 @@ export class DependencyResolverService {
   }
 
   /**
+   * Calculate total size of file contents in bytes
+   */
+  private calculateFileSize(fileContents: Record<string, string>): number {
+    let totalSize = 0;
+    for (const content of Object.values(fileContents)) {
+      totalSize += new TextEncoder().encode(content).length;
+    }
+    return totalSize;
+  }
+
+  /**
    * Resolve a single dependency recursively (including its transitive dependencies)
    */
   private async resolveDependency(
@@ -218,6 +230,9 @@ export class DependencyResolverService {
     }
 
     resolved.add(dep.name);
+
+    // Track timing for this dependency
+    const startTime = performance.now();
 
     const repoInfo = this.parseGitHubUrl(dep.git);
     if (!repoInfo) {
@@ -235,7 +250,6 @@ export class DependencyResolverService {
 
     if (cached) {
       // Cache hit - use cached files
-      onProgress?.(`✓ Using cached ${dep.name}@${dep.tag}`);
       fileContents = cached.files;
 
       // Extract Nargo.toml from cached files
@@ -314,7 +328,18 @@ export class DependencyResolverService {
       await fileManager.writeFile(fullPath, stream);
     }
 
-    onProgress?.(`✓ ${dep.name} installed`);
+    // Calculate timing and size
+    const elapsedTime = performance.now() - startTime;
+    const fileSize = this.calculateFileSize(fileContents);
+
+    // Show completion message with timing and size
+    const cacheStatus = cached ? 'Using cached' : '';
+    const statusPrefix = cached ? '✓ ' : '✓ ';
+    const message = cached
+      ? `${statusPrefix}Using cached ${dep.name}@${dep.tag} (${formatDuration(elapsedTime)}, ${formatBytes(fileSize)})`
+      : `${statusPrefix}${dep.name} installed (${formatDuration(elapsedTime)}, ${formatBytes(fileSize)})`;
+
+    onProgress?.(message);
 
     // Recursively resolve transitive dependencies
     if (depCargoToml) {
@@ -351,6 +376,8 @@ export class DependencyResolverService {
     fileManager: any,
     onProgress?: (message: string) => void
   ): Promise<DependencyResolutionResult> {
+    const overallStartTime = performance.now();
+
     try {
       const dependencies = this.parseDependencies(cargoToml);
 
@@ -373,7 +400,10 @@ export class DependencyResolverService {
         allDeps.push(dep);
       }
 
-      onProgress?.(`All ${resolved.size} ${resolved.size === 1 ? 'dependency' : 'dependencies'} resolved`);
+      // Calculate overall timing
+      const overallTime = performance.now() - overallStartTime;
+
+      onProgress?.(`All ${resolved.size} ${resolved.size === 1 ? 'dependency' : 'dependencies'} resolved (${formatDuration(overallTime)})`);
 
 
       // Convert git dependencies to path dependencies in Nargo.toml

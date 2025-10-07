@@ -36,7 +36,7 @@ compiler_version = ">=1.0.0"
     cargoToml?: string,
     onProgress?: (message: string) => void
   ): Promise<WasmCompilationResult> {
-    const startTime = performance.now();
+    const overallStartTime = performance.now();
 
     try {
       // Create default Nargo.toml if not provided
@@ -59,6 +59,8 @@ compiler_version = ">=1.0.0"
       // Resolve and fetch git dependencies BEFORE writing Nargo.toml
       // This prevents noir_wasm from trying to fetch git dependencies itself
       onProgress?.('Resolving dependencies...');
+      const depStartTime = performance.now();
+
       const dependencyResult = await dependencyResolverService.resolveDependencies(
         defaultCargoToml,
         this.fileManager,
@@ -81,6 +83,9 @@ compiler_version = ">=1.0.0"
         // This prevents "Illegal invocation" errors from noir_wasm's internal fetch usage
         globalThis.fetch = window.fetch.bind(window);
 
+        // Track compilation time separately
+        const compileStartTime = performance.now();
+
         // Compile using noir_wasm with file manager
         const result = await compile_program(
           this.fileManager,
@@ -89,7 +94,7 @@ compiler_version = ">=1.0.0"
           () => {}  // Debug callback
         );
 
-        const compilationTime = performance.now() - startTime;
+        const compilationTime = performance.now() - overallStartTime;
 
         return {
           success: true,
@@ -104,7 +109,7 @@ compiler_version = ">=1.0.0"
       }
 
     } catch (error) {
-      const compilationTime = performance.now() - startTime;
+      const compilationTime = performance.now() - overallStartTime;
 
       return {
         success: false,
