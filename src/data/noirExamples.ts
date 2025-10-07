@@ -135,20 +135,27 @@ export const noirExamples: NoirExample[] = [
   {
     id: "with-dependencies",
     name: "External Library",
-    description: "Example using an external Noir library from GitHub",
-    code: `// Example showing how to use external dependencies
-// Uncomment the use statement below after adding the dependency to Nargo.toml
-
-// use bignum;
+    description: "Example using the bignum library from GitHub for arbitrary-precision arithmetic",
+    code: `// This example demonstrates using external Noir libraries
+// The bignum library is automatically fetched from GitHub during compilation
+use bignum;
 
 pub fn main(x: Field, y: pub Field) -> pub Field {
-    // For now, this is a simple example
-    // To use external libraries:
-    // 1. Switch to the Nargo.toml tab
-    // 2. Add dependencies under [dependencies]
-    // Example: bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+    // The bignum library provides arbitrary-precision arithmetic operations
+    // This is a simple example that shows the library compiles successfully
 
-    x + y
+    // For demonstration, we'll just use basic Field operations
+    // Real bignum usage would involve creating BigNum instances for large numbers
+
+    // Basic computation
+    let result = x + y;
+
+    // You can explore bignum capabilities:
+    // - U256, U512, U1024, U2048, U4096, U8192 for different bit sizes
+    // - Field-specific operations for various elliptic curves
+    // - Modular arithmetic for cryptographic operations
+
+    result
 }`,
     inputs: {
       x: "100",
@@ -161,8 +168,11 @@ authors = [""]
 compiler_version = ">=1.0.0"
 
 [dependencies]
-# Example: Add external dependencies here
-# bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
-# aztec = { tag = "v1.0.0", git = "https://github.com/AztecProtocol/aztec-packages", directory = "noir-projects/noir-protocol-circuits/crates/aztec" }`
+# Bignum library for arbitrary-precision arithmetic
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+
+# Other available libraries:
+# poseidon = { tag = "v0.1.1", git = "https://github.com/noir-lang/poseidon" }
+# See https://github.com/noir-lang/awesome-noir for more libraries`
   }
 ];

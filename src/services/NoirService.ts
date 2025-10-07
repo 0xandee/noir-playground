@@ -93,14 +93,27 @@ export class NoirService {
   ): Promise<NoirExecutionResult> {
     // Step 1: WASM Compilation
     onStep(this.createStep('running', 'Compiling circuit with Noir WASM...'));
-    
-    const compilationResult = await noirWasmCompiler.compileProgram(sourceCode, cargoToml);
-    
+
+    const compilationResult = await noirWasmCompiler.compileProgram(
+      sourceCode,
+      cargoToml,
+      (message: string) => {
+        // Pass progress messages as running steps
+        onStep(this.createStep('running', message));
+      }
+    );
+
     if (!compilationResult.success) {
       throw new Error(`Compilation failed: ${compilationResult.error}`);
     }
 
-    const compileStep = this.createStep('success', `Compilation successful (${compilationResult.compilationTime?.toFixed(0)}ms)`);
+    let compileMessage = `Compilation successful (${compilationResult.compilationTime?.toFixed(0)}ms)`;
+    if (compilationResult.dependenciesResolved && compilationResult.dependenciesResolved > 0) {
+      const depCount = compilationResult.dependenciesResolved;
+      compileMessage += ` - ${depCount} ${depCount === 1 ? 'dependency' : 'dependencies'} resolved`;
+    }
+
+    const compileStep = this.createStep('success', compileMessage);
     steps.push(compileStep);
     onStep(compileStep);
 

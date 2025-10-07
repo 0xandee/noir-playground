@@ -52,18 +52,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
+    "main.nr": initialCode || `use bignum;
 
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-
-    // Return the sum as proof output
-    sum
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    x + y
 }`,
     "Nargo.toml": initialCargoToml || `[package]
 name = "playground"
@@ -71,7 +63,8 @@ type = "bin"
 authors = [""]
 compiler_version = ">=1.0.0"
 
-[dependencies]`
+[dependencies]
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -292,7 +285,7 @@ compiler_version = ">=1.0.0"
         files["main.nr"],
         processedInputs,
         addStepWithDelay,
-        undefined,
+        files["Nargo.toml"],
         proveAndVerify
       );
 
@@ -605,18 +598,10 @@ compiler_version = ">=1.0.0"
                       {activeFile === 'main.nr' ? (
                         <NoirEditorWithHover
                           ref={monacoEditorRef}
-                          value={files[activeFile] || `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
+                          value={files[activeFile] || `use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    x + y
 }`}
                           onChange={(content) => {
                             handleMainFileChange(content);

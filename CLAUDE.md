@@ -35,8 +35,60 @@ The app integrates Noir zero-knowledge proof compilation through a carefully orc
 - **NoirService**: Primary service orchestrating the 5-step execution pipeline (Parse → Compile → Execute → Prove → Verify) using `@noir-lang/noir_js` and `@aztec/bb.js`
 - **NoirWasmCompiler**: Handles WASM compilation with `@noir-lang/noir_wasm` using file manager pattern for browser environment
 - **NoirProfilerService**: Provides circuit profiling capabilities with ACIR/gate analysis via external profiler server
+- **DependencyResolverService**: Manages external library dependencies with recursive git resolution for browser environment
 - **WASM Routing**: Vite config redirects WASM requests from `node_modules/.vite/deps/` to `/public/wasm/` directory
 - **Cross-Origin Headers**: Required CORP/COOP headers for WASM execution and SharedArrayBuffer support in `vite.config.ts`
+
+### External Library Support
+The playground supports external Noir libraries from GitHub with automatic dependency resolution:
+
+#### How It Works
+1. **Git Dependency Parsing**: Parses `Nargo.toml` to extract git dependencies with tag/version
+2. **Recursive Resolution**: Automatically resolves transitive dependencies (dependencies of dependencies)
+3. **GitHub API Integration**: Fetches library files from GitHub using public API
+4. **Virtual Filesystem**: Writes dependencies to browser's virtual filesystem via `FileManager`
+5. **Path Conversion**: Converts all git dependencies to path dependencies before compilation
+6. **noir_wasm Compatibility**: Prevents noir_wasm from attempting browser-incompatible git operations
+
+#### Usage Example
+```toml
+# In Nargo.toml tab
+[dependencies]
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+```
+
+```noir
+// In main.nr tab
+use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    x + y
+}
+```
+
+#### Supported Formats
+- **Git with tag**: `{ tag = "v1.0.0", git = "https://github.com/owner/repo" }` ✅
+- **Git with subdirectory**: `{ tag = "v1.0.0", git = "https://github.com/owner/repo", directory = "crates/lib" }` ✅
+- **Local path**: `{ path = "../my-lib" }` ❌ (browser cannot access local filesystem)
+
+#### Common Libraries
+- **noir-bignum**: Arbitrary precision arithmetic (`noir-lang/noir-bignum`)
+- **poseidon**: Poseidon hash function (`noir-lang/poseidon`)
+- **ecrecover**: Ethereum signature recovery (via standard library)
+
+#### Limitations
+- Only GitHub repositories supported
+- Requires public repositories (no private repo access)
+- Must use tagged releases (commit SHAs not supported)
+- CORS-compliant sources only (GitHub raw files work by default)
+
+#### Service Architecture
+- **DependencyResolverService** (`src/services/DependencyResolverService.ts`):
+  - `parseDependencies()`: Extracts git dependencies from TOML
+  - `resolveDependency()`: Recursively resolves single dependency and its transitive deps
+  - `fetchGitHubTree()`: Gets file list from GitHub API
+  - `fetchFileContent()`: Downloads raw file content
+  - `convertGitToPathDependencies()`: Rewrites TOML with path dependencies
 
 ### Code Sharing & SEO System
 The app includes a sophisticated code sharing system with dynamic SEO:
