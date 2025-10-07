@@ -760,7 +760,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                 </header>
                 <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
-                  {rightPanelView === 'inputs' ? (
+                  {/* Inputs Panel */}
+                  <div className={rightPanelView === 'inputs' ? 'block' : 'hidden'}>
                     <div className="p-4">
                       {/* Inputs Section */}
                       <div className="mb-6">
@@ -884,7 +885,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         )}
                       </div>
                     </div>
-                  ) : rightPanelView === 'profiler' ? (
+                  </div>
+
+                  {/* Profiler Panel */}
+                  <div className={rightPanelView === 'profiler' ? 'block h-full' : 'hidden'}>
                     <div className="h-full flex flex-col">
                       {/* Profiler Controls */}
                       <div className="px-2 sm:px-4 py-3 border-b border-border bg-transparent">
@@ -1011,7 +1015,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         />
                       </div>
                     </div>
-                  ) : rightPanelView === 'benchmark' ? (
+                  </div>
+
+                  {/* Benchmark Panel */}
+                  <div className={rightPanelView === 'benchmark' ? 'block h-full' : 'hidden'}>
                     <BenchmarkPanel
                       sourceCode={files["main.nr"]}
                       inputs={inputs}
@@ -1019,7 +1026,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       onConsoleMessage={addConsoleMessage}
                       onClearConsole={clearConsoleMessages}
                     />
-                  ) : null}
+                  </div>
                 </div>
               </section>
             </ResizablePanel>

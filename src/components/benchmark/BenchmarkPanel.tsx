@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { BenchmarkControls } from "./BenchmarkControls";
 import { BenchmarkCombinedView } from "./BenchmarkCombinedView";
 import {
@@ -62,6 +60,11 @@ export const BenchmarkPanel = ({
         config,
         (progressUpdate) => {
           setProgress(progressUpdate);
+          // Send progress updates to console - only one message per run
+          if (progressUpdate.currentStage === 'Starting') {
+            const progressMessage = `Run ${progressUpdate.currentRun}/${progressUpdate.totalRuns}`;
+            onConsoleMessage?.('info', progressMessage);
+          }
         },
         cargoToml
       );
@@ -83,9 +86,7 @@ export const BenchmarkPanel = ({
       }
 
       // Success message with key metrics
-      const successMessage = config.numberOfRuns === 1
-        ? `Benchmark completed! Total time: ${result.summary.avgTotalTime.toFixed(0)}ms`
-        : `Benchmark completed! Average time: ${result.summary.avgTotalTime.toFixed(0)}ms ± ${result.summary.stdDevTime.toFixed(0)}ms over ${result.summary.totalRuns} runs`;
+      const successMessage = `Benchmark completed!`;
 
       onConsoleMessage?.('success', successMessage);
 
@@ -142,7 +143,6 @@ export const BenchmarkPanel = ({
         <ScrollArea className="h-full">
           <BenchmarkCombinedView
             result={currentResult || undefined}
-            progress={progress || undefined}
             isRunning={isRunning}
             comparison={comparison || undefined}
             showComparison={config.enableComparison && !!baselineResult}
@@ -150,23 +150,6 @@ export const BenchmarkPanel = ({
           />
         </ScrollArea>
       </div>
-
-      {/* Bottom status bar (if running) */}
-      {isRunning && progress && (
-        <>
-          <Separator />
-          <div className="px-4 py-2 bg-muted/30">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                Run {progress.currentRun} of {progress.totalRuns}
-              </span>
-              <span className="text-foreground font-medium">
-                {progress.currentStage}
-              </span>
-            </div>
-          </div>
-        </>
-      )}
     </div>
   );
 };

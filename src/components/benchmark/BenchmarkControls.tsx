@@ -43,7 +43,7 @@ export const BenchmarkControls = ({
               Runs:
             </Label>
             <Select value={config.numberOfRuns.toString()} onValueChange={handleRunsChange}>
-              <SelectTrigger className="w-[90px] h-7 flex items-center justify-center text-xs">
+              <SelectTrigger className="w-[90px] h-7 flex items-center justify-center gap-2 text-xs">
                 <SelectValue className="text-center" />
               </SelectTrigger>
               <SelectContent>

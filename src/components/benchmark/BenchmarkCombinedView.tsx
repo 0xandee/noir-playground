@@ -1,8 +1,6 @@
 import React from "react";
-import { BenchmarkResult, BenchmarkProgress, BenchmarkComparison } from "@/types/benchmark";
-import { Progress } from "@/components/ui/progress";
+import { BenchmarkResult, BenchmarkComparison } from "@/types/benchmark";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Zap, Loader2 } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis, LabelList } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
@@ -10,7 +8,6 @@ import { BenchmarkHistoryTable } from "./BenchmarkHistoryTable";
 
 interface BenchmarkCombinedViewProps {
   result?: BenchmarkResult;
-  progress?: BenchmarkProgress;
   isRunning: boolean;
   comparison?: BenchmarkComparison;
   showComparison?: boolean;
@@ -19,12 +16,12 @@ interface BenchmarkCombinedViewProps {
 
 export const BenchmarkCombinedView = ({
   result,
-  progress,
   isRunning,
   comparison,
   showComparison = false,
   history = []
 }: BenchmarkCombinedViewProps) => {
+  // Show empty state only when not running and no result
   if (!result && !isRunning) {
     return (
       <div className="px-4 py-8 text-center">
@@ -36,70 +33,56 @@ export const BenchmarkCombinedView = ({
     );
   }
 
-  if (isRunning && progress) {
-    return <RunningVisualization progress={progress} />;
-  }
-
-  if (result) {
-    return (
-      <div>
-        <div className="py-4 px-4">
-          <div className="pb-4">
-            <h3 className="text-sm font-semibold">Last Runs</h3>
-          </div>
-          <div>
-            <PipelineVisualization result={result} />
-            <DetailedStatistics result={result} comparison={comparison} showComparison={showComparison} />
-          </div>
-        </div>
-        {/* Benchmark History */}
-        {history.length > 0 && (
-          <div>
-            <div className="px-4 py-4 space-y-4">
-              <h3 className="text-sm font-semibold">Recent Runs</h3>
-            </div>
-            <BenchmarkHistoryTable history={history} />
-          </div>
-        )}
-
-      </div>
-    );
-  }
-
-  return null;
-};
-
-const RunningVisualization = ({ progress }: { progress: BenchmarkProgress }) => {
-  const progressPercentage = (progress.currentRun / progress.totalRuns) * 100;
-
+  // Show main layout when running or when we have results
   return (
-    <Card className="mx-4 my-6">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-            <CardTitle className="text-sm">Running Benchmark</CardTitle>
-          </div>
-          <span className="text-xs text-muted-foreground">
-            {progress.currentRun}/{progress.totalRuns}
-          </span>
+    <div>
+      <div className="py-4 px-4">
+        <div className="pb-4">
+          <h3 className="text-sm font-semibold">Recent Run</h3>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="space-y-1.5">
-          <div className="flex justify-between text-xs">
-            <span className="text-muted-foreground">{progress.currentStage}</span>
-            <span className="text-muted-foreground">{Math.round(progressPercentage)}%</span>
-          </div>
-          <Progress value={progressPercentage} className="h-2" />
+        <div>
+          <PipelineVisualization result={result} isRunning={isRunning} />
+          {result && <DetailedStatistics comparison={comparison} showComparison={showComparison} />}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+      {/* Benchmark History - always show if available */}
+      {history.length > 0 && (
+        <div>
+          <div className="px-4 py-4 space-y-4">
+            <h3 className="text-sm font-semibold">History</h3>
+          </div>
+          <BenchmarkHistoryTable history={history} />
+        </div>
+      )}
+    </div>
   );
 };
 
-const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
+
+const PipelineVisualization = ({ result, isRunning }: { result?: BenchmarkResult; isRunning: boolean }) => {
   const [activeSegment, setActiveSegment] = React.useState<string | null>(null);
+
+  // Show loading state when running
+  if (isRunning) {
+    return (
+      <Card>
+        <CardContent className="pt-6 pb-6">
+          <div className="text-center py-8">
+            <div className="text-muted-foreground text-sm">
+              <Loader2 className="h-8 w-8 mx-auto mb-3 opacity-50 animate-spin" />
+              <p>Running benchmark...</p>
+              <p className="text-xs mt-2">Check console for progress</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If no result and not running, return null
+  if (!result) {
+    return null;
+  }
 
   // Extract raw times from result
   const rawTimes = {
@@ -269,6 +252,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               fill="var(--color-compile)"
               radius={[4, 0, 0, 4]}
               minPointSize={3}
+              isAnimationActive={false}
               onMouseEnter={() => setActiveSegment('compile')}
               onMouseLeave={() => setActiveSegment(null)}
             >
@@ -279,6 +263,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               stackId="a"
               fill="var(--color-witness)"
               minPointSize={3}
+              isAnimationActive={false}
               onMouseEnter={() => setActiveSegment('witness')}
               onMouseLeave={() => setActiveSegment(null)}
             >
@@ -289,6 +274,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               stackId="a"
               fill="var(--color-proof)"
               minPointSize={3}
+              isAnimationActive={false}
               onMouseEnter={() => setActiveSegment('proof')}
               onMouseLeave={() => setActiveSegment(null)}
             >
@@ -300,6 +286,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
               fill="var(--color-verify)"
               radius={[0, 4, 4, 0]}
               minPointSize={3}
+              isAnimationActive={false}
               onMouseEnter={() => setActiveSegment('verify')}
               onMouseLeave={() => setActiveSegment(null)}
             >
@@ -313,7 +300,7 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
           <div className="text-center space-y-1">
             <div className="text-muted-foreground text-xs">Total Time</div>
             <div className="font-mono text-foreground font-bold">
-              {result.summary.avgTotalTime.toFixed(0)}ms
+              {result.summary.avgTotalTime.toFixed(0)}ms{result.config.numberOfRuns > 1 && <span className="text-muted-foreground text-xs font-normal"> ± {result.summary.stdDevTime.toFixed(0)}ms</span>}
             </div>
           </div>
 
@@ -330,11 +317,9 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
 };
 
 const DetailedStatistics = ({
-  result,
   comparison,
   showComparison
 }: {
-  result: BenchmarkResult;
   comparison?: BenchmarkComparison;
   showComparison: boolean;
 }) => {
