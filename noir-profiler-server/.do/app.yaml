@@ -1,0 +1,37 @@
+name: noir-profiler-server
+region: nyc
+
+services:
+  - name: api
+    dockerfile_path: noir-profiler-server/Dockerfile
+    source_dir: /
+    github:
+      repo: 0xandee/noir-playground
+      branch: main
+      deploy_on_push: true
+
+    http_port: 4000
+
+    instance_count: 1
+    instance_size_slug: basic-xxs
+
+    envs:
+      - key: NODE_ENV
+        value: "production"
+      - key: PORT
+        value: "4000"
+      - key: NOIR_DATA_PATH
+        value: "/data/noir-profiler"
+      - key: NOIR_BACKEND_PATH
+        value: "/usr/local/bin/bb"
+
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 60
+      timeout_seconds: 10
+      period_seconds: 30
+      success_threshold: 1
+      failure_threshold: 3
+
+    routes:
+      - path: /
