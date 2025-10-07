@@ -84,8 +84,11 @@ export const BenchmarkPanel = ({
         setComparison(null);
       }
 
-      // Success message with key metrics
-      const successMessage = `Benchmark completed!`;
+      // Success message with timing metrics
+      const totalTime = result.runs.reduce((sum, run) => sum + run.totalTime, 0);
+      const successMessage = config.numberOfRuns > 1
+        ? `Benchmark completed! (avg: ${Math.round(result.summary.avgTotalTime)}ms, total: ${Math.round(totalTime)}ms)`
+        : `Benchmark completed! (${Math.round(totalTime)}ms)`;
 
       onConsoleMessage?.('success', successMessage);
 
