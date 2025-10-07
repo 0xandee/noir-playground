@@ -34,6 +34,7 @@ export const BenchmarkPanel = ({
   const [comparison, setComparison] = useState<BenchmarkComparison | null>(null);
   const [progress, setProgress] = useState<BenchmarkProgress | null>(null);
   const [isRunning, setIsRunning] = useState(false);
+  const [benchmarkHistory, setBenchmarkHistory] = useState<BenchmarkResult[]>([]);
 
   const handleRunBenchmark = useCallback(async () => {
     if (!sourceCode.trim()) {
@@ -66,6 +67,12 @@ export const BenchmarkPanel = ({
       );
 
       setCurrentResult(result);
+
+      // Add to history (limit to last 10 runs)
+      setBenchmarkHistory((prevHistory) => {
+        const newHistory = [result, ...prevHistory];
+        return newHistory.slice(0, 10); // Keep only last 10 runs
+      });
 
       // Generate comparison if baseline exists and comparison is enabled
       if (config.enableComparison && baselineResult) {
@@ -102,6 +109,7 @@ export const BenchmarkPanel = ({
     setCurrentResult(null);
     setComparison(null);
     setProgress(null);
+    setBenchmarkHistory([]);
     benchmarkService.clearResults();
     onConsoleMessage?.('info', 'Benchmark results cleared');
   }, [onConsoleMessage]);
@@ -138,6 +146,7 @@ export const BenchmarkPanel = ({
             isRunning={isRunning}
             comparison={comparison || undefined}
             showComparison={config.enableComparison && !!baselineResult}
+            history={benchmarkHistory}
           />
         </ScrollArea>
       </div>

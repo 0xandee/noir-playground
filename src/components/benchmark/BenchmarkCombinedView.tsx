@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Zap, Loader2 } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis, LabelList } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
+import { BenchmarkHistoryTable } from "./BenchmarkHistoryTable";
 
 interface BenchmarkCombinedViewProps {
   result?: BenchmarkResult;
@@ -13,6 +14,7 @@ interface BenchmarkCombinedViewProps {
   isRunning: boolean;
   comparison?: BenchmarkComparison;
   showComparison?: boolean;
+  history?: BenchmarkResult[];
 }
 
 export const BenchmarkCombinedView = ({
@@ -20,7 +22,8 @@ export const BenchmarkCombinedView = ({
   progress,
   isRunning,
   comparison,
-  showComparison = false
+  showComparison = false,
+  history = []
 }: BenchmarkCombinedViewProps) => {
   if (!result && !isRunning) {
     return (
@@ -39,9 +42,26 @@ export const BenchmarkCombinedView = ({
 
   if (result) {
     return (
-      <div className="px-4 py-4 space-y-4">
-        <PipelineVisualization result={result} />
-        <DetailedStatistics result={result} comparison={comparison} showComparison={showComparison} />
+      <div>
+        <div className="py-4 px-4">
+          <div className="pb-4">
+            <h3 className="text-sm font-semibold">Last Runs</h3>
+          </div>
+          <div>
+            <PipelineVisualization result={result} />
+            <DetailedStatistics result={result} comparison={comparison} showComparison={showComparison} />
+          </div>
+        </div>
+        {/* Benchmark History */}
+        {history.length > 0 && (
+          <div>
+            <div className="px-4 py-4 space-y-4">
+              <h3 className="text-sm font-semibold">Recent Runs</h3>
+            </div>
+            <BenchmarkHistoryTable history={history} />
+          </div>
+        )}
+
       </div>
     );
   }
@@ -92,8 +112,8 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
   // Check if times are cumulative by comparing witness to compile
   // If witness > compile, they're likely cumulative
   const areCumulative = rawTimes.witness > rawTimes.compile &&
-                        rawTimes.proof > rawTimes.witness &&
-                        rawTimes.verify > rawTimes.proof;
+    rawTimes.proof > rawTimes.witness &&
+    rawTimes.verify > rawTimes.proof;
 
   // Calculate individual stage times (handle both cumulative and individual data)
   const stageTimes = areCumulative ? {
@@ -204,13 +224,12 @@ const PipelineVisualization = ({ result }: { result: BenchmarkResult }) => {
     <Card>
       <CardContent className="pt-6 space-y-4">
         {/* Interactive Stacked Bar Chart */}
-        <ChartContainer config={chartConfig} className="h-36 w-full block">
+        <ChartContainer config={chartConfig} className="h-[82px] w-full block">
           <BarChart
             data={chartData}
             layout="vertical"
             margin={{ left: 0, right: 0, top: 0, bottom: 60 }}
             width={undefined}
-            height={144}
             barCategoryGap={0}
           >
             <XAxis type="number" hide domain={[0, 'dataMax']} />
@@ -321,47 +340,11 @@ const DetailedStatistics = ({
 }) => {
   return (
     <>
-      {/* Multi-run Statistics (only show if more than 1 run) */}
-      {result.summary.totalRuns > 1 && <MultiRunStats result={result} />}
-
-
       {/* Comparison Results */}
       {showComparison && comparison && <ComparisonStats comparison={comparison} />}
-
     </>
   );
 };
-
-const MultiRunStats = ({ result }: { result: BenchmarkResult }) => {
-  const cv = (result.summary.stdDevTime / result.summary.avgTotalTime) * 100;
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm">
-          Multi-Run Statistics ({result.summary.totalRuns} runs)
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Average</span>
-          <span className="font-mono font-bold">{result.summary.avgTotalTime.toFixed(1)}ms ±{result.summary.stdDevTime.toFixed(1)}ms</span>
-        </div>
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">Range</span>
-          <span className="font-mono">{result.summary.minTotalTime.toFixed(1)}ms - {result.summary.maxTotalTime.toFixed(1)}ms</span>
-        </div>
-        <div className="flex items-center justify-between text-xs pt-2 border-t">
-          <span className="text-muted-foreground">Consistency</span>
-          <Badge variant={cv < 5 ? 'default' : cv < 15 ? 'secondary' : 'destructive'} className="text-xs">
-            {cv.toFixed(1)}% CV
-          </Badge>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
 
 const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) => {
   const overallImprovement = comparison.overallImprovement;
@@ -377,9 +360,8 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
         <div className="text-center p-3 rounded bg-muted/30">
           <div className="text-muted-foreground text-xs mb-1">Overall Change</div>
           <div
-            className={`font-mono font-bold text-lg ${
-              isImprovement ? 'text-green-500' : overallImprovement < 0 ? 'text-red-500' : 'text-muted-foreground'
-            }`}
+            className={`font-mono font-bold text-lg ${isImprovement ? 'text-green-500' : overallImprovement < 0 ? 'text-red-500' : 'text-muted-foreground'
+              }`}
           >
             {isImprovement ? '+' : ''}{overallImprovement.toFixed(1)}%
           </div>
@@ -393,13 +375,12 @@ const ComparisonStats = ({ comparison }: { comparison: BenchmarkComparison }) =>
             <div key={improvement.stage} className="flex items-center justify-between py-1.5 text-xs">
               <span className="capitalize">{improvement.stage}</span>
               <span
-                className={`font-mono ${
-                  improvement.isImprovement
-                    ? 'text-green-500'
-                    : improvement.percentageChange < 0
-                      ? 'text-red-500'
-                      : 'text-muted-foreground'
-                }`}
+                className={`font-mono ${improvement.isImprovement
+                  ? 'text-green-500'
+                  : improvement.percentageChange < 0
+                    ? 'text-red-500'
+                    : 'text-muted-foreground'
+                  }`}
               >
                 {improvement.percentageChange > 0 ? '+' : ''}{improvement.percentageChange.toFixed(1)}%
               </span>

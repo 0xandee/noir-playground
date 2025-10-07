@@ -134,6 +134,7 @@ export class BenchmarkService {
     };
 
     let proofSize = 0;
+    let circuitSize: number | undefined = undefined;
     let lastCumulativeTime = 0; // Track last cumulative time to calculate stage durations
 
     // Reset NoirService for clean measurement
@@ -182,11 +183,15 @@ export class BenchmarkService {
         proofSize = result.proof.length;
       }
 
+      // Get circuit size from NoirService
+      circuitSize = this.noirService.getCircuitSize();
+
       const metrics: SingleRunMetrics = {
         runId,
         stages,
         totalTime,
         proofSize,
+        circuitSize,
         timestamp: new Date(),
         circuitName: config.circuitName || 'main.nr',
         backend: config.backend,

@@ -21,6 +21,7 @@ export interface SingleRunMetrics {
   };
   totalTime: number;
   proofSize: number;
+  circuitSize?: number; // ACIR opcode count
   timestamp: Date;
   circuitName: string;
   backend: string;

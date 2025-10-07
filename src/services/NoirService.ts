@@ -26,6 +26,7 @@ export class NoirService {
   private backend?: UltraHonkBackend;
   private startTime: number = 0;
   private wasmInitialized: boolean = false;
+  private compiledProgram?: any; // Store compiled program for circuit info access
 
   private async initializeWasm(): Promise<void> {
     if (this.wasmInitialized) return;
@@ -113,15 +114,16 @@ export class NoirService {
     try {
       // The Noir instance expects the inner program object, not the wrapper
       const program = (compilationResult.program as any).program;
+      this.compiledProgram = program; // Store for circuit info access
       this.noir = new Noir(program);
-      
+
       // Initialize UltraHonkBackend for proof generation
       // UltraHonkBackend needs the bytecode from the program
       const bytecode = program.bytecode;
       if (!bytecode) {
         throw new Error('No bytecode found in compiled program');
       }
-      
+
       this.backend = new UltraHonkBackend(bytecode);
     } catch (initError) {
       throw new Error(`Failed to initialize Noir circuit: ${initError instanceof Error ? initError.message : 'Unknown error'}`);;
@@ -264,15 +266,50 @@ export class NoirService {
 
   getCircuitInfo() {
     if (!this.noir) return null;
-    
+
     return {
-      hasCircuit: true
+      hasCircuit: true,
+      circuitSize: this.getCircuitSize()
     };
+  }
+
+  /**
+   * Get the circuit size (number of ACIR opcodes)
+   */
+  getCircuitSize(): number | undefined {
+    if (!this.compiledProgram) return undefined;
+
+    try {
+      // Try to get circuit size from bytecode
+      // The bytecode is typically a base64 encoded string representing the ACIR program
+      const bytecode = this.compiledProgram.bytecode;
+      if (bytecode && typeof bytecode === 'string') {
+        // Decode base64 to get the ACIR buffer
+        const decoded = atob(bytecode);
+        // Return the byte size as a proxy for circuit complexity
+        return decoded.length;
+      }
+
+      // Alternative: Check if the program has an abi field with circuit_size
+      if (this.compiledProgram.abi?.circuit_size) {
+        return this.compiledProgram.abi.circuit_size;
+      }
+
+      // Alternative: Check bytecode as Uint8Array
+      if (bytecode instanceof Uint8Array) {
+        return bytecode.length;
+      }
+    } catch (error) {
+      console.warn('Failed to extract circuit size:', error);
+    }
+
+    return undefined;
   }
 
   reset() {
     this.noir = undefined;
     this.backend = undefined;
+    this.compiledProgram = undefined;
     this.startTime = 0;
     noirWasmCompiler.reset();
   }
