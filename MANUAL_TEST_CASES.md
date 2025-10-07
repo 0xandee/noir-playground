@@ -5,7 +5,7 @@ This document provides comprehensive manual test cases to verify the Real-Time C
 
 ## Prerequisites
 - Noir Playground running locally (`npm run dev`)
-- Noir profiler server running (`cd noir-profiler-server && npm run start:dev`)
+- Noir profiler server running (see [noir-playground-server](https://github.com/0xandee/noir-playground-server) repository)
 - Modern browser (Chrome, Firefox, Safari, or Edge)
 
 ---

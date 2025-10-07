@@ -20,6 +20,7 @@ import {
   CornerDownRight,
   Play,
   Link2,
+  Copy,
 } from "lucide-react";
 import { BsTwitterX, BsGithub } from "react-icons/bs";
 import { noirService, ExecutionStep } from "@/services/NoirService";
@@ -31,6 +32,7 @@ import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexit
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
+import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -90,13 +92,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
-    { value: 'profiler' as const, label: 'Profiler' }
+    { value: 'profiler' as const, label: 'Profiler' },
+    { value: 'benchmark' as const, label: 'Benchmark' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -141,8 +144,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   const addConsoleMessage = useCallback((type: 'error' | 'success' | 'info', message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    const id = Date.now().toString();
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setConsoleMessages(prev => [...prev, { id, type, message, timestamp }]);
+  }, []);
+
+  const clearConsoleMessages = useCallback(() => {
+    setConsoleMessages([]);
   }, []);
 
   const handleComplexityRefresh = useCallback(async () => {
@@ -326,7 +333,13 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     setShareDialogOpen(true);
   };
 
-
+  const handleCopyField = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
 
   const handleInputChange = (key: string, value: string) => {
     setInputs(prev => ({ ...prev, [key]: value }));
@@ -536,14 +549,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     if (allMessages.length === 0) {
       return (
         <div className="flex items-center gap-2">
-          <span className="text-foreground select-none">Ready to execute...</span>
+          <span className="text-foreground select-text">Ready to execute...</span>
         </div>
       );
     }
 
     return allMessages.map((msg, i) => (
       <div key={msg.id || i} className="flex items-center gap-2">
-        <span className={`select-none ${msg.type === "success" ? "text-green-400" :
+        <span className={`select-text ${msg.type === "success" ? "text-green-400" :
           msg.type === "error" ? "text-red-400" :
             msg.type === "info" ? "text-foreground" :
               "text-foreground"
@@ -563,7 +576,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
 
         {/* Main Content */}
-        <section className="flex flex-1" aria-label="Development Environment">
+        <section className="flex flex-1 overflow-hidden" aria-label="Development Environment">
           {/* Desktop Layout - Resizable Panels */}
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Left Panel - Code Editor and Console */}
@@ -711,7 +724,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     </div>
                   }
                 >
-                  <div className="h-full flex flex-col" style={{ backgroundColor: '#161616' }}>
+                  <div className="h-full flex flex-col" style={{ backgroundColor: '#100E0F' }}>
                     <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
                       {renderConsoleContent()}
                     </div>
@@ -746,8 +759,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   </div>
 
                 </header>
-                <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
-                  {rightPanelView === 'inputs' ? (
+                <div className="overflow-y-auto flex-1 min-h-0" style={{ backgroundColor: '#100E0F' }}>
+                  {/* Inputs Panel */}
+                  <div className={rightPanelView === 'inputs' ? 'block' : 'hidden'}>
                     <div className="p-4">
                       {/* Inputs Section */}
                       <div className="mb-6">
@@ -785,9 +799,18 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                           <div className="space-y-4">
                             {proofData.publicInputs && proofData.publicInputs.length > 0 && (
                               <div>
-                                <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                  <button
+                                    onClick={() => handleCopyField(proofData.publicInputs!.join('\n'))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                                 <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono space-y-1 overflow-x-auto" style={{ fontSize: '13px' }}>
+                                  <div className="p-3 font-mono space-y-1 overflow-x-auto output-scrollbar" style={{ fontSize: '13px' }}>
                                     {proofData.publicInputs.map((input: string, i: number) => (
                                       <div key={i}>{input}</div>
                                     ))}
@@ -798,9 +821,18 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
                             {proofData.witness && proofData.witness.length > 0 && (
                               <div>
-                                <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
+                                  <button
+                                    onClick={() => handleCopyField(Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                                 <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
                                     {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
                                   </div>
                                 </div>
@@ -808,9 +840,20 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                             )}
 
                             <div>
-                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
+                                {proofData.proof && proofData.proof.length > 0 && (
+                                  <button
+                                    onClick={() => handleCopyField(Array.from(proofData.proof!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
                               <div className="bg-muted/50 border border-border rounded">
-                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap" style={{ fontSize: '13px' }}>
+                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
                                   {proofData.proof && proofData.proof.length > 0
                                     ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
                                     : 'No proof generated'}
@@ -842,8 +885,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         )}
                       </div>
                     </div>
-                  ) : rightPanelView === 'profiler' ? (
-                    <div className="h-full flex flex-col">
+                  </div>
+
+                  {/* Profiler Panel */}
+                  <div className={rightPanelView === 'profiler' ? 'block' : 'hidden'}>
+                    <div className="flex flex-col">
                       {/* Profiler Controls */}
                       <div className="px-2 sm:px-4 py-3 border-b border-border bg-transparent">
                         {/* Single row layout for normal width, 2-row for narrow */}
@@ -944,11 +990,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
 
                       {/* Complexity Analysis Panel */}
-                      <div className="flex-1">
+                      <div>
                         <CombinedComplexityPanel
                           sourceCode={files[activeFile] || ''}
                           cargoToml={files['Nargo.toml'] || ''}
-                          className="h-full"
+                          className=""
                           enableHeatmap={enableHeatmap}
                           viewMode={complexityViewMode}
                           onViewModeChange={setComplexityViewMode}
@@ -969,7 +1015,18 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                         />
                       </div>
                     </div>
-                  ) : null}
+                  </div>
+
+                  {/* Benchmark Panel */}
+                  <div className={rightPanelView === 'benchmark' ? 'block' : 'hidden'}>
+                    <BenchmarkPanel
+                      sourceCode={files["main.nr"]}
+                      inputs={inputs}
+                      cargoToml={files["Nargo.toml"]}
+                      onConsoleMessage={addConsoleMessage}
+                      onClearConsole={clearConsoleMessages}
+                    />
+                  </div>
                 </div>
               </section>
             </ResizablePanel>
@@ -978,7 +1035,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
         {/* Footer */}
         <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{ fontSize: '13px' }}>
-          <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
+          <span>Noir v1.0.0-beta.11 | Barretenberg v1.0.0</span>
           <div className="flex items-center space-x-4">
             <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
               <BsTwitterX className="h-4 w-4" />

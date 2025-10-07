@@ -118,7 +118,7 @@ const config = {
 ## Dependencies
 
 - Monaco Editor for code visualization
-- Existing noir-profiler-server for metrics
+- [noir-playground-server](https://github.com/0xandee/noir-playground-server) for circuit profiling and metrics
 - Radix UI components for interface elements
 - Tailwind CSS for styling
 

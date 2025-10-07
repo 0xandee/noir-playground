@@ -206,10 +206,10 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
 
 
   return (
-    <div className={`h-full flex flex-col ${className || ''}`}>
+    <div className={`flex flex-col ${className || ''}`}>
 
       {!profilerResult && !isProfiling && (
-        <div className="flex-1 flex items-center justify-center p-4">
+        <div className="flex items-center justify-center p-8 min-h-[300px]">
           <div className="text-center text-muted-foreground">
             <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No complexity analysis available</p>
@@ -221,7 +221,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {isProfiling && (
-        <div className="flex-1 flex items-center justify-center p-4">
+        <div className="flex items-center justify-center p-8 min-h-[300px]">
           <div className="text-center text-muted-foreground">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
             <p>Analyzing circuit complexity...</p>
@@ -231,37 +231,37 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {profilerResult && !isProfiling && (
-        <div className={`flex-1 overflow-hidden ${viewMode === 'flamegraph' ? 'px-4 pt-4' : ''}`}>
+        <div className={viewMode === 'flamegraph' ? 'px-4 pt-4' : ''}>
           {/* Content Area - Flamegraph or Metrics View */}
-          <div className="h-full">
+          <div>
             {viewMode === 'flamegraph' ? (
               /* Dual SVG Viewers - Vertical Stack */
-              <div className="flex flex-col gap-4 h-full">
+              <div className="flex flex-col gap-4 pb-4">
                 {/* ACIR Opcodes Flamegraph */}
-                <div className="flex-1 min-h-0">
+                <div className="min-h-[400px]">
                   <SVGFlamegraphViewer
                     title="ACIR Opcodes"
                     svgContent={profilerResult.acirSVG || ''}
                     onFunctionClick={handleFunctionClick}
                     onLineClick={handleLineClick}
-                    className="h-full"
+                    className=""
                   />
                 </div>
 
                 {/* Proving Gates Flamegraph */}
-                <div className="flex-1 min-h-0">
+                <div className="min-h-[400px]">
                   <SVGFlamegraphViewer
                     title="Proving Gates"
                     svgContent={profilerResult.gatesSVG || ''}
                     onFunctionClick={handleFunctionClick}
                     onLineClick={handleLineClick}
-                    className="h-full"
+                    className=""
                   />
                 </div>
               </div>
             ) : (
               /* Metrics View */
-              <div className="h-full flex flex-col">
+              <div className="flex flex-col">
                 {/* Circuit Metrics - Show in metrics view */}
                 {profilerResult.circuitMetrics && (
                   <div className="p-4 border-b border-border">
@@ -271,11 +271,11 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
                     />
                   </div>
                 )}
-                <div className="flex-1">
+                <div>
                   <ComplexityTableView
                     data={tableData}
                     onLineClick={handleLineClick}
-                    className="h-full"
+                    className=""
                   />
                 </div>
               </div>

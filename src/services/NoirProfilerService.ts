@@ -133,8 +133,9 @@ export class NoirProfilerService {
         fileName: request.fileName
       });
 
-      // Step 6: Automatically output console table with opcode analysis
-      this.generateOpcodeConsoleTable(complexityReport, serverResponse.circuitMetrics);
+      // Step 6: Console table generation removed from production code
+      // Uncomment the line below if you need to debug circuit complexity:
+      // this.generateOpcodeConsoleTable(complexityReport, serverResponse.circuitMetrics);
 
       return {
         acirSVG: svgData.mainAcirSVG,
@@ -480,28 +481,8 @@ export class NoirProfilerService {
       totalGates: complexityReport.totalGates
     };
 
-    // Output summary header
-    console.log('\n🔥 Circuit Complexity Analysis - Detailed Expression Breakdown');
-    console.log('================================================================');
-    console.log(`Total ACIR Opcodes: ${actualMetrics.totalAcirOpcodes}`);
-    console.log(`Total Brillig Opcodes: ${actualMetrics.totalBrilligOpcodes}`);
-    console.log(`Total Gates: ${actualMetrics.totalGates}`);
-    console.log(`Total Expressions: ${deduplicatedExpressions.length}`);
-    console.log('================================================================\n');
-
-    // Output the main table
-    console.table(tableData);
-
-    // Output top 5 hotspots if available
-    if (complexityReport.hotspots && complexityReport.hotspots.length > 0) {
-      console.log('\n🎯 Top Performance Hotspots:');
-      console.log('-----------------------------');
-      complexityReport.hotspots.slice(0, 5).forEach((hotspot, index) => {
-        console.log(`${index + 1}. Line ${hotspot.lineNumber}: ${hotspot.percentage.toFixed(2)}% (${hotspot.totalCost} total cost)`);
-      });
-    }
-
-    console.log('\n📊 Use this data to identify the most expensive expressions in your circuit.');
-    console.log('💡 Focus optimization efforts on expressions with high percentages.');
+    // Console output removed from production code
+    // This function can be re-enabled for debugging by uncommenting the call in profileCircuit()
+    // and restoring the console.log statements below if needed for development debugging
   }
 }

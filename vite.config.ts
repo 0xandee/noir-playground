@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import inject from "@rollup/plugin-inject";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -47,18 +48,38 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
       buffer: 'buffer',
       process: 'process/browser',
+      'pino': 'pino/browser.js',
     },
   },
   optimizeDeps: {
-    include: ['@noir-lang/noir_js', '@aztec/bb.js', 'buffer', 'process'],
-    exclude: ['@noir-lang/noir_wasm', '@noir-lang/noirc_abi', '@noir-lang/acvm_js'],
+    include: ['buffer', 'process'],
+    exclude: [
+      '@noir-lang/noir_wasm',
+      '@noir-lang/noirc_abi',
+      '@noir-lang/acvm_js',
+      '@noir-lang/noir_js',
+      '@aztec/bb.js'
+    ],
     force: true,
+  },
+  worker: {
+    format: 'es',
+    plugins: () => [
+      wasm(),
+      topLevelAwait()
+    ],
   },
   assetsInclude: ['**/*.wasm'],
   build: {
     target: 'es2022',
     rollupOptions: {
       external: [],
+      plugins: [
+        inject({
+          Buffer: ['buffer', 'Buffer'],
+          process: ['process', 'default'],
+        })
+      ],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],

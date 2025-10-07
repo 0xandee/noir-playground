@@ -208,63 +208,36 @@ Core TypeScript interfaces for complexity analysis:
 
 ## Noir Profiler Server
 
-### Architecture Overview
-The `noir-profiler-server/` directory contains a standalone NestJS application that provides HTTP endpoints for circuit profiling:
+The profiler server has been moved to a separate repository for independent development and deployment.
+
+**Repository**: https://github.com/0xandee/noir-playground-server
+
+### Overview
+A standalone NestJS-based REST API server that provides HTTP endpoints for circuit profiling:
 
 - **NestJS Framework**: Modern TypeScript server with dependency injection and configuration management
-- **Docker Integration**: Pre-built container with `noir-profiler` CLI and Barretenberg backend
+- **Circuit Profiling**: ACIR opcodes, Brillig opcodes, and gates profiling via noir-profiler CLI
+- **Docker Support**: Pre-built container with noir-profiler CLI and Barretenberg backend
 - **Automatic File Management**: Creates temporary directories, writes artifacts, and cleans up automatically
-- **RESTful API**: HTTP endpoints for profiling operations with structured error handling
+- **Health Checks**: Built-in monitoring endpoints
 
-### Server Development Commands
+### Quick Start
 
 ```bash
-# Navigate to profiler server directory
-cd noir-profiler-server/
+# Clone the server repository
+git clone https://github.com/0xandee/noir-playground-server.git
+cd noir-playground-server
 
 # Development
-npm install                 # Install dependencies
-npm run start:dev          # Start development server with watch mode
-npm run start:debug        # Start with debug mode
-npm run start:prod         # Start production server
+npm install
+npm run start:dev          # Runs on http://localhost:4000
 
-# Testing
-npm run test               # Run unit tests
-npm run test:e2e           # Run end-to-end tests
-npm run test:cov           # Run tests with coverage
-npm run test:watch         # Run tests in watch mode
-
-# Production
-npm run build              # Build for production
-npm run start              # Start production server
-
-# Docker
+# Docker (recommended)
 docker build -t noir-playground-server .
 docker run -p 4000:4000 noir-playground-server
-docker-compose up --build  # Full stack with compose
 ```
 
-### Key Server Components
-
-#### ProfilingService (`noir-profiler-server/src/profiling/profiling.service.ts`)
-Core service handling circuit profiling operations:
-- **Temporary file management**: Creates unique request directories with UUID-based naming
-- **Artifact processing**: Writes circuit artifacts as JSON files for noir-profiler CLI
-- **Command execution**: Executes `noir-profiler` with proper error handling and output capture
-- **SVG generation**: Processes flamegraph output and returns SVG content
-- **Auto cleanup**: Removes temporary files and directories after processing
-
-#### ProfilingController (`noir-profiler-server/src/profiling/profiling.controller.ts`)
-HTTP endpoints for profiling operations:
-- **POST /api/profile/opcodes**: Profile circuit ACIR opcodes with artifact input
-- **GET /api/profile/check-profiler**: Health check for noir-profiler CLI availability
-
-#### Configuration System
-- **Environment-based**: Uses NestJS ConfigService with validation
-- **Docker-optimized**: Default paths configured for containerized deployment
-- **Flexible paths**: Configurable data directory and Barretenberg backend location
-
-### Integration with Frontend
+### Frontend Integration
 
 The main React application integrates with the profiler server via `NoirProfilerService`:
 
@@ -277,30 +250,14 @@ const result = await noirProfilerService.profileCircuit({
 });
 ```
 
-### Server Deployment Considerations
+### Environment Configuration
 
-#### Docker Deployment (Recommended)
-- **Pre-installed tools**: Container includes noir-profiler CLI and bb backend
-- **Port mapping**: Default port 4000, configurable via environment
-- **Volume mounting**: Optional output directory mounting for debugging
-- **Non-root user**: Container runs with proper security permissions
-
-#### Local Development Setup
-- **Manual installation**: Requires noir-profiler CLI installation via noirup
-- **Backend dependency**: Needs Barretenberg backend (bb) in system PATH
-- **Development mode**: Hot reload and debug logging enabled
-
-### Environment Variables
+Configure the frontend to connect to the profiler server:
 
 ```bash
-# Server Configuration
-PORT=4000                                    # Server port (default: 4000)
-NODE_ENV=production                          # Environment mode
-
-# Profiler Configuration  
-NOIR_DATA_PATH=/data/noir-profiler          # Base directory for profiling operations
-NOIR_BACKEND_PATH=/usr/local/bin/bb         # Path to Barretenberg backend binary
-
 # Client Integration
-VITE_PROFILER_SERVER_URL=http://localhost:4000  # Frontend profiler server URL
+VITE_PROFILER_SERVER_URL=http://localhost:4000  # Local development
+VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
 ```
+
+For detailed documentation on server architecture, deployment, and API endpoints, see the [server repository](https://github.com/0xandee/noir-playground-server).
