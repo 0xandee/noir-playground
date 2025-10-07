@@ -576,7 +576,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
 
         {/* Main Content */}
-        <section className="flex flex-1" aria-label="Development Environment">
+        <section className="flex flex-1 overflow-hidden" aria-label="Development Environment">
           {/* Desktop Layout - Resizable Panels */}
           <ResizablePanelGroup direction="horizontal" className="h-full">
             {/* Left Panel - Code Editor and Console */}
@@ -759,7 +759,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   </div>
 
                 </header>
-                <div className="overflow-y-auto flex-1" style={{ backgroundColor: '#100E0F' }}>
+                <div className="overflow-y-auto flex-1 min-h-0" style={{ backgroundColor: '#100E0F' }}>
                   {/* Inputs Panel */}
                   <div className={rightPanelView === 'inputs' ? 'block' : 'hidden'}>
                     <div className="p-4">
@@ -888,8 +888,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   </div>
 
                   {/* Profiler Panel */}
-                  <div className={rightPanelView === 'profiler' ? 'block h-full' : 'hidden'}>
-                    <div className="h-full flex flex-col">
+                  <div className={rightPanelView === 'profiler' ? 'block' : 'hidden'}>
+                    <div className="flex flex-col">
                       {/* Profiler Controls */}
                       <div className="px-2 sm:px-4 py-3 border-b border-border bg-transparent">
                         {/* Single row layout for normal width, 2-row for narrow */}
@@ -990,11 +990,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       </div>
 
                       {/* Complexity Analysis Panel */}
-                      <div className="flex-1">
+                      <div>
                         <CombinedComplexityPanel
                           sourceCode={files[activeFile] || ''}
                           cargoToml={files['Nargo.toml'] || ''}
-                          className="h-full"
+                          className=""
                           enableHeatmap={enableHeatmap}
                           viewMode={complexityViewMode}
                           onViewModeChange={setComplexityViewMode}
@@ -1018,7 +1018,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                   </div>
 
                   {/* Benchmark Panel */}
-                  <div className={rightPanelView === 'benchmark' ? 'block h-full' : 'hidden'}>
+                  <div className={rightPanelView === 'benchmark' ? 'block' : 'hidden'}>
                     <BenchmarkPanel
                       sourceCode={files["main.nr"]}
                       inputs={inputs}

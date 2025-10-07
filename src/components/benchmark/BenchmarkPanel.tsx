@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { BenchmarkControls } from "./BenchmarkControls";
 import { BenchmarkCombinedView } from "./BenchmarkCombinedView";
 import {
@@ -128,7 +127,7 @@ export const BenchmarkPanel = ({
   }, []);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       {/* Controls Section */}
       <BenchmarkControls
         config={config}
@@ -139,16 +138,14 @@ export const BenchmarkPanel = ({
       />
 
       {/* Combined View */}
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full">
-          <BenchmarkCombinedView
-            result={currentResult || undefined}
-            isRunning={isRunning}
-            comparison={comparison || undefined}
-            showComparison={config.enableComparison && !!baselineResult}
-            history={benchmarkHistory}
-          />
-        </ScrollArea>
+      <div>
+        <BenchmarkCombinedView
+          result={currentResult || undefined}
+          isRunning={isRunning}
+          comparison={comparison || undefined}
+          showComparison={config.enableComparison && !!baselineResult}
+          history={benchmarkHistory}
+        />
       </div>
     </div>
   );
