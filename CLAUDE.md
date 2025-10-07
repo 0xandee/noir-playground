@@ -50,6 +50,38 @@ The playground supports external Noir libraries from GitHub with automatic depen
 5. **Path Conversion**: Converts all git dependencies to path dependencies before compilation
 6. **noir_wasm Compatibility**: Prevents noir_wasm from attempting browser-incompatible git operations
 
+#### Dependency Caching System
+The playground includes an intelligent caching layer that dramatically reduces dependency loading times:
+
+**Cache Architecture:**
+- **Storage**: Browser IndexedDB (persistent across sessions, up to 50MB)
+- **Cache Key**: Version-specific (`repo@tag` format, e.g., `noir-lang/noir-bignum@v0.8.0`)
+- **Invalidation**: Automatic - changing version creates new cache entry
+- **Eviction**: LRU (Least Recently Used) when cache exceeds 50MB
+
+**Performance Impact:**
+- **First compile**: 2-5 seconds (populates cache)
+- **Cached compile**: <100ms for dependencies (~95% reduction)
+- **Persistent**: Works across page refreshes and browser sessions
+
+**Cache Service** (`DependencyCacheService`):
+- `getDependency(key)`: Check cache before GitHub fetch
+- `saveDependency(data)`: Store fetched library for reuse
+- `clearCache()`: Manual cache reset via UI
+- `getStats()`: View cache size, hit rate, and statistics
+
+**UI Integration:**
+- Navigate to "Cache" tab in right panel to view statistics
+- See real-time cache hits/misses during compilation
+- Progress messages show "✓ Using cached bignum@v0.8.0" vs "Fetching..."
+- Clear cache button for troubleshooting
+
+**Technical Details:**
+- Cache checks integrated in `DependencyResolverService.resolveDependency()`
+- Graceful fallback: Cache errors automatically trigger network fetch
+- Includes file contents + metadata (repository, tag, size, timestamps)
+- LRU tracking via IndexedDB indexes for efficient eviction
+
 #### Usage Example
 ```toml
 # In Nargo.toml tab

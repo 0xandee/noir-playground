@@ -31,6 +31,7 @@ import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
 import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
+import { CacheManagementPanel } from "./CacheManagementPanel";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -90,14 +91,15 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'cache'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
     { value: 'profiler' as const, label: 'Profiler' },
-    { value: 'benchmark' as const, label: 'Benchmark' }
+    { value: 'benchmark' as const, label: 'Benchmark' },
+    { value: 'cache' as const, label: 'Cache' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -989,6 +991,13 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
                       onConsoleMessage={addConsoleMessage}
                       onClearConsole={clearConsoleMessages}
                     />
+                  </div>
+
+                  {/* Cache Management Panel */}
+                  <div className={rightPanelView === 'cache' ? 'block' : 'hidden'}>
+                    <div className="p-4">
+                      <CacheManagementPanel />
+                    </div>
                   </div>
                 </div>
               </section>

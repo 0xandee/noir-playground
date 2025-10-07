@@ -1,4 +1,6 @@
 import { parse } from 'smol-toml';
+import { dependencyCacheService } from './DependencyCacheService';
+import { CachedDependency } from '@/types/dependencyCache';
 
 export interface GitDependency {
   name: string;
@@ -217,45 +219,88 @@ export class DependencyResolverService {
 
     resolved.add(dep.name);
 
-    onProgress?.(`Fetching ${dep.name} from ${dep.git}@${dep.tag}...`);
-
     const repoInfo = this.parseGitHubUrl(dep.git);
     if (!repoInfo) {
       throw new Error(`Invalid GitHub URL: ${dep.git}`);
     }
 
-    // Fetch file tree
-    const files = await this.fetchGitHubTree(repoInfo.owner, repoInfo.repo, dep.tag);
-    const relevantFiles = this.filterDependencyFiles(files, dep.directory);
+    // Generate cache key
+    const cacheKey = dependencyCacheService.generateCacheKey(dep.git, dep.tag);
 
-    onProgress?.(`Downloading ${relevantFiles.length} files for ${dep.name}...`);
+    // Try cache first
+    const cached = await dependencyCacheService.getDependency(cacheKey);
 
-    // Fetch and write each file, and find the Nargo.toml
+    let fileContents: Record<string, string>;
     let depCargoToml: string | null = null;
 
-    for (const file of relevantFiles) {
-      const content = await this.fetchFileContent(
-        repoInfo.owner,
-        repoInfo.repo,
-        dep.tag,
-        file.path
-      );
+    if (cached) {
+      // Cache hit - use cached files
+      onProgress?.(`✓ Using cached ${dep.name}@${dep.tag}`);
+      fileContents = cached.files;
 
-      // Determine the write path in the virtual filesystem
-      let writePath = file.path;
+      // Extract Nargo.toml from cached files
+      for (const [path, content] of Object.entries(cached.files)) {
+        if (path.endsWith('Nargo.toml')) {
+          depCargoToml = content;
+          break;
+        }
+      }
+    } else {
+      // Cache miss - fetch from GitHub
+      onProgress?.(`Fetching ${dep.name} from ${dep.git}@${dep.tag}...`);
 
-      // If a subdirectory is specified, strip it from the path
-      if (dep.directory) {
-        const dirPrefix = dep.directory.endsWith('/') ? dep.directory : dep.directory + '/';
-        writePath = file.path.replace(dirPrefix, '');
+      // Fetch file tree
+      const files = await this.fetchGitHubTree(repoInfo.owner, repoInfo.repo, dep.tag);
+      const relevantFiles = this.filterDependencyFiles(files, dep.directory);
+
+      onProgress?.(`Downloading ${relevantFiles.length} files for ${dep.name}...`);
+
+      // Fetch and store all file contents
+      fileContents = {};
+
+      for (const file of relevantFiles) {
+        const content = await this.fetchFileContent(
+          repoInfo.owner,
+          repoInfo.repo,
+          dep.tag,
+          file.path
+        );
+
+        // Determine the write path in the virtual filesystem
+        let writePath = file.path;
+
+        // If a subdirectory is specified, strip it from the path
+        if (dep.directory) {
+          const dirPrefix = dep.directory.endsWith('/') ? dep.directory : dep.directory + '/';
+          writePath = file.path.replace(dirPrefix, '');
+        }
+
+        // Store content
+        fileContents[writePath] = content;
+
+        // Store Nargo.toml content for parsing transitive dependencies
+        if (writePath.endsWith('Nargo.toml')) {
+          depCargoToml = content;
+        }
       }
 
-      // Store Nargo.toml content for parsing transitive dependencies
-      if (writePath.endsWith('Nargo.toml')) {
-        depCargoToml = content;
-      }
+      // Cache the dependency for future use
+      const cachedDep: CachedDependency = {
+        key: cacheKey,
+        files: fileContents,
+        repository: dep.git,
+        tag: dep.tag,
+        directory: dep.directory,
+        cachedAt: Date.now(),
+        lastAccessedAt: Date.now(),
+        sizeBytes: dependencyCacheService.calculateContentSize(fileContents)
+      };
 
-      // Write dependencies at the root level, parallel to noir_project
+      await dependencyCacheService.saveDependency(cachedDep);
+    }
+
+    // Write all files to file manager
+    for (const [writePath, content] of Object.entries(fileContents)) {
       const fullPath = `${dep.name}/${writePath}`;
 
       // Convert content to stream
