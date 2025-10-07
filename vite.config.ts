@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import wasm from "vite-plugin-wasm";
 import topLevelAwait from "vite-plugin-top-level-await";
+import inject from "@rollup/plugin-inject";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -73,6 +74,12 @@ export default defineConfig(({ mode }) => ({
     target: 'es2022',
     rollupOptions: {
       external: [],
+      plugins: [
+        inject({
+          Buffer: ['buffer', 'Buffer'],
+          process: ['process', 'default'],
+        })
+      ],
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
