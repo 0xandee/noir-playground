@@ -4,6 +4,7 @@ export interface NoirExample {
   description: string;
   code: string;
   inputs: Record<string, string>;
+  cargoToml?: string;
 }
 
 export const noirExamples: NoirExample[] = [
@@ -130,5 +131,48 @@ export const noirExamples: NoirExample[] = [
       valid_txs: "[1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1]",
       timestamp: "1640995200"
     }
+  },
+  {
+    id: "with-dependencies",
+    name: "External Library",
+    description: "Example using the bignum library from GitHub for arbitrary-precision arithmetic",
+    code: `// This example demonstrates using external Noir libraries
+// The bignum library is automatically fetched from GitHub during compilation
+use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    // The bignum library provides arbitrary-precision arithmetic operations
+    // This is a simple example that shows the library compiles successfully
+
+    // For demonstration, we'll just use basic Field operations
+    // Real bignum usage would involve creating BigNum instances for large numbers
+
+    // Basic computation
+    let result = x + y;
+
+    // You can explore bignum capabilities:
+    // - U256, U512, U1024, U2048, U4096, U8192 for different bit sizes
+    // - Field-specific operations for various elliptic curves
+    // - Modular arithmetic for cryptographic operations
+
+    result
+}`,
+    inputs: {
+      x: "100",
+      y: "200"
+    },
+    cargoToml: `[package]
+name = "playground"
+type = "bin"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+# Bignum library for arbitrary-precision arithmetic
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+
+# Other available libraries:
+# poseidon = { tag = "v0.1.1", git = "https://github.com/noir-lang/poseidon" }
+# See https://github.com/noir-lang/awesome-noir for more libraries`
   }
 ];

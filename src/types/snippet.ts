@@ -9,25 +9,28 @@
 export interface SharedSnippet {
   /** UUID identifier for the snippet */
   id: string;
-  
+
   /** Human-readable title for the snippet */
   title: string;
-  
+
   /** The Noir source code */
   code: string;
-  
+
   /** Input values for the Noir program - matches pattern from NoirExample */
   inputs: Record<string, any>;
-  
+
+  /** Optional Nargo.toml configuration with dependencies */
+  cargoToml: string | null;
+
   /** Optional binary proof data */
   proof: Uint8Array | null;
-  
+
   /** Optional binary witness data */
   witness: Uint8Array | null;
-  
+
   /** Optional public inputs from proof execution */
   publicInputs: string[] | null;
-  
+
   /** Timestamp when the snippet was created */
   created_at: Date;
 }
@@ -39,19 +42,22 @@ export interface SharedSnippet {
 export interface CreateSnippetData {
   /** Human-readable title for the snippet */
   title: string;
-  
+
   /** The Noir source code */
   code: string;
-  
+
   /** Input values for the Noir program */
   inputs: Record<string, any>;
-  
+
+  /** Optional Nargo.toml configuration with dependencies */
+  cargoToml?: string | null;
+
   /** Optional binary proof data */
   proof?: Uint8Array | null;
-  
+
   /** Optional binary witness data */
   witness?: Uint8Array | null;
-  
+
   /** Optional public inputs from proof execution */
   publicInputs?: string[] | null;
 }
@@ -65,6 +71,7 @@ export interface DatabaseSnippetRow {
   title: string;
   code: string;
   inputs: any; // JSON field in database
+  toml: string | null; // Nargo.toml configuration
   proof: string | null; // hex encoded binary data
   witness: string | null; // hex encoded binary data
   public_inputs: any; // JSON array field in database
@@ -78,6 +85,7 @@ export interface SerializedSnippetData {
   title: string;
   code: string;
   inputs: any;
+  toml: string | null; // Nargo.toml configuration
   proof: string | null; // hex encoded
   witness: string | null; // hex encoded
   public_inputs: any; // JSON array

@@ -39,23 +39,27 @@ function validateSnippetData(data: CreateSnippetData): void {
   if (!data.title || typeof data.title !== 'string' || data.title.trim().length === 0) {
     throw new Error('Title is required and must be a non-empty string');
   }
-  
+
   if (!data.code || typeof data.code !== 'string' || data.code.trim().length === 0) {
     throw new Error('Code is required and must be a non-empty string');
   }
-  
+
   if (!data.inputs || typeof data.inputs !== 'object' || data.inputs === null) {
     throw new Error('Inputs must be a valid object');
   }
-  
+
+  if (data.cargoToml !== undefined && data.cargoToml !== null && typeof data.cargoToml !== 'string') {
+    throw new Error('cargoToml must be a string or null');
+  }
+
   if (data.proof !== undefined && data.proof !== null && !(data.proof instanceof Uint8Array)) {
     throw new Error('Proof must be a Uint8Array or null');
   }
-  
+
   if (data.witness !== undefined && data.witness !== null && !(data.witness instanceof Uint8Array)) {
     throw new Error('Witness must be a Uint8Array or null');
   }
-  
+
   if (data.publicInputs !== undefined && data.publicInputs !== null && !Array.isArray(data.publicInputs)) {
     throw new Error('Public inputs must be an array or null');
   }
@@ -73,11 +77,12 @@ export function serializeSnippetForDatabase(snippetData: CreateSnippetData): Ser
   try {
     // Validate input data
     validateSnippetData(snippetData);
-    
+
     return {
       title: snippetData.title.trim(),
       code: snippetData.code,
       inputs: snippetData.inputs,
+      toml: snippetData.cargoToml || null,
       proof: snippetData.proof ? uint8ArrayToHex(snippetData.proof) : null,
       witness: snippetData.witness ? uint8ArrayToHex(snippetData.witness) : null,
       public_inputs: snippetData.publicInputs || null,
@@ -102,6 +107,7 @@ export function deserializeSnippetFromDatabase(row: DatabaseSnippetRow): SharedS
       title: row.title,
       code: row.code,
       inputs: row.inputs,
+      cargoToml: row.toml || null,
       proof: row.proof ? hexToUint8Array(row.proof) : null,
       witness: row.witness ? hexToUint8Array(row.witness) : null,
       publicInputs: row.public_inputs || null,

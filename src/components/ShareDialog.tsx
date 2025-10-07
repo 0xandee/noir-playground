@@ -31,6 +31,8 @@ interface ShareDialogProps {
   code: string;
   /** Current input values */
   inputs: Record<string, any>;
+  /** Optional Nargo.toml configuration */
+  cargoToml?: string;
   /** Optional proof and witness data */
   proofData?: {
     proof?: Uint8Array;
@@ -43,6 +45,7 @@ export function ShareDialog({
   onOpenChange,
   code,
   inputs,
+  cargoToml,
   proofData,
 }: ShareDialogProps) {
   // State management
@@ -100,6 +103,7 @@ export function ShareDialog({
         title: title.trim(),
         code: code, // Always include code
         inputs: includeInputs ? inputs : {},
+        cargoToml: cargoToml || null, // Always include Nargo.toml if provided
         proof: includeProof && proofData?.proof ? proofData.proof : null,
         witness: includeWitness && proofData?.witness ? proofData.witness : null,
         publicInputs: includePublicInputs && proofData?.publicInputs ? proofData.publicInputs : null,

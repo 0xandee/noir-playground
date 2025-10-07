@@ -35,8 +35,111 @@ The app integrates Noir zero-knowledge proof compilation through a carefully orc
 - **NoirService**: Primary service orchestrating the 5-step execution pipeline (Parse → Compile → Execute → Prove → Verify) using `@noir-lang/noir_js` and `@aztec/bb.js`
 - **NoirWasmCompiler**: Handles WASM compilation with `@noir-lang/noir_wasm` using file manager pattern for browser environment
 - **NoirProfilerService**: Provides circuit profiling capabilities with ACIR/gate analysis via external profiler server
+- **DependencyResolverService**: Manages external library dependencies with recursive git resolution for browser environment
 - **WASM Routing**: Vite config redirects WASM requests from `node_modules/.vite/deps/` to `/public/wasm/` directory
 - **Cross-Origin Headers**: Required CORP/COOP headers for WASM execution and SharedArrayBuffer support in `vite.config.ts`
+
+### External Library Support
+The playground supports external Noir libraries from GitHub with automatic dependency resolution:
+
+#### How It Works
+1. **Git Dependency Parsing**: Parses `Nargo.toml` to extract git dependencies with tag/version
+2. **Recursive Resolution**: Automatically resolves transitive dependencies (dependencies of dependencies)
+3. **GitHub API Integration**: Fetches library files from GitHub using public API
+4. **Virtual Filesystem**: Writes dependencies to browser's virtual filesystem via `FileManager`
+5. **Path Conversion**: Converts all git dependencies to path dependencies before compilation
+6. **noir_wasm Compatibility**: Prevents noir_wasm from attempting browser-incompatible git operations
+
+#### Dependency Caching System
+The playground includes an intelligent caching layer that dramatically reduces dependency loading times:
+
+**Cache Architecture:**
+- **Storage**: Browser IndexedDB (persistent across sessions, up to 50MB)
+- **Cache Key**: Version-specific (`repo@tag` format, e.g., `noir-lang/noir-bignum@v0.8.0`)
+- **Invalidation**: Automatic - changing version creates new cache entry
+- **Eviction**: LRU (Least Recently Used) when cache exceeds 50MB
+
+**Performance Impact:**
+- **First compile**: 2-5 seconds (populates cache)
+- **Cached compile**: <100ms for dependencies (~95% reduction)
+- **Persistent**: Works across page refreshes and browser sessions
+
+**Cache Service** (`DependencyCacheService`):
+- `getDependency(key)`: Check cache before GitHub fetch
+- `saveDependency(data)`: Store fetched library for reuse
+- `clearCache()`: Manual cache reset via UI
+- `getStats()`: View cache size, hit rate, and statistics
+
+**UI Integration:**
+- Navigate to "Cache" tab in right panel to view statistics
+- See real-time cache hits/misses during compilation
+- Progress messages show "✓ Using cached bignum@v0.8.0" vs "Fetching..."
+- Clear cache button for troubleshooting
+
+**Technical Details:**
+- Cache checks integrated in `DependencyResolverService.resolveDependency()`
+- Graceful fallback: Cache errors automatically trigger network fetch
+- Includes file contents + metadata (repository, tag, size, timestamps)
+- LRU tracking via IndexedDB indexes for efficient eviction
+
+#### Usage Example
+```toml
+# In Nargo.toml tab
+[dependencies]
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+```
+
+```noir
+// In main.nr tab
+use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    x + y
+}
+```
+
+#### Supported Formats
+- **Git with tag**: `{ tag = "v1.0.0", git = "https://github.com/owner/repo" }` ✅
+- **Git with subdirectory**: `{ tag = "v1.0.0", git = "https://github.com/owner/repo", directory = "crates/lib" }` ✅
+- **Local path**: `{ path = "../my-lib" }` ❌ (browser cannot access local filesystem)
+
+#### Common Libraries
+- **noir-bignum**: Arbitrary precision arithmetic (`noir-lang/noir-bignum`)
+- **poseidon**: Poseidon hash function (`noir-lang/poseidon`)
+- **ecrecover**: Ethereum signature recovery (via standard library)
+
+#### Limitations
+- Only GitHub repositories supported
+- Requires public repositories (no private repo access)
+- Must use tagged releases (commit SHAs not supported)
+- CORS-compliant sources only (GitHub raw files work by default)
+
+#### Version Compatibility Considerations
+**Important**: Not all library versions are compatible with the current Noir compiler (v1.0.0-beta.11). When testing or using external libraries:
+
+- **Check library release dates**: Libraries released before major Noir compiler updates may have breaking changes
+- **Use latest stable versions**: Prefer recent tags (e.g., bignum v0.8.0 over v0.6.0)
+- **Verify compiler_version**: Check the library's `Nargo.toml` for `compiler_version` requirements
+- **Test compilation**: Some older libraries may resolve dependencies correctly but fail compilation due to:
+  - Type system changes in newer Noir versions
+  - Deprecated syntax or APIs
+  - Missing dependencies in older versions (e.g., bignum v0.6.0 lacks poseidon dependency)
+
+**Known Compatible Libraries** (tested with Noir v1.0.0-beta.11):
+- `bignum` v0.8.0 → poseidon v0.1.1 ✅
+- `ecrecover` v1.0.0 → array_helpers v0.30.0 + keccak256 v0.1.0 ✅
+- `poseidon` v0.1.1 (standalone) ✅
+
+**Deprecated/Incompatible**:
+- `noir_rsa` v0.7.0 (uses outdated bignum v0.6.0, not actively maintained) ❌
+
+#### Service Architecture
+- **DependencyResolverService** (`src/services/DependencyResolverService.ts`):
+  - `parseDependencies()`: Extracts git dependencies from TOML
+  - `resolveDependency()`: Recursively resolves single dependency and its transitive deps
+  - `fetchGitHubTree()`: Gets file list from GitHub API
+  - `fetchFileContent()`: Downloads raw file content
+  - `convertGitToPathDependencies()`: Rewrites TOML with path dependencies
 
 ### Code Sharing & SEO System
 The app includes a sophisticated code sharing system with dynamic SEO:

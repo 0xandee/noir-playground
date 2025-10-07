@@ -217,6 +217,7 @@ const SharedSnippetPage = () => {
         <CodePlayground
         initialCode={snippet.code}
         initialInputs={inputsAsStrings}
+        initialCargoToml={snippet.cargoToml || undefined}
         initialProofData={
           snippet.proof || snippet.witness || snippet.publicInputs
             ? {

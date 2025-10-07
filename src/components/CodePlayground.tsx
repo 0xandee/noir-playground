@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -26,7 +25,6 @@ import { BsTwitterX, BsGithub } from "react-icons/bs";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
 import { NoirEditorWithHover } from "./NoirEditorWithHover";
-import { noirExamples, NoirExample } from "@/data/noirExamples";
 import { ShareDialog } from "./ShareDialog";
 import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
@@ -38,6 +36,7 @@ import * as monaco from 'monaco-editor';
 interface CodePlaygroundProps {
   initialCode?: string;
   initialInputs?: Record<string, string>;
+  initialCargoToml?: string;
   initialProofData?: {
     proof?: Uint8Array;
     witness?: Uint8Array;
@@ -50,22 +49,22 @@ interface CodePlaygroundProps {
 }
 
 const CodePlayground = (props: CodePlaygroundProps = {}) => {
-  const { initialCode, initialInputs, initialProofData, snippetTitle, snippetId } = props;
+  const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
-}`
+    "main.nr": initialCode || `use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    x + y
+}`,
+    "Nargo.toml": initialCargoToml || `[package]
+name = "playground"
+type = "bin"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -90,7 +89,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     timestamp: string;
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
-  const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
@@ -237,31 +235,6 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     };
   }, []);
 
-  const loadExample = (exampleId: string) => {
-    const example = noirExamples.find(ex => ex.id === exampleId);
-    if (!example) return;
-
-    // Update the main.nr file with the example code
-    setFiles(prev => ({
-      ...prev,
-      "main.nr": example.code
-    }));
-
-    // Extract inputs from the code and set default values
-    const extracted = extractInputsFromCode(example.code);
-    setInputs(example.inputs);
-    setInputTypes(extracted.types);
-    setParameterOrder(extracted.order);
-
-    // Reset execution state
-    setExecutionSteps([]);
-    setProofData(null);
-    setConsoleMessages([]);
-    setSelectedExample(exampleId);
-
-    // Add success message
-    addConsoleMessage('info', `Loaded example: ${example.name}`);
-  };
 
   const processStepQueue = () => {
     if (stepQueueRef.current.length === 0) {
@@ -312,7 +285,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
         files["main.nr"],
         processedInputs,
         addStepWithDelay,
-        undefined,
+        files["Nargo.toml"],
         proveAndVerify
       );
 
@@ -429,6 +402,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   const getFileLanguage = (filename: string) => {
     if (filename.endsWith('.nr')) return 'noir';
+    if (filename.endsWith('.toml')) return 'ini'; // Monaco uses 'ini' for TOML-like syntax
     return 'plaintext';
   };
 
@@ -519,24 +493,15 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   };
 
   const renderConsoleContent = () => {
-    const formatStepMessage = (message: string, status: string) => {
-      let formattedMessage = message;
-
-      // Remove timing information like (574ms) or (1.2s)
-      formattedMessage = formattedMessage.replace(/\s*\(\d+(\.\d+)?(ms|s)\)/g, '');
-
-      if (status === "success" && formattedMessage.toLowerCase().includes("successful")) {
-        // Add exclamation mark after "successful" variants, replacing any trailing period
-        formattedMessage = formattedMessage.replace(/successful(ly)?\.?/gi, "successful$1!");
-      }
-      return formattedMessage;
+    const formatStepMessage = (message: string) => {
+      return message;
     };
 
     const allMessages = [
       ...executionSteps.map(step => ({
         id: `step-${step.message}`,
         type: step.status === "success" ? "success" : step.status === "error" ? "error" : "info",
-        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message, step.status),
+        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message),
         timestamp: '',
         isStep: true
       })),
@@ -589,39 +554,14 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                     <header className="" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                       {/* File Tabs */}
                       <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center">
-                            {snippetTitle ? (
-                              // Show snippet title instead of examples dropdown
-                              <div className="flex items-center gap-2 px-2" style={{ fontSize: '13px' }}>
-                                <span className="text-muted-foreground select-none">Shared Snippet:</span>
-                                <span className="font-medium text-foreground select-none">{snippetTitle}</span>
-                              </div>
-                            ) : (
-                              // Show examples dropdown in normal mode
-                              <Select value={selectedExample} onValueChange={loadExample}>
-                                <SelectTrigger className="min-w-24 w-auto h-8 focus:ring-0 focus:ring-offset-0 bg-transparent border border-border gap-2" style={{ fontSize: '13px' }}>
-                                  <SelectValue placeholder="Examples" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {noirExamples.map((example, index) => (
-                                    <div key={example.id}>
-                                      <SelectItem value={example.id}>
-                                        {example.name}
-                                      </SelectItem>
-                                    </div>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            )}
-                          </div>
-                          {Object.keys(files).filter(filename => filename !== 'main.nr').map((filename) => (
+                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
+                          {Object.keys(files).map((filename) => (
                             <button
                               key={filename}
                               onClick={() => setActiveFile(filename)}
-                              className={`flex items-center gap-2 px-3 py-2 font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
-                                ? 'bg-background text-foreground'
-                                : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${activeFile === filename
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                               style={{ fontSize: '13px' }}
                             >
@@ -649,18 +589,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       {activeFile === 'main.nr' ? (
                         <NoirEditorWithHover
                           ref={monacoEditorRef}
-                          value={files[activeFile] || `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
+                          value={files[activeFile] || `use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    x + y
 }`}
                           onChange={(content) => {
                             handleMainFileChange(content);
@@ -819,6 +751,26 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               </div>
                             )}
 
+                            {proofData.returnValue && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
+                                  <button
+                                    onClick={() => handleCopyField(proofData.returnValue!)}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="bg-muted/50 border border-border rounded">
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
+                                    {proofData.returnValue}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {proofData.witness && proofData.witness.length > 0 && (
                               <div>
                                 <div className="flex items-center justify-between mb-2">
@@ -867,6 +819,12 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                               <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
                               <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No public inputs
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No return value
                               </div>
                             </div>
                             <div>
@@ -1027,6 +985,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
                       onClearConsole={clearConsoleMessages}
                     />
                   </div>
+
                 </div>
               </section>
             </ResizablePanel>
@@ -1051,7 +1010,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
           onOpenChange={setShareDialogOpen}
           code={files["main.nr"]}
           inputs={inputs}
-          // No TOML file needed
+          cargoToml={files["Nargo.toml"]}
           proofData={proofData}
         />
       </main>

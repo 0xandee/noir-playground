@@ -99,7 +99,7 @@ export class NoirProfilerService {
       };
 
 
-      const response = await fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
+      const response = await window.fetch(`${this.serverBaseUrl}${this.apiEndpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

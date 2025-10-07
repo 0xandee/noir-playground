@@ -6,6 +6,7 @@ import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
 import { CircuitMetrics } from './CircuitMetrics';
 import { ComplexityTableView } from './ComplexityTableView';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
+import { LoadingState } from '@/components/ui/loading-state';
 
 
 interface CombinedComplexityPanelProps {
@@ -221,13 +222,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {isProfiling && (
-        <div className="flex items-center justify-center p-8 min-h-[300px]">
-          <div className="text-center text-muted-foreground">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2"></div>
-            <p>Analyzing circuit complexity...</p>
-            <p className="mt-1" style={{fontSize: '13px'}}>This may take a few seconds</p>
-          </div>
-        </div>
+        <LoadingState message="Analyzing circuit complexity..." />
       )}
 
       {profilerResult && !isProfiling && (

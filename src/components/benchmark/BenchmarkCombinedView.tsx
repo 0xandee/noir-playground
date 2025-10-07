@@ -1,10 +1,11 @@
 import React from "react";
 import { BenchmarkResult, BenchmarkComparison } from "@/types/benchmark";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Loader2 } from "lucide-react";
+import { Zap } from "lucide-react";
 import { Bar, BarChart, XAxis, YAxis, LabelList } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip } from "@/components/ui/chart";
 import { BenchmarkHistoryTable } from "./BenchmarkHistoryTable";
+import { LoadingState } from "@/components/ui/loading-state";
 
 interface BenchmarkCombinedViewProps {
   result?: BenchmarkResult;
@@ -67,13 +68,7 @@ const PipelineVisualization = ({ result, isRunning }: { result?: BenchmarkResult
     return (
       <Card>
         <CardContent className="pt-6 pb-6">
-          <div className="text-center py-8">
-            <div className="text-muted-foreground text-sm">
-              <Loader2 className="h-8 w-8 mx-auto mb-3 opacity-50 animate-spin" />
-              <p>Running benchmark...</p>
-              <p className="text-xs mt-2">Check console for progress</p>
-            </div>
-          </div>
+          <LoadingState message="Running benchmark..." />
         </CardContent>
       </Card>
     );
