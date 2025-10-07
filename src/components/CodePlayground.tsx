@@ -493,16 +493,12 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
   };
 
   const renderConsoleContent = () => {
-    const formatStepMessage = (message: string, status: string) => {
+    const formatStepMessage = (message: string) => {
       let formattedMessage = message;
 
       // Remove timing information like (574ms) or (1.2s)
       formattedMessage = formattedMessage.replace(/\s*\(\d+(\.\d+)?(ms|s)\)/g, '');
 
-      if (status === "success" && formattedMessage.toLowerCase().includes("successful")) {
-        // Add exclamation mark after "successful" variants, replacing any trailing period
-        formattedMessage = formattedMessage.replace(/successful(ly)?\.?/gi, "successful$1!");
-      }
       return formattedMessage;
     };
 
@@ -510,7 +506,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
       ...executionSteps.map(step => ({
         id: `step-${step.message}`,
         type: step.status === "success" ? "success" : step.status === "error" ? "error" : "info",
-        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message, step.status),
+        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message),
         timestamp: '',
         isStep: true
       })),
@@ -760,6 +756,26 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
                               </div>
                             )}
 
+                            {proofData.returnValue && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
+                                  <button
+                                    onClick={() => handleCopyField(proofData.returnValue!)}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="bg-muted/50 border border-border rounded">
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
+                                    {proofData.returnValue}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
                             {proofData.witness && proofData.witness.length > 0 && (
                               <div>
                                 <div className="flex items-center justify-between mb-2">
@@ -808,6 +824,12 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
                               <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
                               <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
                                 No public inputs
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No return value
                               </div>
                             </div>
                             <div>

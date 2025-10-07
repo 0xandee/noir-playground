@@ -162,7 +162,7 @@ export class NoirService {
     try {
       const { witness, returnValue } = await this.noir.execute(processedInputs);
       
-      const executeStep = this.createStep('success', `Execution successful. Return value: ${returnValue || 'None'}`);
+      const executeStep = this.createStep('success', 'Execution successful');
       steps.push(executeStep);
       onStep(executeStep);
       

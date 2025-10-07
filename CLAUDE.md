@@ -82,6 +82,25 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
 - Must use tagged releases (commit SHAs not supported)
 - CORS-compliant sources only (GitHub raw files work by default)
 
+#### Version Compatibility Considerations
+**Important**: Not all library versions are compatible with the current Noir compiler (v1.0.0-beta.11). When testing or using external libraries:
+
+- **Check library release dates**: Libraries released before major Noir compiler updates may have breaking changes
+- **Use latest stable versions**: Prefer recent tags (e.g., bignum v0.8.0 over v0.6.0)
+- **Verify compiler_version**: Check the library's `Nargo.toml` for `compiler_version` requirements
+- **Test compilation**: Some older libraries may resolve dependencies correctly but fail compilation due to:
+  - Type system changes in newer Noir versions
+  - Deprecated syntax or APIs
+  - Missing dependencies in older versions (e.g., bignum v0.6.0 lacks poseidon dependency)
+
+**Known Compatible Libraries** (tested with Noir v1.0.0-beta.11):
+- `bignum` v0.8.0 → poseidon v0.1.1 ✅
+- `ecrecover` v1.0.0 → array_helpers v0.30.0 + keccak256 v0.1.0 ✅
+- `poseidon` v0.1.1 (standalone) ✅
+
+**Deprecated/Incompatible**:
+- `noir_rsa` v0.7.0 (uses outdated bignum v0.6.0, not actively maintained) ❌
+
 #### Service Architecture
 - **DependencyResolverService** (`src/services/DependencyResolverService.ts`):
   - `parseDependencies()`: Extracts git dependencies from TOML
