@@ -209,7 +209,7 @@ Core TypeScript interfaces for complexity analysis:
 ## Noir Profiler Server
 
 ### Architecture Overview
-The `noir-profiler-server/` directory contains a standalone NestJS application that provides HTTP endpoints for circuit profiling:
+The `noir-playground-server/` directory contains a standalone NestJS application that provides HTTP endpoints for circuit profiling:
 
 - **NestJS Framework**: Modern TypeScript server with dependency injection and configuration management
 - **Docker Integration**: Pre-built container with `noir-profiler` CLI and Barretenberg backend
@@ -220,7 +220,7 @@ The `noir-profiler-server/` directory contains a standalone NestJS application t
 
 ```bash
 # Navigate to profiler server directory
-cd noir-profiler-server/
+cd noir-playground-server/
 
 # Development
 npm install                 # Install dependencies
@@ -246,7 +246,7 @@ docker-compose up --build  # Full stack with compose
 
 ### Key Server Components
 
-#### ProfilingService (`noir-profiler-server/src/profiling/profiling.service.ts`)
+#### ProfilingService (`noir-playground-server/src/profiling/profiling.service.ts`)
 Core service handling circuit profiling operations:
 - **Temporary file management**: Creates unique request directories with UUID-based naming
 - **Artifact processing**: Writes circuit artifacts as JSON files for noir-profiler CLI
@@ -254,7 +254,7 @@ Core service handling circuit profiling operations:
 - **SVG generation**: Processes flamegraph output and returns SVG content
 - **Auto cleanup**: Removes temporary files and directories after processing
 
-#### ProfilingController (`noir-profiler-server/src/profiling/profiling.controller.ts`)
+#### ProfilingController (`noir-playground-server/src/profiling/profiling.controller.ts`)
 HTTP endpoints for profiling operations:
 - **POST /api/profile/opcodes**: Profile circuit ACIR opcodes with artifact input
 - **GET /api/profile/check-profiler**: Health check for noir-profiler CLI availability

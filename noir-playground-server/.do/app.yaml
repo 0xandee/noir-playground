@@ -1,9 +1,9 @@
-name: noir-profiler-server
+name: noir-playground-server
 region: nyc
 
 services:
   - name: api
-    dockerfile_path: noir-profiler-server/Dockerfile
+    dockerfile_path: noir-playground-server/Dockerfile
     source_dir: /
     github:
       repo: 0xandee/noir-playground

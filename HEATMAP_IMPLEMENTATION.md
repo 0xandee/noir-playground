@@ -118,7 +118,7 @@ const config = {
 ## Dependencies
 
 - Monaco Editor for code visualization
-- Existing noir-profiler-server for metrics
+- Existing noir-playground-server for metrics
 - Radix UI components for interface elements
 - Tailwind CSS for styling
 

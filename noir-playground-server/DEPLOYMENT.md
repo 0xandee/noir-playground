@@ -1,6 +1,6 @@
-# Deployment Guide: noir-profiler-server
+# Deployment Guide: noir-playground-server
 
-This guide covers deploying the noir-profiler-server to production using the GitHub Student Developer Pack benefits.
+This guide covers deploying the noir-playground-server to production using the GitHub Student Developer Pack benefits.
 
 ## Prerequisites
 
@@ -45,11 +45,11 @@ This guide covers deploying the noir-profiler-server to production using the Git
 
 3. **Import App Spec**
    - Click "Edit Your App Spec"
-   - Upload or paste contents from `noir-profiler-server/.do/app.yaml`
+   - Upload or paste contents from `noir-playground-server/.do/app.yaml`
    - Click "Save"
 
 4. **Review Configuration**
-   - App name: `noir-profiler-server`
+   - App name: `noir-playground-server`
    - Region: Choose closest to your users (NYC, SFO, AMS, etc.)
    - Service: Docker container
    - Resources: Basic (1 container, 512MB RAM)
@@ -57,7 +57,7 @@ This guide covers deploying the noir-profiler-server to production using the Git
 5. **Deploy**
    - Click "Create Resources"
    - Wait 5-10 minutes for initial build
-   - Note your app URL: `https://noir-profiler-server-xxxxx.ondigitalocean.app`
+   - Note your app URL: `https://noir-playground-server-xxxxx.ondigitalocean.app`
 
 #### Option B: Manual Configuration
 
@@ -71,7 +71,7 @@ This guide covers deploying the noir-profiler-server to production using the Git
    - **Type**: Web Service
    - **Name**: `api`
    - **Source Directory**: `/`
-   - **Dockerfile Path**: `noir-profiler-server/Dockerfile`
+   - **Dockerfile Path**: `noir-playground-server/Dockerfile`
    - **HTTP Port**: `4000`
 
 3. **Environment Variables**
@@ -110,7 +110,7 @@ Once your profiler server is deployed, configure the frontend to use it:
 
 1. **Get Your Deployment URL**
    - Find it in DigitalOcean App Platform dashboard
-   - Format: `https://noir-profiler-server-xxxxx.ondigitalocean.app`
+   - Format: `https://noir-playground-server-xxxxx.ondigitalocean.app`
 
 2. **Add Environment Variable in Vercel**
    - Go to https://vercel.com/dashboard
@@ -166,7 +166,7 @@ Heroku offers $13/month for 24 months:
 
 1. Install Heroku CLI: `brew install heroku`
 2. Login: `heroku login`
-3. Create app: `heroku create noir-profiler-server`
+3. Create app: `heroku create noir-playground-server`
 4. Set stack: `heroku stack:set container`
 5. Deploy: `git push heroku main`
 
@@ -271,8 +271,8 @@ If you need more power:
 
 ```bash
 # Test local Docker build
-docker build -t noir-profiler-server ./noir-profiler-server
-docker run -p 4000:4000 noir-profiler-server
+docker build -t noir-playground-server ./noir-playground-server
+docker run -p 4000:4000 noir-playground-server
 
 # Test deployed endpoint
 curl https://your-app.ondigitalocean.app/api/health
