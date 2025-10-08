@@ -1,10 +1,15 @@
 // Vercel Serverless Function for dynamic meta tags
 export default async function handler(req, res) {
   const { id } = req.query;
-  
+
   if (!id) {
     return res.status(404).json({ error: 'Not Found' });
   }
+
+  // Detect current domain dynamically (supports beta.noir-playground.app, noir-playground.app, and Vercel previews)
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers.host;
+  const baseUrl = `${protocol}://${host}`;
 
   // Check if this is a crawler/bot request
   const userAgent = req.headers['user-agent'] || '';
@@ -32,16 +37,16 @@ export default async function handler(req, res) {
     }
     
     // Generate meta tags
-    const title = snippet?.title 
+    const title = snippet?.title
       ? `${snippet.title} - Noir Code Snippet | Noir Playground`
       : 'Noir Code Snippet | Noir Playground';
-      
-    const description = snippet?.code 
+
+    const description = snippet?.code
       ? `Explore this Noir zero-knowledge proof snippet. Interactive code with Monaco editor, compilation, and proof generation.`
       : 'Interactive browser-based environment for developing zero-knowledge proofs with Noir.';
-      
-    const canonicalUrl = `https://noir-playground.app/share/${id}`;
-    const ogImage = 'https://noir-playground.app/noir-playground-og.png';
+
+    const canonicalUrl = `${baseUrl}/share/${id}`;
+    const ogImage = `${baseUrl}/noir-playground-og.png`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -95,16 +100,16 @@ export default async function handler(req, res) {
         <div style="text-align: center;">
           <h1>${title}</h1>
           <p>Loading Noir Playground...</p>
-          <p><a href="https://noir-playground.app">Visit Noir Playground</a></p>
+          <p><a href="${baseUrl}">Visit Noir Playground</a></p>
         </div>
       </div>
     </div>
-    
+
     <!-- Redirect script for human users -->
     <script>
       // Only redirect if not a bot/crawler
       if (!/bot|crawler|spider|crawling|facebookexternalhit|twitterbot/i.test(navigator.userAgent)) {
-        window.location.href = 'https://noir-playground.app/share/${id}';
+        window.location.href = '${baseUrl}/share/${id}';
       }
     </script>
   </body>
@@ -114,22 +119,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'public, max-age=300');
     return res.status(200).send(html);
   }
-  
-<<<<<<< HEAD
-  // For regular users, serve the React app directly
-  // This prevents redirect loops by serving the SPA instead of redirecting
-  try {
-    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
-    const indexHtml = fs.readFileSync(indexPath, 'utf8');
-    res.setHeader('Content-Type', 'text/html');
-    res.setHeader('Cache-Control', 'public, max-age=0');
-    return res.status(200).send(indexHtml);
-  } catch (error) {
-    // Fallback to redirect if we can't read the file
-    return res.redirect(302, '/');
-  }
-=======
+
   // For regular users, redirect to the React app
-  res.redirect(302, `https://noir-playground.app/share/${id}`);
->>>>>>> origin/dev
+  res.redirect(302, `${baseUrl}/share/${id}`);
 }
