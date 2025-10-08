@@ -46,7 +46,7 @@ compiler_version = ">=1.0.0"
     const overallStartTime = performance.now();
 
     try {
-      onProgress?.('Sending code to server for compilation...');
+      // onProgress?.('Sending code to server for compilation...');
 
       // Prepare request body
       const requestBody = {
