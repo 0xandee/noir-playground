@@ -589,11 +589,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
                       {activeFile === 'main.nr' ? (
                         <NoirEditorWithHover
                           ref={monacoEditorRef}
-                          value={files[activeFile] || `use bignum;
-
-pub fn main(x: Field, y: pub Field) -> pub Field {
-    x + y
-}`}
+                          value={files[activeFile]}
                           onChange={(content) => {
                             handleMainFileChange(content);
                           }}

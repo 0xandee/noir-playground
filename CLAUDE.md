@@ -30,16 +30,91 @@ npx playwright test --ui # Run tests with UI mode
 ## Core Architecture
 
 ### Noir Integration Layer
-The app integrates Noir zero-knowledge proof compilation through a carefully orchestrated WASM setup:
+The app integrates Noir zero-knowledge proof compilation through both server-side and browser-based compilers:
 
-- **NoirService**: Primary service orchestrating the 5-step execution pipeline (Parse → Compile → Execute → Prove → Verify) using `@noir-lang/noir_js` and `@aztec/bb.js`
-- **NoirWasmCompiler**: Handles WASM compilation with `@noir-lang/noir_wasm` using file manager pattern for browser environment
+- **NoirService**: Primary service orchestrating the 5-step execution pipeline (Parse → Compile → Execute → Prove → Verify) using `@noir-lang/noir_js` and `@aztec/bb.js`. Supports dual compiler modes (server/WASM) via `VITE_USE_SERVER_COMPILER` env variable.
+- **NoirServerCompiler** (Recommended): HTTP client for server-side compilation using native `nargo compile` CLI. Eliminates CORS issues, provides native git dependency resolution, and faster compilation (~2-5x speedup).
+- **NoirWasmCompiler** (Fallback): Handles browser WASM compilation with `@noir-lang/noir_wasm` using file manager pattern. Subject to CORS restrictions for git dependencies.
 - **NoirProfilerService**: Provides circuit profiling capabilities with ACIR/gate analysis via external profiler server
-- **DependencyResolverService**: Manages external library dependencies with recursive git resolution for browser environment
+- **DependencyResolverService**: Manages external library dependencies with recursive git resolution for browser environment (WASM compiler only)
 - **WASM Routing**: Vite config redirects WASM requests from `node_modules/.vite/deps/` to `/public/wasm/` directory
 - **Cross-Origin Headers**: Required CORP/COOP headers for WASM execution and SharedArrayBuffer support in `vite.config.ts`
 
-### External Library Support
+### Server-Side Compilation (Recommended)
+
+The playground supports two compilation modes with server-side compilation as the recommended approach:
+
+#### Compilation Modes
+
+**1. Server Compiler (Default - Recommended)**
+- Uses native `nargo compile` CLI on backend server
+- Native git dependency resolution (no CORS issues)
+- Faster compilation (~2-5x speedup vs WASM)
+- Handles transitive dependencies automatically
+- Better error messages from Nargo CLI
+- Requires companion server deployment
+
+**2. WASM Compiler (Fallback)**
+- Browser-based compilation via `@noir-lang/noir_wasm`
+- No server dependency required
+- Subject to CORS restrictions for git dependencies
+- Requires complex dependency resolution workarounds
+- Slower compilation performance
+
+#### Configuration
+
+**Environment Variables:**
+```bash
+# Enable server-side compilation (recommended)
+VITE_USE_SERVER_COMPILER=true
+
+# Server URL (same as profiler server)
+VITE_PROFILER_SERVER_URL=http://localhost:4000              # Local development
+VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
+```
+
+**How It Works:**
+1. Client sends source code + Nargo.toml to server via `POST /api/compile`
+2. Server creates temporary project directory with UUID isolation
+3. Server runs `nargo compile` with native git operations
+4. Server returns compiled artifact JSON to client
+5. Client uses artifact for execution/proving (same as WASM flow)
+6. Server automatically cleans up temporary files
+
+**Benefits Over WASM:**
+- ✅ No CORS errors when fetching git dependencies
+- ✅ Native git clone operations (supports any GitHub repository)
+- ✅ Automatic transitive dependency resolution
+- ✅ ~2-5x faster compilation (native vs WASM)
+- ✅ Better error messages from Nargo CLI
+- ✅ No browser dependency caching complexity
+
+**Server Integration:**
+- Server repository: https://github.com/0xandee/noir-playground-server
+- Same server handles both compilation and profiling
+- Compilation endpoint: `POST /api/compile`
+- Health check: `GET /api/compile/check-nargo`
+
+**Development Workflow:**
+```bash
+# Terminal 1: Start server
+cd noir-playground-server
+NOIR_DATA_PATH=./data/noir-profiler npm run start:dev
+
+# Terminal 2: Start client
+cd noir-playground
+npm run dev  # Will use server at localhost:4000
+```
+
+**Production Deployment:**
+Both client and server must be deployed:
+- Client: Static site (Vercel, Netlify, etc.)
+- Server: Node.js server (DigitalOcean, Heroku, etc.)
+- Configure `VITE_PROFILER_SERVER_URL` to point to deployed server
+
+### External Library Support (WASM Compiler)
+**Note:** When using server-side compilation, dependencies are handled natively by the server. The information below applies to WASM compiler mode only.
+
 The playground supports external Noir libraries from GitHub with automatic dependency resolution:
 
 #### How It Works
@@ -181,7 +256,14 @@ The app includes a sophisticated code sharing system with dynamic SEO:
 # Client-side (VITE_ prefix required)
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_key
-VITE_PROFILER_SERVER_URL=http://localhost:4000  # Optional, for circuit profiling
+
+# Compilation & Profiling Server
+VITE_PROFILER_SERVER_URL=http://localhost:4000              # Local development
+VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
+
+# Compiler Mode Selection
+VITE_USE_SERVER_COMPILER=true   # Use server-side nargo compiler (recommended)
+VITE_USE_SERVER_COMPILER=false  # Use browser WASM compiler (fallback)
 
 # Server-side (for serverless functions)
 SUPABASE_URL=your_supabase_url
@@ -250,15 +332,27 @@ This project uses Yarn 4.8.1+ with node_modules linker (not PnP). The `.yarnrc.y
 Core service managing the complete Noir execution pipeline:
 - **Stateful singleton**: Maintains compilation state across operations
 - **5-step execution**: Parse → Compile → Execute → Prove → Verify
+- **Dual compiler support**: Selects server or WASM compiler based on `VITE_USE_SERVER_COMPILER` environment variable
+- **Compiler abstraction**: `getCompiler()` method returns appropriate compiler instance
 - **UltraHonkBackend**: Uses `@aztec/bb.js` for proof generation and verification
 - **Public input extraction**: Parses Noir code to identify public parameters without full proof generation
 - **Error handling**: Structured error responses with detailed execution steps
 
+#### NoirServerCompiler (`src/services/NoirServerCompiler.ts`)
+HTTP client for server-side Noir compilation (recommended):
+- **Native compilation**: Sends source code to server for `nargo compile` execution
+- **No CORS issues**: Server handles git operations natively
+- **Faster performance**: ~2-5x speedup vs WASM compilation
+- **Progress callbacks**: Reports compilation status to UI
+- **Availability check**: `checkAvailability()` verifies server connectivity
+- **Compatible interface**: Matches `NoirWasmCompiler` interface for easy switching
+
 #### NoirWasmCompiler (`src/services/NoirWasmCompiler.ts`)
-Handles browser-based Noir compilation:
+Handles browser-based Noir compilation (fallback):
 - **File manager pattern**: Uses `createFileManager` for virtual file system in browser
 - **Stream-based file writing**: Converts strings to ReadableStreams for WASM file operations
 - **Default Nargo.toml generation**: Provides fallback configuration for compilation
+- **CORS limitations**: Subject to browser security restrictions for git dependencies
 
 #### SnippetService (`src/services/SnippetService.ts`)
 Manages code snippet persistence and sharing via Supabase integration.

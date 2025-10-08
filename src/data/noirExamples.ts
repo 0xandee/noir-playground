@@ -11,24 +11,20 @@ export const noirExamples: NoirExample[] = [
   {
     id: "playground",
     name: "Playground",
-    description: "The default playground with assertions",
+    description: "Default playground using nodash library - demonstrates server-side compilation with git dependencies",
     code: `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
+    nodash::poseidon2([x, y])
 }`,
     inputs: {
       x: "10",
       y: "25"
-    }
+    },
+    cargoToml: `[package]
+name = "playground"
+type = "bin"
+
+[dependencies]
+nodash = { git = "https://github.com/olehmisar/nodash", tag = "v0.42.0" }`
   },
   {
     id: "basic-types",
@@ -135,9 +131,10 @@ export const noirExamples: NoirExample[] = [
   {
     id: "with-dependencies",
     name: "External Library",
-    description: "Example using the bignum library from GitHub for arbitrary-precision arithmetic",
+    description: "Using bignum library from GitHub - server natively resolves git dependencies with no CORS issues",
     code: `// This example demonstrates using external Noir libraries
-// The bignum library is automatically fetched from GitHub during compilation
+// Server-side compilation handles git dependencies natively (no CORS!)
+// The bignum library and its transitive dependencies are automatically resolved
 use bignum;
 
 pub fn main(x: Field, y: pub Field) -> pub Field {
