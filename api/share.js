@@ -1,4 +1,7 @@
 // Vercel Serverless Function for dynamic meta tags
+import fs from 'fs';
+import path from 'path';
+
 export default async function handler(req, res) {
   const { id } = req.query;
 
@@ -120,6 +123,17 @@ export default async function handler(req, res) {
     return res.status(200).send(html);
   }
 
-  // For regular users, redirect to the React app
-  res.redirect(302, `${baseUrl}/share/${id}`);
+  // For regular users, serve the React SPA to avoid redirect loops
+  // The React app will handle /share/:id routing client-side
+  try {
+    // Read built index.html from dist directory (not source template)
+    const indexPath = path.join(process.cwd(), 'dist', 'index.html');
+    const indexHtml = fs.readFileSync(indexPath, 'utf8');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=0, must-revalidate');
+    return res.status(200).send(indexHtml);
+  } catch (error) {
+    console.error('Error serving index.html:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
+  }
 }
