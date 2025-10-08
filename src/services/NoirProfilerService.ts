@@ -1,4 +1,5 @@
 import { noirWasmCompiler, NoirWasmCompiler } from './NoirWasmCompiler';
+import { noirServerCompiler } from './NoirServerCompiler';
 import { MetricsAggregationService, AggregationInput } from './MetricsAggregationService';
 import { CircuitComplexityReport, ExpressionMetrics } from '@/types/circuitMetrics';
 
@@ -58,12 +59,29 @@ export class NoirProfilerService {
   private apiEndpoint: string;
   private serverBaseUrl: string;
   private metricsService: MetricsAggregationService;
+  private useServerCompiler: boolean;
 
   constructor() {
     this.apiEndpoint = '/api/profile/opcodes';
     // Use environment variable for server base URL, fallback to localhost:4000
     this.serverBaseUrl = import.meta.env.VITE_PROFILER_SERVER_URL || 'http://localhost:4000';
     this.metricsService = new MetricsAggregationService();
+    // Check environment variable for compiler selection
+    this.useServerCompiler = import.meta.env.VITE_USE_SERVER_COMPILER === 'true';
+  }
+
+  /**
+   * Select compiler based on configuration
+   * Returns server compiler if enabled, otherwise returns WASM compiler
+   */
+  private getCompiler() {
+    if (this.useServerCompiler) {
+      console.log('[NoirProfilerService] Using server-side compiler for profiling');
+      return noirServerCompiler;
+    } else {
+      console.log('[NoirProfilerService] Using WASM compiler for profiling');
+      return noirWasmCompiler;
+    }
   }
 
 
@@ -73,12 +91,17 @@ export class NoirProfilerService {
    */
   async profileCircuit(request: ProfilerRequest): Promise<ProfilerResult> {
     try {
-      // Step 1: Compile the source code to get real artifacts
+      // Step 1: Compile the source code to get real artifacts using selected compiler
 
-      // Use provided cargoToml or default from NoirWasmCompiler
+      // Use provided cargoToml or default
       const cargoTomlToUse = request.cargoToml || NoirWasmCompiler.getDefaultCargoToml();
 
-      const compilationResult = await noirWasmCompiler.compileProgram(request.sourceCode, cargoTomlToUse);
+      // Use the selected compiler (server or WASM based on configuration)
+      const compiler = this.getCompiler();
+      const compilerType = this.useServerCompiler ? 'server' : 'WASM';
+      console.log(`[NoirProfilerService] Compiling with ${compilerType} compiler for profiling...`);
+
+      const compilationResult = await compiler.compileProgram(request.sourceCode, cargoTomlToUse);
 
       if (!compilationResult.success) {
         throw new Error(`Compilation failed: ${compilationResult.error}`);
