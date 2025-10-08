@@ -416,9 +416,9 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
     const functionRegex = /fn\s+main\s*\([^)]*\)/;
     const match = code.match(functionRegex);
     if (!match) return {
-      inputs: { x: "10", y: "25" },
-      types: { x: { type: "Field", isPublic: false }, y: { type: "Field", isPublic: true } },
-      order: ["x", "y"]
+      inputs: {},
+      types: {},
+      order: []
     };
 
     const paramString = match[0];
@@ -464,9 +464,9 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
 
     const hasInputs = Object.keys(extractedInputs).length > 0;
     return {
-      inputs: hasInputs ? extractedInputs : { x: "10", y: "25" },
-      types: hasInputs ? extractedTypes : { x: { type: "Field", isPublic: false }, y: { type: "Field", isPublic: true } },
-      order: hasInputs ? extractedOrder : ["x", "y"]
+      inputs: hasInputs ? extractedInputs : {},
+      types: hasInputs ? extractedTypes : {},
+      order: hasInputs ? extractedOrder : []
     };
   };
 
@@ -698,27 +698,33 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
                       {/* Inputs Section */}
                       <div className="mb-6">
                         <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Inputs</h3>
-                        <div className="space-y-4">
-                          {parameterOrder.map((key) => (
-                            <div key={key}>
-                              <label className="font-medium mb-2 block select-none text-muted-foreground" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
-                              <input
-                                type="text"
-                                value={inputs[key] || ''}
-                                onChange={(e) => handleInputChange(key, e.target.value)}
-                                className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none ring-1 transition-colors font-mono ${inputValidationErrors[key]
-                                  ? 'border-red-500/50 focus:ring-red-500/50'
-                                  : 'border-border ring-border'
-                                  }`}
-                                style={{ fontSize: '13px' }}
-                                disabled={isRunning}
-                              />
-                              {inputValidationErrors[key] && (
-                                <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                        {parameterOrder.length === 0 ? (
+                          <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                            No inputs
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {parameterOrder.map((key) => (
+                              <div key={key}>
+                                <label className="font-medium mb-2 block select-none text-muted-foreground" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
+                                <input
+                                  type="text"
+                                  value={inputs[key] || ''}
+                                  onChange={(e) => handleInputChange(key, e.target.value)}
+                                  className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none ring-1 transition-colors font-mono ${inputValidationErrors[key]
+                                    ? 'border-red-500/50 focus:ring-red-500/50'
+                                    : 'border-border ring-border'
+                                    }`}
+                                  style={{ fontSize: '13px' }}
+                                  disabled={isRunning}
+                                />
+                                {inputValidationErrors[key] && (
+                                  <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       {/* Visual Separator */}
