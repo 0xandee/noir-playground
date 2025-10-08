@@ -132,6 +132,15 @@ export class DependencyResolverService {
       (file.path.endsWith('.nr') || file.path.endsWith('Nargo.toml'))
     );
 
+    // Exclude test and example directories to avoid incorrect Nargo.toml detection
+    filtered = filtered.filter(file => {
+      const pathLower = file.path.toLowerCase();
+      return !pathLower.includes('/tests/') &&
+             !pathLower.includes('/examples/') &&
+             !pathLower.includes('/test/') &&
+             !pathLower.includes('/example/');
+    });
+
     // If a directory is specified, filter to only files in that directory
     if (directory) {
       const dirPrefix = directory.endsWith('/') ? directory : directory + '/';
@@ -253,10 +262,19 @@ export class DependencyResolverService {
       fileContents = cached.files;
 
       // Extract Nargo.toml from cached files
+      // Prioritize root-level Nargo.toml over subdirectory versions
       for (const [path, content] of Object.entries(cached.files)) {
         if (path.endsWith('Nargo.toml')) {
-          depCargoToml = content;
-          break;
+          if (path === 'Nargo.toml') {
+            // Root-level Nargo.toml - use this and stop
+            console.log(`[DependencyResolver] Using cached root Nargo.toml for ${dep.name}`);
+            depCargoToml = content;
+            break;
+          } else if (!depCargoToml) {
+            // Subdirectory Nargo.toml - only use if we don't have one yet
+            console.log(`[DependencyResolver] Using cached subdirectory Nargo.toml at ${path} for ${dep.name}`);
+            depCargoToml = content;
+          }
         }
       }
     } else {
@@ -293,8 +311,17 @@ export class DependencyResolverService {
         fileContents[writePath] = content;
 
         // Store Nargo.toml content for parsing transitive dependencies
+        // Prioritize root-level Nargo.toml over subdirectory versions
         if (writePath.endsWith('Nargo.toml')) {
-          depCargoToml = content;
+          if (writePath === 'Nargo.toml') {
+            // Root-level Nargo.toml - always use this
+            console.log(`[DependencyResolver] Using root Nargo.toml for ${dep.name}`);
+            depCargoToml = content;
+          } else if (!depCargoToml) {
+            // Subdirectory Nargo.toml - only use if we don't have one yet
+            console.log(`[DependencyResolver] Using subdirectory Nargo.toml at ${writePath} for ${dep.name}`);
+            depCargoToml = content;
+          }
         }
       }
 
@@ -344,6 +371,7 @@ export class DependencyResolverService {
     // Recursively resolve transitive dependencies
     if (depCargoToml) {
       const transitiveDeps = this.parseDependencies(depCargoToml);
+      console.log(`[DependencyResolver] Found ${transitiveDeps.length} transitive dependencies for ${dep.name}:`, transitiveDeps.map(d => `${d.name}@${d.tag}`).join(', ') || 'none');
 
       if (transitiveDeps.length > 0) {
         onProgress?.(`Resolving ${transitiveDeps.length} ${transitiveDeps.length === 1 ? 'dependency' : 'dependencies'} of ${dep.name}...`);

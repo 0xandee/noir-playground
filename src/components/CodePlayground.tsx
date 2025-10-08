@@ -52,19 +52,15 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": initialCode || `use bignum;
-
-pub fn main(x: Field, y: pub Field) -> pub Field {
-    x + y
+    "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
+    nodash::poseidon2([x, y])
 }`,
     "Nargo.toml": initialCargoToml || `[package]
 name = "playground"
 type = "bin"
-authors = [""]
-compiler_version = ">=1.0.0"
 
 [dependencies]
-bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
+nodash = { git = "https://github.com/olehmisar/nodash", tag = "v0.42.0" }`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);

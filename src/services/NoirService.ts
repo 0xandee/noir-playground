@@ -1,6 +1,7 @@
 import { Noir } from '@noir-lang/noir_js';
 import { UltraHonkBackend } from '@aztec/bb.js';
-import { noirWasmCompiler } from './NoirWasmCompiler';
+import { noirWasmCompiler, WasmCompilationResult } from './NoirWasmCompiler';
+import { noirServerCompiler } from './NoirServerCompiler';
 import { formatDuration } from '@/lib/utils';
 export interface ExecutionStep {
   status: 'pending' | 'running' | 'success' | 'error';
@@ -28,6 +29,39 @@ export class NoirService {
   private startTime: number = 0;
   private wasmInitialized: boolean = false;
   private compiledProgram?: any; // Store compiled program for circuit info access
+  private useServerCompiler: boolean;
+
+  constructor() {
+    // Check environment variable for compiler selection
+    // Default to server compiler if available, fallback to WASM
+    this.useServerCompiler = import.meta.env.VITE_USE_SERVER_COMPILER === 'true';
+  }
+
+  /**
+   * Select compiler based on configuration
+   * Returns server compiler if enabled, otherwise returns WASM compiler
+   */
+  private getCompiler() {
+    if (this.useServerCompiler) {
+      console.log('[NoirService] Using server-side compiler');
+      return noirServerCompiler;
+    } else {
+      console.log('[NoirService] Using WASM compiler');
+      return noirWasmCompiler;
+    }
+  }
+
+  /**
+   * Compile program using selected compiler
+   */
+  private async compileProgram(
+    sourceCode: string,
+    cargoToml: string | undefined,
+    onProgress: (message: string) => void
+  ): Promise<WasmCompilationResult> {
+    const compiler = this.getCompiler();
+    return await compiler.compileProgram(sourceCode, cargoToml, onProgress);
+  }
 
   private async initializeWasm(): Promise<void> {
     if (this.wasmInitialized) return;
@@ -92,11 +126,12 @@ export class NoirService {
     steps: ExecutionStep[],
     proveAndVerify: boolean = true
   ): Promise<NoirExecutionResult> {
-    // Step 1: WASM Compilation
-    onStep(this.createStep('running', 'Compiling circuit with Noir WASM...'));
+    // Step 1: Compilation (server or WASM based on config)
+    const compilerType = this.useServerCompiler ? 'server' : 'WASM';
+    onStep(this.createStep('running', `Compiling circuit with ${compilerType} compiler...`));
     const compileStartTime = performance.now();
 
-    const compilationResult = await noirWasmCompiler.compileProgram(
+    const compilationResult = await this.compileProgram(
       sourceCode,
       cargoToml,
       (message: string) => {
