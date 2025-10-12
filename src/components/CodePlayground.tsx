@@ -31,6 +31,9 @@ import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
 import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
+import { WitnessInspectorPanel } from "./witness/WitnessInspectorPanel";
+import { ConstraintVisualizerPanel } from "./constraint-visualizer";
+import { DebugControlPanel, InspectorPanel } from "./debug";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -52,19 +55,39 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": initialCode || `use bignum;
+    "main.nr": initialCode || `pub fn main(
+    private_input: Field,
+    public_value: pub Field,
+    multiplier: Field
+) -> pub Field {
+    // Step 1: Local variable declaration
+    let initial = private_input + public_value;
 
-pub fn main(x: Field, y: pub Field) -> pub Field {
-    x + y
+    // Step 2: Conditional logic (cast for comparison)
+    let initial_u32 = initial as u32;
+    let adjusted = if initial_u32 > 100 {
+        initial - 50
+    } else {
+        initial + 50
+    };
+
+    // Step 3: Complex arithmetic (multiple opcodes)
+    let scaled = adjusted * multiplier;
+    let final_value = scaled + 1000;
+
+    // Step 4: Constraint (assert with Field equality)
+    assert(final_value != 0);
+
+    // Step 5: Return computation
+    final_value
 }`,
     "Nargo.toml": initialCargoToml || `[package]
-name = "playground"
+name = "debug_test"
 type = "bin"
 authors = [""]
 compiler_version = ">=1.0.0"
 
-[dependencies]
-bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
+[dependencies]`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -76,12 +99,13 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
     returnValue?: string;
     witness?: Uint8Array;
   } | null>(initialProofData || null);
-  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "25" });
+  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { private_input: "75", public_value: "30", multiplier: "3" });
   const [inputTypes, setInputTypes] = useState<Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>>({
-    x: { type: "Field", isPublic: false },
-    y: { type: "Field", isPublic: true }
+    private_input: { type: "Field", isPublic: false },
+    public_value: { type: "Field", isPublic: true },
+    multiplier: { type: "Field", isPublic: false }
   });
-  const [parameterOrder, setParameterOrder] = useState<string[]>(["x", "y"]);
+  const [parameterOrder, setParameterOrder] = useState<string[]>(["private_input", "public_value", "multiplier"]);
   const [consoleMessages, setConsoleMessages] = useState<Array<{
     id: string;
     type: 'error' | 'success' | 'info';
@@ -90,14 +114,17 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'witness' | 'visualizer' | 'inspector'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
     { value: 'profiler' as const, label: 'Profiler' },
-    { value: 'benchmark' as const, label: 'Benchmark' }
+    { value: 'benchmark' as const, label: 'Benchmark' },
+    { value: 'witness' as const, label: 'Witness Inspector' },
+    { value: 'visualizer' as const, label: 'Constraint Visualizer' },
+    { value: 'inspector' as const, label: 'Inspector' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -986,6 +1013,33 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
                       onConsoleMessage={addConsoleMessage}
                       onClearConsole={clearConsoleMessages}
                     />
+                  </div>
+
+                  {/* Witness Inspector Panel */}
+                  <div className={rightPanelView === 'witness' ? 'block' : 'hidden'}>
+                    <WitnessInspectorPanel
+                      sourceCode={files["main.nr"]}
+                      cargoToml={files["Nargo.toml"]}
+                      witness={proofData?.witness}
+                    />
+                  </div>
+
+                  {/* Constraint Visualizer Panel */}
+                  <div className={rightPanelView === 'visualizer' ? 'block' : 'hidden'}>
+                    <ConstraintVisualizerPanel
+                      sourceCode={files["main.nr"]}
+                      cargoToml={files["Nargo.toml"]}
+                    />
+                  </div>
+
+                  {/* Inspector Panel */}
+                  <div className={rightPanelView === 'inspector' ? 'block h-full flex flex-col' : 'hidden'}>
+                    <DebugControlPanel
+                      sourceCode={files["main.nr"]}
+                      cargoToml={files["Nargo.toml"]}
+                      inputs={inputs}
+                    />
+                    <InspectorPanel className="flex-1" />
                   </div>
 
                 </div>

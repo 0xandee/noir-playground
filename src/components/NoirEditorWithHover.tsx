@@ -5,6 +5,7 @@ import { LineAnalysisService, LineAnalysisResult } from '@/services/LineAnalysis
 import { HeatmapDecorationService, DecorationOptions } from '@/services/HeatmapDecorationService';
 import { NoirProfilerService } from '@/services/NoirProfilerService';
 import { CircuitComplexityReport, MetricType, MetricsDelta, ExpressionMetrics, LineMetrics } from '@/types/circuitMetrics';
+import { useDebug } from '@/contexts/DebugContext';
 
 interface NoirEditorWithHoverProps {
   value: string;
@@ -171,6 +172,10 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const hoverProviderRegistered = useRef<boolean>(false);
   const decorationIds = useRef<string[]>([]);
+
+  // Debug context for current line highlighting
+  const { currentLine, isDebugging } = useDebug();
+  const debugLineDecorationIds = useRef<string[]>([]);
 
   // New heatmap-related state and services
   const heatmapService = useRef<HeatmapDecorationService>(new HeatmapDecorationService());
@@ -450,6 +455,18 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
       .monaco-hover .monaco-scrollable-element > .scrollbar {
         display: none !important;
       }
+
+      /* Debug current line highlighting */
+      .debug-current-line {
+        background-color: rgba(255, 204, 0, 0.15) !important;
+        border-left: 3px solid #ffcc00 !important;
+      }
+
+      .debug-current-line-glyph {
+        background-color: #ffcc00 !important;
+        width: 4px !important;
+        margin-left: 3px !important;
+      }
     `;
     document.head.appendChild(style);
 
@@ -620,6 +637,42 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
       scheduleHeatmapUpdate(value);
     }
   }, [cargoToml, enableHeatmap, value, scheduleHeatmapUpdate]);
+
+  // Effect to highlight current debug line
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    const model = editorRef.current.getModel();
+    if (!model) return;
+
+    // Clear existing debug line decorations
+    if (debugLineDecorationIds.current.length > 0) {
+      model.deltaDecorations(debugLineDecorationIds.current, []);
+      debugLineDecorationIds.current = [];
+    }
+
+    // Apply debug line decoration if debugging and currentLine is set
+    if (isDebugging && currentLine !== null && currentLine > 0) {
+      const decoration = {
+        range: new monaco.Range(currentLine, 1, currentLine, 1),
+        options: {
+          isWholeLine: true,
+          className: 'debug-current-line',
+          glyphMarginClassName: 'debug-current-line-glyph',
+          overviewRuler: {
+            color: '#ffcc00',
+            position: monaco.editor.OverviewRulerLane.Full
+          }
+        }
+      };
+
+      const newDecorationIds = model.deltaDecorations([], [decoration]);
+      debugLineDecorationIds.current = newDecorationIds;
+
+      // Scroll to the current line and center it
+      editorRef.current.revealLineInCenter(currentLine);
+    }
+  }, [currentLine, isDebugging]);
 
   // Cleanup caches when component unmounts
   useEffect(() => {
