@@ -554,7 +554,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
                     <header className="" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                       {/* File Tabs */}
                       <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
-                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
+                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
                           {Object.keys(files).map((filename) => (
                             <button
                               key={filename}
@@ -670,7 +670,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
             <ResizablePanel defaultSize={41} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel" ref={rightPanelRef}>
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
-                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
+                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
                     {rightPanelTabs.map((tab) => (
                       <button
                         key={tab.value}
