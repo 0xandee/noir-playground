@@ -43,8 +43,7 @@ export const WitnessInspectorPanel: React.FC<WitnessInspectorPanelProps> = ({
       // Compile the circuit to get artifact
       const result = await noirServerCompiler.compileProgram(
         sourceCode,
-        cargoToml,
-        (msg) => console.log('[Witness Inspector]', msg)
+        cargoToml
       );
 
       if (!result.success || !result.program?.program) {

@@ -114,7 +114,6 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const errorMessage = err instanceof Error ? err.message : 'Unknown error starting debug session';
       setError(errorMessage);
       setIsDebugging(false);
-      console.error('[DebugContext] Start session error:', err);
       return false;
     } finally {
       setIsSessionStarting(false); // Clear loading state
@@ -143,7 +142,6 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setCurrentLine(null);
       setError(null);
     } catch (err) {
-      console.error('[DebugContext] Stop session error:', err);
       // Don't throw - allow cleanup to complete
     } finally {
       setIsSessionStopping(false);
@@ -205,7 +203,6 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const errorMessage = err instanceof Error ? err.message : 'Unknown error restarting debug session';
       setError(errorMessage);
       setIsDebugging(false);
-      console.error('[DebugContext] Restart session error:', err);
       return false;
     } finally {
       setIsSessionRestarting(false);
@@ -225,65 +222,26 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       setIsStepExecuting(true);
       setError(null);
 
-      // === DIAGNOSTIC LOGGING: Step command initiated ===
-      console.log(`%c[CLIENT STEP] Command: '${command}'`, 'color: #4CAF50; font-weight: bold');
-      console.log(`[CLIENT STEP] Current line before step:`, currentLine);
-      console.log(`[CLIENT STEP] Session ID:`, sessionIdRef.current);
-
-      const stepStartTime = Date.now();
-
       // Execute step command
       const response = await noirDebuggerService.executeStep(sessionIdRef.current, command);
 
-      const stepDuration = Date.now() - stepStartTime;
-
-      // === DIAGNOSTIC LOGGING: Response received ===
-      console.log(`%c[CLIENT STEP] Response received in ${stepDuration}ms`, 'color: #2196F3; font-weight: bold');
-      console.log('[CLIENT STEP] Response success:', response.success);
-      console.log('[CLIENT STEP] Response state:', response.state);
-
       if (!response.success) {
-        console.error(`[CLIENT STEP] Step failed:`, response.error);
         throw new Error(response.error || 'Step command failed');
       }
 
-      // === DIAGNOSTIC LOGGING: Before state update ===
-      const oldLine = currentLine;
-      const newLine = response.state?.sourceLine || null;
-
-      console.log('[CLIENT STEP] Line change:', oldLine, '→', newLine);
-
       // Update session state
       if (response.state) {
-        console.log('[CLIENT STEP] Updating session state:', {
-          sessionId: response.state.sessionId,
-          stopped: response.state.stopped,
-          reason: response.state.reason,
-          sourceLine: response.state.sourceLine,
-          sourceFile: response.state.sourceFile,
-          frameId: response.state.frameId,
-          threadId: response.state.threadId,
-        });
-
         setSession(response.state);
         setCurrentLine(response.state.sourceLine || null);
-
-        // Log if line didn't change (might indicate function inlining)
-        if (oldLine === newLine) {
-          console.warn('[CLIENT STEP] ⚠️ Line number unchanged after step - possible function inlining');
-        }
       }
 
       // Fetch updated debug state
-      console.log('[CLIENT STEP] Fetching updated debug state (variables, witnesses, opcodes)...');
       await fetchDebugState(sessionIdRef.current);
 
-      console.log(`%c[CLIENT STEP] Step completed successfully`, 'color: #4CAF50; font-weight: bold');
       return true;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error executing step';
       setError(errorMessage);
-      console.error('%c[CLIENT STEP] Execute step error:', 'color: #f44336; font-weight: bold', err);
       return false;
     } finally {
       setIsStepExecuting(false);
@@ -303,7 +261,6 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         setOpcodes(stateResponse.state.opcodes);
       }
     } catch (err) {
-      console.error('[DebugContext] Fetch debug state error:', err);
       // Don't set error state here - this is background fetch
     }
   };
@@ -341,30 +298,11 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (response.breakpoints && response.breakpoints.length > 0) {
             // Update breakpoints with verification status from server
             setBreakpoints(response.breakpoints);
-
-            // Log verification results
-            const verified = response.breakpoints.filter(bp => bp.verified).length;
-            const total = response.breakpoints.length;
-            console.log(`[DebugContext] Breakpoints updated: ${verified}/${total} verified`);
-
-            // Show warning for unverified breakpoints
-            const unverified = response.breakpoints.filter(bp => !bp.verified);
-            if (unverified.length > 0) {
-              console.warn(
-                `[DebugContext] Some breakpoints could not be verified:`,
-                unverified.map(bp => `line ${bp.line}${bp.message ? `: ${bp.message}` : ''}`)
-              );
-            }
           } else if (response.breakpoints && response.breakpoints.length === 0) {
             // Server returned empty array - this means all breakpoints were cleared
-            console.log('[DebugContext] All breakpoints cleared by server');
             setBreakpoints([]);
-          } else {
-            // Server returned success but no breakpoints array - keep local state
-            console.warn('[DebugContext] Server returned success but no breakpoints array, keeping local state');
           }
         } else {
-          console.error('[DebugContext] Failed to sync breakpoints:', response.error);
           setError(response.error || 'Failed to set breakpoints');
           // Revert to previous state on error using functional update
           setBreakpoints(prevBreakpoints => {
@@ -378,7 +316,6 @@ export const DebugProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           });
         }
       } catch (err) {
-        console.error('[DebugContext] Error syncing breakpoints:', err);
         setError(err instanceof Error ? err.message : 'Error syncing breakpoints');
         // Revert to previous state on error using functional update
         setBreakpoints(prevBreakpoints => {

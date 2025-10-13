@@ -53,7 +53,6 @@ export class WitnessInspectorService {
 
     // Defensive checks for artifact structure
     if (!artifact || !artifact.abi) {
-      console.warn('WitnessInspector: Artifact or ABI is missing');
       return witnesses;
     }
 
@@ -189,7 +188,6 @@ export class WitnessInspectorService {
         }
       });
     } catch (error) {
-      console.warn('Failed to deserialize witness data:', error);
       // Don't fail silently - still show structure even if we can't get values
     }
   }
@@ -222,13 +220,9 @@ export class WitnessInspectorService {
           const value = this.bytesToBigInt(fieldBytes);
           witnessMap.set(i, value.toString());
         }
-      } else {
-        // Data might be compressed or in a different format
-        // Try to extract what we can
-        console.warn('Witness data format not recognized, length:', witnessData.length);
       }
     } catch (error) {
-      console.error('Error deserializing witness:', error);
+      // Error deserializing witness
     }
 
     return witnessMap;

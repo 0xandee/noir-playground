@@ -76,7 +76,7 @@ export class ConstraintMappingService {
         this.parseSvgOutput(profilerResult.acirSVG, metrics);
       }
     } catch (error) {
-      console.warn('Failed to extract line metrics from profiler:', error);
+      // Failed to extract line metrics from profiler
     }
 
     return metrics;
@@ -121,7 +121,7 @@ export class ConstraintMappingService {
         }
       }
     } catch (error) {
-      console.warn('Failed to parse SVG output:', error);
+      // Failed to parse SVG output
     }
   }
 

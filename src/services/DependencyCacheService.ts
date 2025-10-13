@@ -98,7 +98,6 @@ export class DependencyCacheService {
       return `tree-${hashHex.substring(0, 16)}`; // Use first 16 chars
     } catch (error) {
       // Fallback to simple hash if crypto API unavailable
-      console.warn('Crypto API unavailable, using fallback hash');
       return `tree-${this.simpleHash(manifest)}`;
     }
   }
@@ -133,7 +132,7 @@ export class DependencyCacheService {
           if (result) {
             this.stats.hits++;
             // Update access time asynchronously (don't block)
-            this.updateAccessTime(key, this.DEPENDENCY_STORE).catch(console.warn);
+            this.updateAccessTime(key, this.DEPENDENCY_STORE).catch(() => {});
           } else {
             this.stats.misses++;
           }
@@ -144,7 +143,6 @@ export class DependencyCacheService {
         };
       });
     } catch (error) {
-      console.warn('Cache read failed, falling back to network:', error);
       this.stats.misses++;
       return null;
     }
@@ -171,19 +169,14 @@ export class DependencyCacheService {
         request.onsuccess = () => resolve();
         request.onerror = () => reject(new Error(`Failed to save dependency: ${dep.key}`));
       });
-
-      console.log(`✓ Cached dependency: ${dep.key} (${this.formatBytes(dep.sizeBytes)})`);
     } catch (error) {
       if ((error as Error).name === 'QuotaExceededError') {
-        console.warn('Storage quota exceeded, attempting to free space');
         try {
           await this.evictLRU(dep.sizeBytes * 2); // Make extra room
           await this.saveDependency(dep); // Retry once
         } catch (retryError) {
-          console.error('Failed to save dependency after eviction:', retryError);
+          // Failed to save dependency after eviction
         }
-      } else {
-        console.error('Failed to cache dependency (non-critical):', error);
       }
     }
   }
@@ -205,7 +198,7 @@ export class DependencyCacheService {
           if (result) {
             this.stats.hits++;
             // Update access time asynchronously
-            this.updateAccessTime(key, this.TREE_STORE).catch(console.warn);
+            this.updateAccessTime(key, this.TREE_STORE).catch(() => {});
           } else {
             this.stats.misses++;
           }
@@ -216,7 +209,6 @@ export class DependencyCacheService {
         };
       });
     } catch (error) {
-      console.warn('Cache read failed for tree:', error);
       this.stats.misses++;
       return null;
     }
@@ -236,10 +228,8 @@ export class DependencyCacheService {
         request.onsuccess = () => resolve();
         request.onerror = () => reject(new Error(`Failed to save dependency tree: ${tree.key}`));
       });
-
-      console.log(`✓ Cached dependency tree: ${tree.key} (${Object.keys(tree.resolvedDependencies).length} dependencies)`);
     } catch (error) {
-      console.error('Failed to cache dependency tree (non-critical):', error);
+      // Failed to cache dependency tree (non-critical)
     }
   }
 
@@ -269,8 +259,7 @@ export class DependencyCacheService {
         getRequest.onerror = () => reject();
       });
     } catch (error) {
-      // Non-critical - just log
-      console.debug('Failed to update access time:', error);
+      // Non-critical - failed to update access time
     }
   }
 
@@ -295,7 +284,6 @@ export class DependencyCacheService {
         };
       });
     } catch (error) {
-      console.warn('Failed to get cache size:', error);
       return 0;
     }
   }
@@ -333,7 +321,6 @@ export class DependencyCacheService {
 
           for (const key of toDelete) {
             deleteStore.delete(key);
-            console.log(`Evicted (LRU): ${key}`);
           }
 
           await new Promise<void>((resolveDelete) => {
@@ -345,7 +332,6 @@ export class DependencyCacheService {
         request.onerror = () => reject(new Error('Failed to evict LRU entries'));
       });
     } catch (error) {
-      console.error('Failed to evict LRU entries:', error);
       throw error;
     }
   }
@@ -383,10 +369,7 @@ export class DependencyCacheService {
         hits: 0,
         misses: 0
       };
-
-      console.log('✓ Cache cleared successfully');
     } catch (error) {
-      console.error('Failed to clear cache:', error);
       throw error;
     }
   }
@@ -429,7 +412,6 @@ export class DependencyCacheService {
         misses: this.stats.misses
       };
     } catch (error) {
-      console.warn('Failed to get cache stats:', error);
       return this.stats;
     }
   }

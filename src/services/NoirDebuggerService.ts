@@ -64,7 +64,6 @@ export class NoirDebuggerService {
 
       return result;
     } catch (error) {
-      console.error('[NoirDebuggerService] Start session error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error starting debug session',
@@ -103,7 +102,6 @@ export class NoirDebuggerService {
 
       return result;
     } catch (error) {
-      console.error('[NoirDebuggerService] Execute step error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error executing step',
@@ -136,7 +134,6 @@ export class NoirDebuggerService {
 
       return result;
     } catch (error) {
-      console.error('[NoirDebuggerService] Get variables error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error getting variables',
@@ -169,7 +166,6 @@ export class NoirDebuggerService {
 
       return result;
     } catch (error) {
-      console.error('[NoirDebuggerService] Get witness map error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error getting witness map',
@@ -202,7 +198,6 @@ export class NoirDebuggerService {
 
       return result;
     } catch (error) {
-      console.error('[NoirDebuggerService] Get opcodes error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error getting opcodes',
@@ -220,14 +215,12 @@ export class NoirDebuggerService {
       });
 
       if (!response.ok) {
-        console.warn(`[NoirDebuggerService] Terminate session warning: ${response.status}`);
         // Don't throw error for cleanup operations
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('[NoirDebuggerService] Terminate session error:', error);
       return false;
     }
   }
@@ -270,12 +263,6 @@ export class NoirDebuggerService {
 
       const result = await response.json();
 
-      console.log('[NoirDebuggerService] setBreakpoints response:', {
-        success: result.success,
-        breakpointsCount: result.breakpoints?.length || 0,
-        breakpoints: result.breakpoints,
-      });
-
       if (!result.success) {
         throw new Error(result.error || 'Failed to set breakpoints');
       }
@@ -285,7 +272,6 @@ export class NoirDebuggerService {
         breakpoints: result.breakpoints || [],
       };
     } catch (error) {
-      console.error('[NoirDebuggerService] Set breakpoints error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error setting breakpoints',
@@ -305,7 +291,6 @@ export class NoirDebuggerService {
 
       return response.ok;
     } catch (error) {
-      console.warn('[NoirDebuggerService] Debug server not available:', error);
       return false;
     }
   }
@@ -350,7 +335,6 @@ export class NoirDebuggerService {
         },
       };
     } catch (error) {
-      console.error('[NoirDebuggerService] Get debug state error:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error getting debug state',

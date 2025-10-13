@@ -336,7 +336,6 @@ compiler_version = ">=1.0.0"
     try {
       await navigator.clipboard.writeText(content);
     } catch (err) {
-      console.error('Failed to copy:', err);
     }
   };
 

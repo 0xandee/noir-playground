@@ -67,7 +67,6 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
 
     if (!success) {
       // Error is already set in context
-      console.error('Failed to start debug session');
     }
   };
 
@@ -83,7 +82,6 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     });
 
     if (!success) {
-      console.error('Failed to restart debug session');
     }
   };
 
@@ -91,7 +89,6 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     const success = await executeStep(command);
 
     if (!success) {
-      console.error(`Failed to execute ${command} command`);
     }
   };
 

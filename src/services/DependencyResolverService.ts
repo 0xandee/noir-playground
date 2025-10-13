@@ -57,7 +57,6 @@ export class DependencyResolverService {
 
       return dependencies;
     } catch (error) {
-      console.error('Failed to parse Nargo.toml:', error);
       return [];
     }
   }
@@ -197,8 +196,6 @@ export class DependencyResolverService {
 
       return result;
     } catch (error) {
-      console.warn('Failed to convert git to path dependencies, using simpler approach:', error);
-
       // Fallback: simple regex replacement
       let modified = cargoToml;
       for (const dep of dependencies) {
@@ -267,12 +264,10 @@ export class DependencyResolverService {
         if (path.endsWith('Nargo.toml')) {
           if (path === 'Nargo.toml') {
             // Root-level Nargo.toml - use this and stop
-            console.log(`[DependencyResolver] Using cached root Nargo.toml for ${dep.name}`);
             depCargoToml = content;
             break;
           } else if (!depCargoToml) {
             // Subdirectory Nargo.toml - only use if we don't have one yet
-            console.log(`[DependencyResolver] Using cached subdirectory Nargo.toml at ${path} for ${dep.name}`);
             depCargoToml = content;
           }
         }
@@ -315,11 +310,9 @@ export class DependencyResolverService {
         if (writePath.endsWith('Nargo.toml')) {
           if (writePath === 'Nargo.toml') {
             // Root-level Nargo.toml - always use this
-            console.log(`[DependencyResolver] Using root Nargo.toml for ${dep.name}`);
             depCargoToml = content;
           } else if (!depCargoToml) {
             // Subdirectory Nargo.toml - only use if we don't have one yet
-            console.log(`[DependencyResolver] Using subdirectory Nargo.toml at ${writePath} for ${dep.name}`);
             depCargoToml = content;
           }
         }
@@ -371,7 +364,6 @@ export class DependencyResolverService {
     // Recursively resolve transitive dependencies
     if (depCargoToml) {
       const transitiveDeps = this.parseDependencies(depCargoToml);
-      console.log(`[DependencyResolver] Found ${transitiveDeps.length} transitive dependencies for ${dep.name}:`, transitiveDeps.map(d => `${d.name}@${d.tag}`).join(', ') || 'none');
 
       if (transitiveDeps.length > 0) {
         onProgress?.(`Resolving ${transitiveDeps.length} ${transitiveDeps.length === 1 ? 'dependency' : 'dependencies'} of ${dep.name}...`);

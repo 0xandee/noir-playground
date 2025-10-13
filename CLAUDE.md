@@ -36,9 +36,52 @@ The app integrates Noir zero-knowledge proof compilation through both server-sid
 - **NoirServerCompiler** (Recommended): HTTP client for server-side compilation using native `nargo compile` CLI. Eliminates CORS issues, provides native git dependency resolution, and faster compilation (~2-5x speedup).
 - **NoirWasmCompiler** (Fallback): Handles browser WASM compilation with `@noir-lang/noir_wasm` using file manager pattern. Subject to CORS restrictions for git dependencies.
 - **NoirProfilerService**: Provides circuit profiling capabilities with ACIR/gate analysis via external profiler server
+- **NoirDebuggerService**: HTTP client for DAP (Debug Adapter Protocol) operations with the debugger server
 - **DependencyResolverService**: Manages external library dependencies with recursive git resolution for browser environment (WASM compiler only)
 - **WASM Routing**: Vite config redirects WASM requests from `node_modules/.vite/deps/` to `/public/wasm/` directory
 - **Cross-Origin Headers**: Required CORP/COOP headers for WASM execution and SharedArrayBuffer support in `vite.config.ts`
+
+### Debugging System (DAP Integration)
+
+The playground includes a complete debugging system based on the Debug Adapter Protocol (DAP):
+
+#### Architecture
+- **DebugContext** (`src/contexts/DebugContext.tsx`): React context managing global debug state, session lifecycle, and user actions
+- **NoirDebuggerService** (`src/services/NoirDebuggerService.ts`): HTTP client for DAP operations (start/stop session, stepping, breakpoints, variable inspection)
+- **Debug UI Components**:
+  - `DebugControlPanel`: VSCode-style controls (play/pause, step over/in/out, restart, stop)
+  - `InspectorPanel`: Side-by-side view showing variables, witnesses, and ACIR opcodes
+  - `NoirEditorWithHover`: Monaco editor with debug decorations (breakpoints, current line highlighting)
+
+#### Debug Session Lifecycle
+1. **Start Session**: Send source code + Nargo.toml + initial inputs to server
+2. **Server Initialization**: Server compiles circuit, creates debug session, returns session ID
+3. **Interactive Debugging**: Step through code with next/stepIn/stepOut/continue commands
+4. **State Inspection**: View variables, witness map, and ACIR opcodes at each step
+5. **Breakpoint Management**: Set/remove breakpoints with server verification
+6. **Session Termination**: Clean up server resources when debugging ends
+
+#### Glyph Margin Decorations
+The Monaco editor glyph margin (narrow column between line numbers and code) is dedicated exclusively to **breakpoint management**:
+- **Red circles**: Verified breakpoints
+- **Gray circles**: Unverified breakpoints (invalid line positions)
+- **Semi-transparent red**: Hover placeholder showing where breakpoints can be placed
+- **No other indicators**: Debug current line and heatmap use inline highlights only (no glyph margin indicators)
+
+#### Step Commands (DAP Standard)
+- **next**: Step over (execute current line, don't enter functions)
+- **stepIn**: Step into (enter function calls)
+- **stepOut**: Step out (continue until function returns)
+- **continue**: Continue execution until next breakpoint or program end
+
+#### State Management
+The debug system maintains:
+- **Session state**: Session ID, stopped state, current line/frame/thread
+- **Variables**: Named local variables with types and values
+- **Witness map**: Low-level witness entries (index → field value)
+- **ACIR opcodes**: Circuit-level operation information
+- **Breakpoints**: User-set breakpoints with verification status
+- **Loading states**: Session starting/stopping/restarting flags for UI feedback
 
 ### Server-Side Compilation (Recommended)
 
@@ -68,9 +111,12 @@ The playground supports two compilation modes with server-side compilation as th
 # Enable server-side compilation (recommended)
 VITE_USE_SERVER_COMPILER=true
 
-# Server URL (same as profiler server)
+# Server URL (same server handles compilation, profiling, and debugging)
 VITE_PROFILER_SERVER_URL=http://localhost:4000              # Local development
 VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
+
+# Debug server URL (defaults to VITE_PROFILER_SERVER_URL if not set)
+VITE_DEBUG_SERVER_URL=http://localhost:4000  # Optional override
 ```
 
 **How It Works:**
@@ -91,9 +137,10 @@ VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
 
 **Server Integration:**
 - Server repository: https://github.com/0xandee/noir-playground-server
-- Same server handles both compilation and profiling
+- Same server handles compilation, profiling, and debugging
 - Compilation endpoint: `POST /api/compile`
 - Health check: `GET /api/compile/check-nargo`
+- Debug endpoints: `/api/debug/*` (start, step, breakpoints, variables, witness, opcodes)
 
 **Development Workflow:**
 ```bash
@@ -233,6 +280,16 @@ The app includes a sophisticated code sharing system with dynamic SEO:
 - **State management**: Manages code, inputs, proof data, execution steps, and console output
 - **Props interface**: Supports both standalone and shared snippet modes with `CodePlaygroundProps`
 - **Complexity analysis**: Integrates with `CombinedComplexityPanel` for circuit profiling and ACIR visualization
+- **Debug integration**: Connects to `DebugContext` for interactive debugging sessions
+
+#### NoirEditorWithHover Component
+Enhanced Monaco editor with multiple overlay systems:
+- **Syntax highlighting**: Custom Noir language definition with enhanced token colors
+- **Hover tooltips**: Show expression-level complexity metrics when heatmap is enabled
+- **Heatmap decorations**: Inline badges showing opcode counts and percentages
+- **Debug decorations**: Current line highlighting (yellow background) and breakpoint indicators (glyph margin)
+- **Glyph margin management**: Dedicated to breakpoint controls (red/gray dots, hover placeholders)
+- **Performance optimization**: Debounced heatmap updates (1-second delay), cached analysis results
 
 #### Sharing Workflow
 1. User clicks Share button → `ShareDialog` opens
@@ -257,9 +314,12 @@ The app includes a sophisticated code sharing system with dynamic SEO:
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_key
 
-# Compilation & Profiling Server
+# Compilation, Profiling & Debugging Server
 VITE_PROFILER_SERVER_URL=http://localhost:4000              # Local development
 VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
+
+# Debug server URL (optional, defaults to VITE_PROFILER_SERVER_URL)
+VITE_DEBUG_SERVER_URL=http://localhost:4000
 
 # Compiler Mode Selection
 VITE_USE_SERVER_COMPILER=true   # Use server-side nargo compiler (recommended)
@@ -274,7 +334,7 @@ SUPABASE_ANON_KEY=your_supabase_key
 
 #### SPA Routing Configuration
 - **Vercel**: `vercel.json` rewrites + serverless functions
-- **Netlify**: `netlify.toml` + `_redirects` + Netlify functions  
+- **Netlify**: `netlify.toml` + `_redirects` + Netlify functions
 - **Apache**: `.htaccess` for client-side routing
 
 #### Social Media Crawler Handling
@@ -354,6 +414,15 @@ Handles browser-based Noir compilation (fallback):
 - **Default Nargo.toml generation**: Provides fallback configuration for compilation
 - **CORS limitations**: Subject to browser security restrictions for git dependencies
 
+#### NoirDebuggerService (`src/services/NoirDebuggerService.ts`)
+HTTP client for DAP (Debug Adapter Protocol) operations:
+- **Session management**: Start/stop/restart debug sessions
+- **Step commands**: Execute next/stepIn/stepOut/continue operations
+- **State inspection**: Fetch variables, witness map, and ACIR opcodes
+- **Breakpoint management**: Set/clear breakpoints with server verification
+- **Health checks**: `checkAvailability()` verifies debug server is running
+- **Parallel fetching**: `getDebugState()` fetches variables/witnesses/opcodes in parallel
+
 #### SnippetService (`src/services/SnippetService.ts`)
 Manages code snippet persistence and sharing via Supabase integration.
 
@@ -365,15 +434,16 @@ Processes SVG profiler output into structured complexity metrics:
 
 #### HeatmapDecorationService (`src/services/HeatmapDecorationService.ts`)
 Manages Monaco editor visual decorations for complexity heatmaps:
-- **Gutter indicators**: Colored bars showing circuit complexity
-- **Inline badges**: Metric counts displayed at line ends
+- **Inline badges**: Metric counts displayed at line ends (e.g., "// 15 opcodes, 3.45%")
+- **Background highlights**: Subtle red/pink backgrounds on high-complexity lines (top 5 hotspots)
 - **Gradient colors**: Dynamic color application based on complexity thresholds
+- **No glyph margin indicators**: Heatmap does not use glyph margin (dedicated to breakpoints only)
 
 ### UI Component Patterns
 
 #### Monaco Editor Integration
 - **NoirEditor**: Basic Monaco editor with Noir syntax highlighting
-- **NoirEditorWithHover**: Enhanced editor with hover information and line analysis
+- **NoirEditorWithHover**: Enhanced editor with hover information, line analysis, debug decorations, and heatmap overlays
 - Uses `@monaco-editor/react` with custom Noir language definition
 
 #### ShadCN/UI Component Library
@@ -388,6 +458,15 @@ Core TypeScript interfaces for complexity analysis:
 - **HeatmapData**: Visualization data with normalized heat values
 - **MetricsConfiguration**: Customization options for thresholds and colors
 
+#### Debug Types (`src/types/debug.ts`)
+Core TypeScript interfaces for debugging:
+- **DebugSession**: Session state (session ID, stopped state, current line/frame/thread)
+- **DebugVariable**: Named variable with type and value
+- **DebugWitnessEntry**: Witness map entry (index → field value)
+- **DebugOpcodeInfo**: ACIR opcode information
+- **Breakpoint**: Line number with verification status
+- **StepCommand**: DAP step command type (`'next' | 'stepIn' | 'stepOut' | 'continue'`)
+
 ### Development Notes
 
 #### Circuit Profiling System
@@ -396,24 +475,35 @@ Core TypeScript interfaces for complexity analysis:
 - **Metrics tracking**: Provides ACIR opcodes, Brillig opcodes, and gate count analysis
 
 #### Real-Time Heatmap Feature
-- **Monaco editor integration**: Visual heat overlays with gutter indicators and inline badges
+- **Monaco editor integration**: Visual heat overlays with inline badges and background highlights
 - **Three metric types**: ACIR opcodes, Brillig opcodes, and proving gates
 - **Hotspot navigator**: Interactive panel showing complexity rankings with click-to-jump navigation
 - **Real-time updates**: Debounced analysis (1-second delay) with background processing
 - **Color gradient**: Green (low) → Yellow (medium) → Red (high complexity)
 - **Performance optimized**: Caching system and non-blocking UI updates
+- **No glyph margin decorations**: Heatmap uses inline annotations only (glyph margin reserved for breakpoints)
 
-## Noir Profiler Server
+#### Interactive Debugging System
+- **DAP-based architecture**: Follows Debug Adapter Protocol standard for debugger communication
+- **Session-based**: Each debug session maintains isolated state on the server
+- **Step-by-step execution**: Support for next/stepIn/stepOut/continue with current line tracking
+- **Real-time state inspection**: View variables, witnesses, and opcodes at each execution point
+- **Breakpoint management**: Click glyph margin to set/remove breakpoints, server verifies validity
+- **Visual feedback**: Yellow current line highlighting, red/gray breakpoint dots in glyph margin
+- **Clean separation**: Debug indicators use inline highlights; breakpoint controls use glyph margin exclusively
 
-The profiler server has been moved to a separate repository for independent development and deployment.
+## Noir Profiler & Debugger Server
+
+The profiler and debugger servers have been combined into a single repository for unified development and deployment.
 
 **Repository**: https://github.com/0xandee/noir-playground-server
 
 ### Overview
-A standalone NestJS-based REST API server that provides HTTP endpoints for circuit profiling:
+A standalone NestJS-based REST API server that provides HTTP endpoints for:
 
-- **NestJS Framework**: Modern TypeScript server with dependency injection and configuration management
 - **Circuit Profiling**: ACIR opcodes, Brillig opcodes, and gates profiling via noir-profiler CLI
+- **Circuit Compilation**: Native `nargo compile` with git dependency support
+- **Interactive Debugging**: DAP (Debug Adapter Protocol) operations for step-by-step debugging
 - **Docker Support**: Pre-built container with noir-profiler CLI and Barretenberg backend
 - **Automatic File Management**: Creates temporary directories, writes artifacts, and cleans up automatically
 - **Health Checks**: Built-in monitoring endpoints
@@ -436,25 +526,36 @@ docker run -p 4000:4000 noir-playground-server
 
 ### Frontend Integration
 
-The main React application integrates with the profiler server via `NoirProfilerService`:
+The main React application integrates with the server via multiple services:
 
 ```typescript
-// Frontend integration pattern
+// Circuit profiling
 const noirProfilerService = new NoirProfilerService();
 const result = await noirProfilerService.profileCircuit({
   sourceCode: noirCode,
   cargoToml: manifestContent
 });
+
+// Interactive debugging
+const noirDebuggerService = new NoirDebuggerService();
+await noirDebuggerService.startSession({
+  sourceCode: noirCode,
+  cargoToml: manifestContent,
+  initialInputs: inputValues
+});
 ```
 
 ### Environment Configuration
 
-Configure the frontend to connect to the profiler server:
+Configure the frontend to connect to the unified server:
 
 ```bash
 # Client Integration
 VITE_PROFILER_SERVER_URL=http://localhost:4000  # Local development
 VITE_PROFILER_SERVER_URL=https://your-server.ondigitalocean.app  # Production
+
+# Optional: Override debug server URL (defaults to VITE_PROFILER_SERVER_URL)
+VITE_DEBUG_SERVER_URL=http://localhost:4000
 ```
 
 For detailed documentation on server architecture, deployment, and API endpoints, see the [server repository](https://github.com/0xandee/noir-playground-server).

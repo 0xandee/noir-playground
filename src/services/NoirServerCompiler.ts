@@ -146,7 +146,6 @@ compiler_version = ">=1.0.0"
       const result = await response.json();
       return result.available === true;
     } catch (error) {
-      console.warn('Server compiler availability check failed:', error);
       return false;
     }
   }
