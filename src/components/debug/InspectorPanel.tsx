@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight, Layers, Variable, Binary, List, Cpu } from 'lucide-react';
+import { ChevronDown, ChevronRight, Layers, Variable, Binary, List } from 'lucide-react';
 import { useDebug } from '@/contexts/DebugContext';
 
 interface InspectorPanelProps {
@@ -21,7 +21,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ className = '' }
     witnesses: true,
     opcodes: true,
     stacktrace: true,
-    memory: true,
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -163,22 +162,6 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ className = '' }
             )}
           </div>
         )}
-      </InspectorSection>
-
-      {/* Brillig VM Memory Section */}
-      <InspectorSection
-        icon={<Cpu className="h-4 w-4" />}
-        title="Brillig VM Memory"
-        count={0}
-        expanded={expandedSections.memory}
-        onToggle={() => toggleSection('memory')}
-      >
-        <div className="px-4 py-2 text-xs text-muted-foreground italic">
-          Brillig VM memory not available
-          <div className="mt-1 text-[10px]">
-            Memory inspection will be available after stepping into Brillig blocks
-          </div>
-        </div>
       </InspectorSection>
 
       {/* Help Text */}

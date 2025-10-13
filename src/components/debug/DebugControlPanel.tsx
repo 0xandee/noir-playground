@@ -12,6 +12,7 @@ import {
   ArrowUp,
   FastForward,
   Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useDebug } from '@/contexts/DebugContext';
@@ -33,10 +34,14 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     session,
     isDebugging,
     isStepExecuting,
+    isSessionStarting,
+    isSessionStopping,
+    isSessionRestarting,
     currentLine,
     error,
     startDebugSession,
     stopDebugSession,
+    restartDebugSession,
     executeStep,
     clearError,
   } = useDebug();
@@ -58,6 +63,18 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     await stopDebugSession();
   };
 
+  const handleRestartDebug = async () => {
+    const success = await restartDebugSession({
+      sourceCode,
+      cargoToml,
+      inputs,
+    });
+
+    if (!success) {
+      console.error('Failed to restart debug session');
+    }
+  };
+
   const handleStep = async (command: 'next' | 'into' | 'out' | 'continue') => {
     const success = await executeStep(command);
 
@@ -76,25 +93,59 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
         {!isDebugging ? (
           <Button
             onClick={handleStartDebug}
+            disabled={isSessionStarting}
             variant="default"
             size="sm"
             className="h-8 px-3 gap-1.5"
             title="Start debugging"
           >
-            <Play className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">Start Debug</span>
+            {isSessionStarting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Play className="h-3.5 w-3.5" />
+            )}
+            <span className="text-xs font-medium">
+              {isSessionStarting ? 'Starting...' : 'Start Debug'}
+            </span>
           </Button>
         ) : (
-          <Button
-            onClick={handleStopDebug}
-            variant="destructive"
-            size="sm"
-            className="h-8 px-3 gap-1.5"
-            title="Stop debugging"
-          >
-            <Square className="h-3.5 w-3.5" />
-            <span className="text-xs font-medium">Stop</span>
-          </Button>
+          <>
+            <Button
+              onClick={handleStopDebug}
+              disabled={isSessionStopping || isStepExecuting}
+              variant="destructive"
+              size="sm"
+              className="h-8 px-3 gap-1.5"
+              title="Stop debugging"
+            >
+              {isSessionStopping ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Square className="h-3.5 w-3.5" />
+              )}
+              <span className="text-xs font-medium">
+                {isSessionStopping ? 'Stopping...' : 'Stop'}
+              </span>
+            </Button>
+
+            <Button
+              onClick={handleRestartDebug}
+              disabled={isSessionRestarting || isStepExecuting}
+              variant="outline"
+              size="sm"
+              className="h-8 px-3 gap-1.5"
+              title="Restart debugging (stop and start fresh)"
+            >
+              {isSessionRestarting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3.5 w-3.5" />
+              )}
+              <span className="text-xs font-medium">
+                {isSessionRestarting ? 'Restarting...' : 'Restart'}
+              </span>
+            </Button>
+          </>
         )}
 
         {/* Separator */}

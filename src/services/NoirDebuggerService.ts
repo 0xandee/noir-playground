@@ -13,9 +13,20 @@ import type {
   WitnessMapResponse,
   OpcodesResponse,
   Breakpoint,
-  SetBreakpointsRequest,
   DebugSession,
 } from '@/types/debug';
+
+/**
+ * Request body for setBreakpoints API call
+ */
+interface SetBreakpointsRequest {
+  sessionId: string;
+  breakpoints: Array<{
+    line: number;
+    column?: number;
+  }>;
+  sourceFile?: string;
+}
 
 export class NoirDebuggerService {
   private apiBaseUrl: string;
@@ -223,17 +234,62 @@ export class NoirDebuggerService {
 
   /**
    * Set breakpoints for the debug session
-   * Note: This is a placeholder - breakpoint support needs to be added to the server API
+   * Following DAP protocol: client sends ALL breakpoints for a source file
    */
-  async setBreakpoints(sessionId: string, breakpoints: Breakpoint[]): Promise<boolean> {
+  async setBreakpoints(
+    sessionId: string,
+    breakpoints: Breakpoint[],
+    sourceFile?: string
+  ): Promise<{
+    success: boolean;
+    breakpoints?: Breakpoint[];
+    error?: string;
+  }> {
     try {
-      // TODO: Implement server endpoint for setting breakpoints
-      // For now, this is a no-op
-      console.log('[NoirDebuggerService] setBreakpoints not yet implemented on server');
-      return true;
+      const requestBody: SetBreakpointsRequest = {
+        sessionId,
+        breakpoints: breakpoints.map(bp => ({
+          line: bp.line,
+          // Don't send 'verified' - that's returned by the server, not sent to it
+        })),
+        sourceFile: sourceFile || 'main.nr',
+      };
+
+      const response = await fetch(`${this.apiBaseUrl}/api/debug/breakpoints`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Set breakpoints failed: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+
+      console.log('[NoirDebuggerService] setBreakpoints response:', {
+        success: result.success,
+        breakpointsCount: result.breakpoints?.length || 0,
+        breakpoints: result.breakpoints,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to set breakpoints');
+      }
+
+      return {
+        success: true,
+        breakpoints: result.breakpoints || [],
+      };
     } catch (error) {
       console.error('[NoirDebuggerService] Set breakpoints error:', error);
-      return false;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error setting breakpoints',
+      };
     }
   }
 
