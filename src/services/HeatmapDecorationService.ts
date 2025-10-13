@@ -217,8 +217,7 @@ export class HeatmapDecorationService {
         return {
           range: new monaco.Range(data.lineNumber, 1, data.lineNumber, 1),
           options: {
-            isWholeLine: false,
-            glyphMarginClassName: `heatmap-gutter-${this.getHeatLevel(data.heatValue)}`
+            isWholeLine: false
           }
         };
       });
@@ -556,14 +555,6 @@ export class HeatmapDecorationService {
       const backgroundColorWithOpacity = `rgba(${baseColor}, ${backgroundOpacity})`;
 
       return `
-        /* Gutter heat indicators for ${level} */
-        .heatmap-gutter-${level}::before {
-          content: "▌";
-          color: ${colorWithOpacity};
-          font-weight: bold;
-          font-size: 13px;
-        }
-
         /* Inline metric badges for ${level} */
         .heatmap-inline-${level} {
           color: ${colorWithOpacity} !important;

@@ -468,12 +468,6 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
         border-left: 3px solid #ffcc00 !important;
       }
 
-      .debug-current-line-glyph {
-        background-color: #ffcc00 !important;
-        width: 4px !important;
-        margin-left: 3px !important;
-      }
-
       /* Breakpoint decorations */
       .breakpoint-glyph {
         background-color: #e51400 !important;
@@ -826,7 +820,6 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
           options: {
             isWholeLine: true,
             className: 'debug-current-line',
-            glyphMarginClassName: 'debug-current-line-glyph',
             overviewRuler: {
               color: '#ffcc00',
               position: monaco.editor.OverviewRulerLane.Full
