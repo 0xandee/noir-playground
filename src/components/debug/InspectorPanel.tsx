@@ -19,9 +19,9 @@ export const InspectorPanel: React.FC<InspectorPanelProps> = ({ className = '' }
   const [expandedSections, setExpandedSections] = useState({
     variables: true,
     witnesses: true,
-    opcodes: false,
+    opcodes: true,
     stacktrace: true,
-    memory: false,
+    memory: true,
   });
 
   const toggleSection = (section: keyof typeof expandedSections) => {

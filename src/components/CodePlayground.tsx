@@ -54,29 +54,33 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
     "main.nr": initialCode || `pub fn main(
-    private_input: Field,
-    public_value: pub Field,
-    multiplier: Field
+    x: Field,
+    y: pub Field
 ) -> pub Field {
-    // Step 1: Local variable declaration
-    let initial = private_input + public_value;
+    // Main function - demonstrates function calls for step debugging
+    let sum = add(x, y);
+    let product = multiply(x, y);
+    let result = compute_final(sum, product);
+    result
+}
 
-    // Step 2: Conditional logic (cast for comparison)
-    let initial_u32 = initial as u32;
-    let adjusted = if initial_u32 > 100 {
-        initial - 50
-    } else {
-        initial + 50
-    };
+fn add(a: Field, b: Field) -> Field {
+    // Helper function: Addition
+    let result = a + b;
+    result
+}
 
-    // Step 3: Complex arithmetic (multiple opcodes)
-    let scaled = adjusted * multiplier;
-    let final_value = scaled + 1000;
+fn multiply(a: Field, b: Field) -> Field {
+    // Helper function: Multiplication
+    let result = a * b;
+    result
+}
 
-    // Step 4: Constraint (assert with Field equality)
+fn compute_final(sum: Field, product: Field) -> Field {
+    // Helper function: Final computation
+    let adjusted = sum + product;
+    let final_value = adjusted * 2;
     assert(final_value != 0);
-
-    // Step 5: Return computation
     final_value
 }`,
     "Nargo.toml": initialCargoToml || `[package]
@@ -97,13 +101,12 @@ compiler_version = ">=1.0.0"
     returnValue?: string;
     witness?: Uint8Array;
   } | null>(initialProofData || null);
-  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { private_input: "75", public_value: "30", multiplier: "3" });
+  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "5" });
   const [inputTypes, setInputTypes] = useState<Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>>({
-    private_input: { type: "Field", isPublic: false },
-    public_value: { type: "Field", isPublic: true },
-    multiplier: { type: "Field", isPublic: false }
+    x: { type: "Field", isPublic: false },
+    y: { type: "Field", isPublic: true }
   });
-  const [parameterOrder, setParameterOrder] = useState<string[]>(["private_input", "public_value", "multiplier"]);
+  const [parameterOrder, setParameterOrder] = useState<string[]>(["x", "y"]);
   const [consoleMessages, setConsoleMessages] = useState<Array<{
     id: string;
     type: 'error' | 'success' | 'info';

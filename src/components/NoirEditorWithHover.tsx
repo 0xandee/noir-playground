@@ -640,37 +640,71 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
 
   // Effect to highlight current debug line
   useEffect(() => {
-    if (!editorRef.current) return;
+    try {
+      // Validation: Check if editor is mounted
+      if (!editorRef.current) {
+        console.debug('[DebugHighlight] Editor ref not available');
+        return;
+      }
 
-    const model = editorRef.current.getModel();
-    if (!model) return;
+      const model = editorRef.current.getModel();
+      if (!model) {
+        console.debug('[DebugHighlight] Editor model not available');
+        return;
+      }
 
-    // Clear existing debug line decorations
-    if (debugLineDecorationIds.current.length > 0) {
-      model.deltaDecorations(debugLineDecorationIds.current, []);
-      debugLineDecorationIds.current = [];
-    }
-
-    // Apply debug line decoration if debugging and currentLine is set
-    if (isDebugging && currentLine !== null && currentLine > 0) {
-      const decoration = {
-        range: new monaco.Range(currentLine, 1, currentLine, 1),
-        options: {
-          isWholeLine: true,
-          className: 'debug-current-line',
-          glyphMarginClassName: 'debug-current-line-glyph',
-          overviewRuler: {
-            color: '#ffcc00',
-            position: monaco.editor.OverviewRulerLane.Full
-          }
+      // Clear existing debug line decorations
+      if (debugLineDecorationIds.current.length > 0) {
+        console.debug('[DebugHighlight] Clearing previous decorations:', debugLineDecorationIds.current);
+        try {
+          model.deltaDecorations(debugLineDecorationIds.current, []);
+          debugLineDecorationIds.current = [];
+        } catch (clearError) {
+          console.error('[DebugHighlight] Error clearing decorations:', clearError);
+          // Reset the decoration IDs even if clearing failed
+          debugLineDecorationIds.current = [];
         }
-      };
+      }
 
-      const newDecorationIds = model.deltaDecorations([], [decoration]);
-      debugLineDecorationIds.current = newDecorationIds;
+      // Apply debug line decoration if debugging and currentLine is set
+      if (isDebugging && currentLine !== null && currentLine > 0) {
+        console.log('[DebugHighlight] Applying decoration to line:', currentLine, '(isDebugging:', isDebugging, ')');
 
-      // Scroll to the current line and center it
-      editorRef.current.revealLineInCenter(currentLine);
+        // Validate line number is within bounds
+        const lineCount = model.getLineCount();
+        if (currentLine > lineCount) {
+          console.warn('[DebugHighlight] Current line', currentLine, 'exceeds line count', lineCount);
+          return;
+        }
+
+        const decoration = {
+          range: new monaco.Range(currentLine, 1, currentLine, 1),
+          options: {
+            isWholeLine: true,
+            className: 'debug-current-line',
+            glyphMarginClassName: 'debug-current-line-glyph',
+            overviewRuler: {
+              color: '#ffcc00',
+              position: monaco.editor.OverviewRulerLane.Full
+            }
+          }
+        };
+
+        try {
+          const newDecorationIds = model.deltaDecorations([], [decoration]);
+          debugLineDecorationIds.current = newDecorationIds;
+          console.log('[DebugHighlight] Decoration applied successfully:', newDecorationIds);
+
+          // Scroll to the current line and center it
+          editorRef.current.revealLineInCenter(currentLine, monaco.editor.ScrollType.Smooth);
+        } catch (decorationError) {
+          console.error('[DebugHighlight] Error applying decoration:', decorationError);
+        }
+      } else {
+        console.debug('[DebugHighlight] Not applying decoration - isDebugging:', isDebugging, 'currentLine:', currentLine);
+      }
+    } catch (error) {
+      console.error('[DebugHighlight] Unexpected error in debug line highlighting:', error);
     }
   }, [currentLine, isDebugging]);
 
@@ -718,7 +752,11 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
           hover: {
             enabled: true,
             delay: 300
-          }
+          },
+          // Enable glyph margin for debug indicators (breakpoints, current line marker)
+          glyphMargin: true,
+          // Enable overview ruler lanes for debug position markers
+          overviewRulerLanes: 3
         }}
       />
 
