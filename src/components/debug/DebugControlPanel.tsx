@@ -24,6 +24,15 @@ interface DebugControlPanelProps {
   className?: string;
 }
 
+/**
+ * Check if execution has completed (reached end of program)
+ */
+const isExecutionCompleted = (reason?: string): boolean => {
+  if (!reason) return false;
+  const completionReasons = ['exited', 'terminated', 'completed', 'finished'];
+  return completionReasons.some(r => reason.toLowerCase().includes(r));
+};
+
 export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
   sourceCode,
   cargoToml,
@@ -45,6 +54,9 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     executeStep,
     clearError,
   } = useDebug();
+
+  // Check if execution has completed
+  const executionCompleted = isDebugging && session && isExecutionCompleted(session.reason);
 
   const handleStartDebug = async () => {
     const success = await startDebugSession({
@@ -83,20 +95,21 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     }
   };
 
-  const isStepDisabled = !isDebugging || isStepExecuting || !session;
+  // Disable step controls if not debugging, executing, no session, or execution completed
+  const isStepDisabled = !isDebugging || isStepExecuting || !session || executionCompleted;
 
   return (
     <div className={`flex flex-col ${className}`}>
       {/* Debug Controls */}
-      <div className="flex items-center gap-2 p-3 border-b border-border bg-muted/30">
-        {/* Start/Stop Button */}
+      <div className="flex flex-wrap items-center gap-2 p-3 border-b border-border bg-muted/30">
+        {/* Start Button */}
         {!isDebugging ? (
           <Button
             onClick={handleStartDebug}
             disabled={isSessionStarting}
             variant="default"
             size="sm"
-            className="h-8 px-3 gap-1.5"
+            className="h-8 px-2 md:px-3 gap-1.5"
             title="Start debugging"
           >
             {isSessionStarting ? (
@@ -104,64 +117,19 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
             ) : (
               <Play className="h-3.5 w-3.5" />
             )}
-            <span className="text-xs font-medium">
+            <span className="hidden md:inline text-xs font-medium">
               {isSessionStarting ? 'Starting...' : 'Start Debug'}
             </span>
           </Button>
         ) : (
           <>
-            <Button
-              onClick={handleStopDebug}
-              disabled={isSessionStopping || isStepExecuting}
-              variant="destructive"
-              size="sm"
-              className="h-8 px-3 gap-1.5"
-              title="Stop debugging"
-            >
-              {isSessionStopping ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Square className="h-3.5 w-3.5" />
-              )}
-              <span className="text-xs font-medium">
-                {isSessionStopping ? 'Stopping...' : 'Stop'}
-              </span>
-            </Button>
-
-            <Button
-              onClick={handleRestartDebug}
-              disabled={isSessionRestarting || isStepExecuting}
-              variant="outline"
-              size="sm"
-              className="h-8 px-3 gap-1.5"
-              title="Restart debugging (stop and start fresh)"
-            >
-              {isSessionRestarting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RotateCcw className="h-3.5 w-3.5" />
-              )}
-              <span className="text-xs font-medium">
-                {isSessionRestarting ? 'Restarting...' : 'Restart'}
-              </span>
-            </Button>
-          </>
-        )}
-
-        {/* Separator */}
-        {isDebugging && (
-          <div className="h-6 w-px bg-border mx-1" />
-        )}
-
-        {/* Step Controls */}
-        {isDebugging && (
-          <>
+            {/* Step Controls */}
             <Button
               onClick={() => handleStep('next')}
               disabled={isStepDisabled}
               variant="ghost"
               size="sm"
-              className="h-8 px-3 gap-1.5"
+              className="h-8 px-2 md:px-3 gap-1.5"
               title="Step Next (execute next line)"
             >
               {isStepExecuting ? (
@@ -169,7 +137,7 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
               ) : (
                 <ArrowRight className="h-3.5 w-3.5" />
               )}
-              <span className="text-xs">Next</span>
+              <span className="hidden md:inline text-xs">Next</span>
             </Button>
 
             <Button
@@ -177,11 +145,11 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
               disabled={isStepDisabled}
               variant="ghost"
               size="sm"
-              className="h-8 px-3 gap-1.5"
+              className="h-8 px-2 md:px-3 gap-1.5"
               title="Step Into (enter function)"
             >
               <ArrowDown className="h-3.5 w-3.5" />
-              <span className="text-xs">Into</span>
+              <span className="hidden md:inline text-xs">Into</span>
             </Button>
 
             <Button
@@ -189,11 +157,11 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
               disabled={isStepDisabled}
               variant="ghost"
               size="sm"
-              className="h-8 px-3 gap-1.5"
+              className="h-8 px-2 md:px-3 gap-1.5"
               title="Step Out (exit function)"
             >
               <ArrowUp className="h-3.5 w-3.5" />
-              <span className="text-xs">Out</span>
+              <span className="hidden md:inline text-xs">Out</span>
             </Button>
 
             <Button
@@ -201,34 +169,54 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
               disabled={isStepDisabled}
               variant="ghost"
               size="sm"
-              className="h-8 px-3 gap-1.5"
+              className="h-8 px-2 md:px-3 gap-1.5"
               title="Continue (run to next breakpoint)"
             >
               <FastForward className="h-3.5 w-3.5" />
-              <span className="text-xs">Continue</span>
+              <span className="hidden md:inline text-xs">Continue</span>
+            </Button>
+
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Session Controls */}
+            <Button
+              onClick={handleRestartDebug}
+              disabled={isSessionRestarting || isStepExecuting}
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 md:px-3 gap-1.5 text-green-500 hover:text-green-400 hover:bg-green-500/10"
+              title="Restart debugging (stop and start fresh)"
+            >
+              {isSessionRestarting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RotateCcw className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden md:inline text-xs font-medium">
+                {isSessionRestarting ? 'Restarting...' : 'Restart'}
+              </span>
+            </Button>
+
+            <Button
+              onClick={handleStopDebug}
+              disabled={isSessionStopping || isStepExecuting}
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 md:px-3 gap-1.5 text-red-500 hover:text-red-400 hover:bg-red-500/10"
+              title="Stop debugging"
+            >
+              {isSessionStopping ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Square className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden md:inline text-xs font-medium">
+                {isSessionStopping ? 'Stopping...' : 'Stop'}
+              </span>
             </Button>
           </>
         )}
-
-        {/* Status Indicator */}
-        <div className="flex-1" />
-        <div className="flex items-center gap-2">
-          {isDebugging && (
-            <div className="flex items-center gap-1.5 text-xs">
-              <div className={`h-2 w-2 rounded-full ${
-                session?.stopped ? 'bg-yellow-500' : 'bg-green-500'
-              }`} />
-              <span className="text-muted-foreground">
-                {session?.stopped ? 'Paused' : 'Running'}
-              </span>
-              {currentLine !== null && (
-                <span className="text-foreground">
-                  at line <span className="font-mono font-medium">{currentLine}</span>
-                </span>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Error Display */}
@@ -242,24 +230,6 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
             >
               Dismiss
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Session Info */}
-      {isDebugging && session && (
-        <div className="p-3 bg-muted/20 border-b border-border">
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <span className="text-muted-foreground">Session:</span>{' '}
-              <span className="font-mono text-foreground">{session.sessionId?.substring(0, 8)}...</span>
-            </div>
-            {session.reason && (
-              <div>
-                <span className="text-muted-foreground">Status:</span>{' '}
-                <span className="text-foreground">{session.reason}</span>
-              </div>
-            )}
           </div>
         </div>
       )}

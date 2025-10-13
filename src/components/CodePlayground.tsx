@@ -121,9 +121,9 @@ compiler_version = ">=1.0.0"
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
+    { value: 'inspector' as const, label: 'Debugger' },
     { value: 'profiler' as const, label: 'Profiler' },
-    { value: 'benchmark' as const, label: 'Benchmark' },
-    { value: 'inspector' as const, label: 'Inspector' }
+    { value: 'benchmark' as const, label: 'Benchmark' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
