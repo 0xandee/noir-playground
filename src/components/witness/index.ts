@@ -1,0 +1,1 @@
+export { WitnessInspectorPanel } from './WitnessInspectorPanel';

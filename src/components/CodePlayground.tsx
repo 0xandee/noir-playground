@@ -1,26 +1,43 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
-  Copy,
   Download,
-  Code,
-  FileText,
   Settings,
   Terminal,
   Cpu,
   Share,
+  Flame,
+  Target,
+  Table,
+  Activity,
+  RefreshCw,
+  CornerDownRight,
+  Play,
+  Link2,
+  Copy,
 } from "lucide-react";
+import { BsTwitterX, BsGithub } from "react-icons/bs";
 import { noirService, ExecutionStep } from "@/services/NoirService";
 import { NoirEditor } from "./NoirEditor";
-import { noirExamples, NoirExample } from "@/data/noirExamples";
+import { NoirEditorWithHover } from "./NoirEditorWithHover";
 import { ShareDialog } from "./ShareDialog";
+import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
+import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
+import { usePanelState } from "@/hooks/usePanelState";
+import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
+import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
+import { DebugControlPanel, InspectorPanel } from "./debug";
+import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
   initialCode?: string;
   initialInputs?: Record<string, string>;
+  initialCargoToml?: string;
   initialProofData?: {
     proof?: Uint8Array;
     witness?: Uint8Array;
@@ -33,22 +50,46 @@ interface CodePlaygroundProps {
 }
 
 const CodePlayground = (props: CodePlaygroundProps = {}) => {
-  const { initialCode, initialInputs, initialProofData, snippetTitle, snippetId } = props;
+  const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": initialCode || `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
-}`
+    "main.nr": initialCode || `pub fn main(
+    x: Field,
+    y: pub Field
+) -> pub Field {
+    // Main function - demonstrates function calls for step debugging
+    let sum = add(x, y);
+    let product = multiply(x, y);
+    let result = compute_final(sum, product);
+    result
+}
+
+fn add(a: Field, b: Field) -> Field {
+    // Helper function: Addition
+    let result = a + b;
+    result
+}
+
+fn multiply(a: Field, b: Field) -> Field {
+    // Helper function: Multiplication
+    let result = a * b;
+    result
+}
+
+fn compute_final(sum: Field, product: Field) -> Field {
+    // Helper function: Final computation
+    let adjusted = sum + product;
+    let final_value = adjusted * 2;
+    assert(final_value != 0);
+    final_value
+}`,
+    "Nargo.toml": initialCargoToml || `[package]
+name = "debug_test"
+type = "bin"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -60,7 +101,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     returnValue?: string;
     witness?: Uint8Array;
   } | null>(initialProofData || null);
-  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "25" });
+  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "5" });
   const [inputTypes, setInputTypes] = useState<Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>>({
     x: { type: "Field", isPublic: false },
     y: { type: "Field", isPublic: true }
@@ -73,12 +114,41 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     timestamp: string;
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
-  const [selectedExample, setSelectedExample] = useState<string>("playground");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [copiedItem, setCopiedItem] = useState<string | null>(null);
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'inspector'>('inputs');
+  const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
+  const rightPanelRef = useRef<HTMLDivElement>(null);
+
+  const rightPanelTabs = [
+    { value: 'inputs' as const, label: 'Input/Output' },
+    { value: 'inspector' as const, label: 'Debugger' },
+    { value: 'profiler' as const, label: 'Profiler' },
+    { value: 'benchmark' as const, label: 'Benchmark' }
+  ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
+  const monacoEditorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+
+  // Heatmap-related state
+  const [enableHeatmap, setEnableHeatmap] = useState<boolean>(false);
+  const [heatmapMetricType, setHeatmapMetricType] = useState<MetricType>('acir');
+  const [complexityReport, setComplexityReport] = useState<CircuitComplexityReport | null>(null);
+  const [selectedHotspotLine, setSelectedHotspotLine] = useState<number | undefined>(undefined);
+
+  // Panel collapse state
+  const { panelState, togglePanel } = usePanelState();
+
+  // Complexity panel state
+  const [complexityViewMode, setComplexityViewMode] = useState<'metrics' | 'flamegraph'>('metrics');
+  const [complexityProfilerResult, setComplexityProfilerResult] = useState<ProfilerResult | null>(null);
+  const [isComplexityProfiling, setIsComplexityProfiling] = useState(false);
+
+  // Profiler service instance
+  const profilerServiceRef = useRef<NoirProfilerService | null>(null);
+  if (!profilerServiceRef.current) {
+    profilerServiceRef.current = new NoirProfilerService();
+  }
 
   // Extract input types when initial code is provided
   useEffect(() => {
@@ -96,11 +166,65 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     }
   }, [snippetId]);
 
-  const addConsoleMessage = (type: 'error' | 'success' | 'info', message: string) => {
+  const addConsoleMessage = useCallback((type: 'error' | 'success' | 'info', message: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    const id = Date.now().toString();
+    const id = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     setConsoleMessages(prev => [...prev, { id, type, message, timestamp }]);
-  };
+  }, []);
+
+  const clearConsoleMessages = useCallback(() => {
+    setConsoleMessages([]);
+  }, []);
+
+  const handleComplexityRefresh = useCallback(async () => {
+    if (!files["main.nr"].trim() || isComplexityProfiling) {
+      return;
+    }
+
+    setIsComplexityProfiling(true);
+    try {
+      const result = await profilerServiceRef.current!.profileCircuit({
+        sourceCode: files["main.nr"].trim(),
+        cargoToml: files["Nargo.toml"] || undefined
+      });
+      setComplexityProfilerResult(result);
+    } catch (err) {
+      addConsoleMessage('error', `Profiling failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setIsComplexityProfiling(false);
+    }
+  }, [files, isComplexityProfiling, addConsoleMessage]);
+
+  // Trigger profiling when heatmap is enabled
+  const prevEnableHeatmapRef = useRef(enableHeatmap);
+  useEffect(() => {
+    const wasHeatmapEnabled = prevEnableHeatmapRef.current;
+    prevEnableHeatmapRef.current = enableHeatmap;
+
+    // Only trigger profiling if heatmap was just turned on (false -> true) and we have code
+    if (!wasHeatmapEnabled && enableHeatmap && files["main.nr"].trim() && !isComplexityProfiling) {
+      handleComplexityRefresh();
+    }
+  }, [enableHeatmap, files, isComplexityProfiling, handleComplexityRefresh]);
+
+  // Auto-profile when switching to Profiler tab
+  const prevRightPanelViewRef = useRef(rightPanelView);
+  useEffect(() => {
+    const wasPrevProfilerTab = prevRightPanelViewRef.current === 'profiler';
+    prevRightPanelViewRef.current = rightPanelView;
+
+    // Trigger profiling when switching to profiler tab if:
+    // 1. We just switched to profiler tab (not profiler -> profiler)
+    // 2. We have code to analyze
+    // 3. We don't have existing results and are not currently profiling
+    if (!wasPrevProfilerTab &&
+      rightPanelView === 'profiler' &&
+      files["main.nr"].trim() &&
+      !complexityProfilerResult &&
+      !isComplexityProfiling) {
+      handleComplexityRefresh();
+    }
+  }, [rightPanelView, files, complexityProfilerResult, isComplexityProfiling, handleComplexityRefresh]);
 
   // Auto-scroll console to bottom when new messages arrive
   useEffect(() => {
@@ -109,31 +233,34 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     }
   }, [executionSteps, consoleMessages]);
 
-  const loadExample = (exampleId: string) => {
-    const example = noirExamples.find(ex => ex.id === exampleId);
-    if (!example) return;
+  // Handle Monaco editor resize when panels expand/collapse
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (monacoEditorRef.current) {
+        monacoEditorRef.current.layout();
+      }
+    }, 300); // Add slight delay to allow panel animations to complete
 
-    // Update the main.nr file with the example code
-    setFiles(prev => ({
-      ...prev,
-      "main.nr": example.code
-    }));
+    return () => clearTimeout(timeoutId);
+  }, [panelState]);
 
-    // Extract inputs from the code and set default values
-    const extracted = extractInputsFromCode(example.code);
-    setInputs(example.inputs);
-    setInputTypes(extracted.types);
-    setParameterOrder(extracted.order);
+  // Track right panel width with ResizeObserver
+  useEffect(() => {
+    if (!rightPanelRef.current) return;
 
-    // Reset execution state
-    setExecutionSteps([]);
-    setProofData(null);
-    setConsoleMessages([]);
-    setSelectedExample(exampleId);
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setRightPanelWidth(entry.contentRect.width);
+      }
+    });
 
-    // Add success message
-    addConsoleMessage('info', `Loaded example: ${example.name}`);
-  };
+    resizeObserver.observe(rightPanelRef.current);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, []);
+
 
   const processStepQueue = () => {
     if (stepQueueRef.current.length === 0) {
@@ -184,7 +311,7 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
         files["main.nr"],
         processedInputs,
         addStepWithDelay,
-        undefined,
+        files["Nargo.toml"],
         proveAndVerify
       );
 
@@ -199,28 +326,17 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     }
   };
 
-  const handleCopy = (content: string, itemId: string) => {
-    navigator.clipboard.writeText(content);
-    setCopiedItem(itemId);
-    setTimeout(() => setCopiedItem(null), 1500);
-  };
 
-  const handleDownloadProof = () => {
-    if (!proofData) return;
-
-    const blob = new Blob([JSON.stringify(proofData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'noir-proof.json';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   const handleShareClick = () => {
     setShareDialogOpen(true);
+  };
+
+  const handleCopyField = async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+    } catch (err) {
+    }
   };
 
   const handleInputChange = (key: string, value: string) => {
@@ -260,8 +376,8 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   };
 
   // Convert array inputs to proper format for Noir
-  const processInputsForNoir = (inputs: Record<string, string>): Record<string, any> => {
-    const processedInputs: Record<string, any> = {};
+  const processInputsForNoir = (inputs: Record<string, string>): Record<string, string | number | string[]> => {
+    const processedInputs: Record<string, string | number | string[]> = {};
 
     for (const [key, value] of Object.entries(inputs)) {
       const typeInfo = inputTypes[key];
@@ -311,13 +427,10 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
   const getFileLanguage = (filename: string) => {
     if (filename.endsWith('.nr')) return 'noir';
+    if (filename.endsWith('.toml')) return 'ini'; // Monaco uses 'ini' for TOML-like syntax
     return 'plaintext';
   };
 
-  const getFileIcon = (filename: string) => {
-    if (filename.endsWith('.nr')) return <Code className="h-4 w-4 text-primary" />;
-    return <FileText className="h-4 w-4 text-muted-foreground" />;
-  };
 
   // Extract inputs from the main function signature
   const extractInputsFromCode = (code: string): {
@@ -328,9 +441,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     const functionRegex = /fn\s+main\s*\([^)]*\)/;
     const match = code.match(functionRegex);
     if (!match) return {
-      inputs: { x: "10", y: "25" },
-      types: { x: { type: "Field", isPublic: false }, y: { type: "Field", isPublic: true } },
-      order: ["x", "y"]
+      inputs: {},
+      types: {},
+      order: []
     };
 
     const paramString = match[0];
@@ -376,9 +489,9 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
 
     const hasInputs = Object.keys(extractedInputs).length > 0;
     return {
-      inputs: hasInputs ? extractedInputs : { x: "10", y: "25" },
-      types: hasInputs ? extractedTypes : { x: { type: "Field", isPublic: false }, y: { type: "Field", isPublic: true } },
-      order: hasInputs ? extractedOrder : ["x", "y"]
+      inputs: hasInputs ? extractedInputs : {},
+      types: hasInputs ? extractedTypes : {},
+      order: hasInputs ? extractedOrder : []
     };
   };
 
@@ -387,7 +500,11 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     handleFileChange('main.nr', content);
     const extracted = extractInputsFromCode(content);
 
-    // Only update if the structure changed, preserve existing values
+    // Always update types and parameter order to stay in sync with code
+    setInputTypes(extracted.types);
+    setParameterOrder(extracted.order);
+
+    // Only update input values if the parameter structure (keys) changed
     const currentKeys = Object.keys(inputs);
     const newKeys = Object.keys(extracted.inputs);
 
@@ -397,30 +514,19 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
         preservedInputs[key] = inputs[key] || extracted.inputs[key];
       });
       setInputs(preservedInputs);
-      setInputTypes(extracted.types);
-      setParameterOrder(extracted.order);
     }
   };
 
   const renderConsoleContent = () => {
-    const formatStepMessage = (message: string, status: string) => {
-      let formattedMessage = message;
-
-      // Remove timing information like (574ms) or (1.2s)
-      formattedMessage = formattedMessage.replace(/\s*\(\d+(\.\d+)?(ms|s)\)/g, '');
-
-      if (status === "success" && formattedMessage.toLowerCase().includes("successful")) {
-        // Add exclamation mark after "successful" variants, replacing any trailing period
-        formattedMessage = formattedMessage.replace(/successful(ly)?\.?/gi, "successful$1!");
-      }
-      return formattedMessage;
+    const formatStepMessage = (message: string) => {
+      return message;
     };
 
     const allMessages = [
       ...executionSteps.map(step => ({
         id: `step-${step.message}`,
         type: step.status === "success" ? "success" : step.status === "error" ? "error" : "info",
-        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message, step.status),
+        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message),
         timestamp: '',
         isStep: true
       })),
@@ -433,19 +539,18 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
     if (allMessages.length === 0) {
       return (
         <div className="flex items-center gap-2">
-          <span className="text-foreground">Ready to execute...</span>
+          <span className="text-foreground select-text">Ready to execute...</span>
         </div>
       );
     }
 
     return allMessages.map((msg, i) => (
       <div key={msg.id || i} className="flex items-center gap-2">
-        <span className={
-          msg.type === "success" ? "text-green-400" :
-            msg.type === "error" ? "text-red-400" :
-              msg.type === "info" ? "text-foreground" :
-                "text-foreground"
-        }>
+        <span className={`select-text ${msg.type === "success" ? "text-green-400" :
+          msg.type === "error" ? "text-red-400" :
+            msg.type === "info" ? "text-foreground" :
+              "text-foreground"
+          }`}>
           {msg.message}
         </span>
       </div>
@@ -455,419 +560,496 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   return (
     <TooltipProvider>
       <main className="h-screen bg-background flex flex-col">
-      <header className="sr-only">
-        <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
-      </header>
+        <header className="sr-only">
+          <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
+        </header>
 
 
-      {/* Main Content */}
-      <section className="flex flex-1" aria-label="Development Environment">
-        {/* Desktop Layout - Resizable Panels */}
-        <ResizablePanelGroup direction="horizontal" className="h-full">
-          {/* Left Panel - Code Editor and Console */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* Code Editor Panel */}
-              <ResizablePanel defaultSize={60} minSize={40}>
-                <section className="h-full flex flex-col" aria-label="Code Editor">
-                  {/* Code Editor Header with File Tabs */}
-                  <header className="border-b border-border bg-muted/30">
-                    {/* File Tabs */}
-                    <div className="flex items-center justify-between px-4 py-2">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-1">
-                          {snippetTitle ? (
-                            // Show snippet title instead of examples dropdown
-                            <div className="flex items-center gap-2 text-sm px-2">
-                              <span className="text-muted-foreground">Shared Snippet:</span>
-                              <span className="font-medium text-foreground">{snippetTitle}</span>
-                            </div>
-                          ) : (
-                            // Show examples dropdown in normal mode
-                            <Select value={selectedExample} onValueChange={loadExample}>
-                              <SelectTrigger className="w-36 h-8 text-xs focus:ring-0 focus:ring-offset-0">
-                                <SelectValue placeholder="Examples" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {noirExamples.map((example, index) => (
-                                  <div key={example.id}>
-                                    <SelectItem value={example.id}>
-                                      {example.name}
-                                    </SelectItem>
-                                    {index === 0 && <SelectSeparator />}
-                                  </div>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
+        {/* Main Content */}
+        <section className="flex flex-1 overflow-hidden" aria-label="Development Environment">
+          {/* Desktop Layout - Resizable Panels */}
+          <ResizablePanelGroup direction="horizontal" className="h-full">
+            {/* Left Panel - Code Editor and Console */}
+            <ResizablePanel defaultSize={59} minSize={30}>
+              <ResizablePanelGroup direction="vertical" className="h-full">
+                {/* Code Editor Panel */}
+                <ResizablePanel defaultSize={70} minSize={50}>
+                  <section className="h-full flex flex-col" aria-label="Code Editor">
+                    {/* Code Editor Header with File Tabs */}
+                    <header className="" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
+                      {/* File Tabs */}
+                      <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
+                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
+                          {Object.keys(files).map((filename) => (
+                            <button
+                              key={filename}
+                              onClick={() => setActiveFile(filename)}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${activeFile === filename
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              style={{ fontSize: '13px' }}
+                            >
+                              {filename}
+                            </button>
+                          ))}
                         </div>
-                        {Object.keys(files).filter(filename => filename !== 'main.nr').map((filename) => (
-                          <button
-                            key={filename}
-                            onClick={() => setActiveFile(filename)}
-                            className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-t-md select-none transition-colors focus:outline-none focus:ring-0 focus:ring-offset-0 ${activeFile === filename
-                              ? 'bg-background text-foreground'
-                              : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                              }`}
-                          >
-                            {filename}
-                          </button>
-                        ))}
-
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <label className="flex items-center gap-2 text-sm select-none">
-                          <input
-                            type="checkbox"
-                            checked={proveAndVerify}
-                            onChange={(e) => setProveAndVerify(e.target.checked)}
-                            className="rounded"
-                          />
-                          Prove & Verify
-                        </label>
-                        <Button
-                          onClick={handleRun}
-                          disabled={isRunning}
-                          variant="default"
-                          size="sm"
-                        >
-                          Run
-                        </Button>
-                      </div>
-                    </div>
-                  </header>
-
-                  {/* Code Editor */}
-                  <div className="flex-1">
-                    <NoirEditor
-                      value={files[activeFile]}
-                      onChange={(content) => {
-                        if (activeFile === 'main.nr') {
-                          handleMainFileChange(content);
-                        } else {
-                          handleFileChange(activeFile, content);
-                        }
-                      }}
-                      disabled={isRunning}
-                      language={getFileLanguage(activeFile)}
-                    />
-                  </div>
-                </section>
-              </ResizablePanel>
-
-              {/* Resizable Handle between Editor and Console */}
-              <ResizableHandle
-                className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-              />
-
-              {/* Console Panel */}
-              <ResizablePanel defaultSize={40} minSize={15}>
-                <section className="h-full flex flex-col border-t border-border bg-muted/20" aria-label="Console Output">
-                  <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="h-4 w-4 text-primary" />
-                      <h2 className="text-sm font-medium">Console</h2>
-                    </div>
-                    <Tooltip open={copiedItem === 'console'}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            const allMessages = [
-                              ...executionSteps.map(step => step.details ? `${step.message}: ${step.details}` : step.message),
-                              ...consoleMessages.map(msg => msg.message)
-                            ];
-                            const consoleText = allMessages.length > 0 ? allMessages.join('\n') : 'Ready to execute...';
-                            handleCopy(consoleText, "console");
-                          }}
-                          disabled={executionSteps.length === 0 && consoleMessages.length === 0}
-                          title="Copy console output"
-                        >
-                          <Copy className="h-3 w-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Copied!</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </header>
-                  <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono text-xs space-y-1" role="log" aria-live="polite">
-                    {renderConsoleContent()}
-                  </div>
-                </section>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-
-          {/* Resizable Handle between Editor Area and Right Panel */}
-          <ResizableHandle
-            className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-          />
-
-          {/* Right Panel - Execution Details */}
-          <ResizablePanel defaultSize={50} minSize={30}>
-            <ResizablePanelGroup direction="vertical" className="h-full">
-              {/* Circuit Inputs Panel */}
-              <ResizablePanel defaultSize={50} minSize={20}>
-                <section className="h-full flex flex-col" aria-label="Circuit Inputs">
-                  <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
-                    <div className="flex items-center gap-2">
-                      <Cpu className="h-4 w-4 text-primary" />
-                      <h2 className="text-sm font-medium">Circuit Inputs</h2>
-                    </div>
-                    <Button
-                      onClick={handleShareClick}
-                      variant="ghost"
-                      size="sm"
-                      title="Share"
-                      className="flex items-center gap-1"
-                    >
-                      <Share className="h-4 w-4" />
-                      <span className="text-sm">Share</span>
-                    </Button>
-                  </header>
-                  <div className="p-4 overflow-y-auto flex-1">
-                    <div className="space-y-4">
-                      {parameterOrder.map((key) => (
-                        <div key={key}>
-                          <label className="text-sm font-medium mb-2 block">{key}: {formatParameterType(key)}</label>
-                          <input
-                            type="text"
-                            value={inputs[key] || ''}
-                            onChange={(e) => handleInputChange(key, e.target.value)}
-                            className={`w-full px-3 py-2 bg-muted/50 border rounded text-sm focus:outline-none focus:ring-1 transition-colors ${inputValidationErrors[key]
-                              ? 'border-red-500/50 focus:ring-red-500/50'
-                              : 'border-border focus:ring-primary/50'
-                              }`}
-                            disabled={isRunning}
-                          />
-                          {inputValidationErrors[key] && (
-                            <p className="text-xs text-red-400 mt-1">{inputValidationErrors[key]}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </section>
-              </ResizablePanel>
-
-              {/* Resizable Handle */}
-              <ResizableHandle
-                className="bg-transparent border-transparent hover:bg-border/30 data-[resize-handle-active]:bg-primary/10 transition-all duration-200 after:opacity-50"
-              />
-
-              {/* Proof Output Panel */}
-              <ResizablePanel defaultSize={50} minSize={20}>
-                <section className="h-full flex flex-col" aria-label="Proof Output">
-                  <header className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/30 select-none">
-                    <div className="flex items-center gap-2">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <h2 className="text-sm font-medium">Output</h2>
-                    </div>
-                    <div className="flex gap-1">
-                      <Tooltip open={copiedItem === 'full-proof'}>
-                        <TooltipTrigger asChild>
+                        <div className="flex items-center">
                           <Button
+                            onClick={handleShareClick}
                             variant="ghost"
                             size="sm"
-                            onClick={() => proofData && handleCopy(JSON.stringify(proofData, null, 2), "full-proof")}
-                            disabled={!proofData}
+                            title="Share"
+                            className="flex items-center gap-1 h-7 px-2"
                           >
-                            <Copy className="h-3 w-3" />
+                            <Link2 className="h-4 w-4" />
+                            <span className="select-none" style={{ fontSize: '13px' }}>Share</span>
                           </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Copied!</p>
-                        </TooltipContent>
-                      </Tooltip>
+                        </div>
+                      </div>
+                    </header>
+
+                    {/* Code Editor */}
+                    <div className="flex-1">
+                      {activeFile === 'main.nr' ? (
+                        <NoirEditorWithHover
+                          ref={monacoEditorRef}
+                          value={files[activeFile]}
+                          onChange={(content) => {
+                            handleMainFileChange(content);
+                          }}
+                          disabled={isRunning}
+                          language={getFileLanguage(activeFile)}
+                          cargoToml={files["Nargo.toml"]}
+                          enableHeatmap={enableHeatmap}
+                          heatmapMetricType={heatmapMetricType}
+                          onComplexityReport={setComplexityReport}
+                        />
+                      ) : (
+                        <NoirEditor
+                          ref={monacoEditorRef}
+                          value={files[activeFile] || ''}
+                          onChange={(content) => {
+                            handleFileChange(activeFile, content);
+                          }}
+                          disabled={isRunning}
+                          language={getFileLanguage(activeFile)}
+                        />
+                      )}
+                    </div>
+                  </section>
+                </ResizablePanel>
+
+                {/* Resizable Handle between Editor and Console */}
+                <ResizableHandle
+                  className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
+                />
+
+                {/* Console Panel */}
+                <CollapsiblePanel
+                  id="console-panel"
+                  title="Console"
+                  icon={<Terminal className="h-4 w-4 text-primary" />}
+                  isExpanded={panelState.console}
+                  onToggle={() => togglePanel('console')}
+                  defaultSize={30}
+                  minSize={30}
+                  direction="vertical"
+                  headerActions={
+                    <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
+                        <Switch
+                          checked={proveAndVerify}
+                          onCheckedChange={setProveAndVerify}
+                          className="scale-75"
+                        />
+                        <span className="text-foreground">Prove & Verify</span>
+                      </div>
                       <Button
-                        variant="ghost"
+                        onClick={handleRun}
+                        disabled={isRunning}
+                        variant="default"
                         size="sm"
-                        onClick={handleDownloadProof}
-                        disabled={!proofData}
+                        className="h-8 px-6"
                       >
-                        <Download className="h-3 w-3" />
+                        Run
                       </Button>
                     </div>
-                  </header>
-                  <div className="p-4 overflow-y-auto flex-1">
-                    {proofData ? (
-                      <div className="space-y-3">
-                        {proofData.publicInputs && proofData.publicInputs.length > 0 && (
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-medium">Public Inputs</h3>
-                              <Tooltip open={copiedItem === 'public-inputs'}>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    onClick={() => handleCopy(JSON.stringify(proofData.publicInputs), "public-inputs")}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Copied!</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <div className="bg-muted/50 p-3 rounded text-xs font-mono space-y-1 overflow-x-auto">
-                              {proofData.publicInputs.map((input: string, i: number) => (
-                                <div key={i}>{input}</div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {proofData.witness && proofData.witness.length > 0 && (
-                          <div>
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-medium">Witness</h3>
-                              <Tooltip open={copiedItem === 'witness'}>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7 px-2 py-1"
-                                    onClick={() => {
-                                      const witnessHex = Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join('');
-                                      handleCopy(witnessHex, "witness");
-                                    }}
-                                  >
-                                    <Copy className="h-3 w-3" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p>Copied!</p>
-                                </TooltipContent>
-                              </Tooltip>
-                            </div>
-                            <div className="bg-muted/50 p-3 rounded text-xs font-mono overflow-x-auto whitespace-nowrap">
-                              {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                            </div>
-                          </div>
-                        )}
-
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Proof</h3>
-                            <Tooltip open={copiedItem === 'proof'}>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 px-2 py-1"
-                                  onClick={() => {
-                                    const proofHex = proofData.proof && proofData.proof.length > 0
-                                      ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                      : '';
-                                    handleCopy(proofHex, "proof");
-                                  }}
-                                >
-                                  <Copy className="h-3 w-3" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Copied!</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono overflow-x-auto whitespace-nowrap">
-                            {proofData.proof && proofData.proof.length > 0
-                              ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                              : 'No proof generated'}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Public Inputs</h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 py-1"
-                              disabled={true}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono text-muted-foreground">
-                            No public inputs
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Witness</h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 py-1"
-                              disabled={true}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono text-muted-foreground">
-                            No witness data
-                          </div>
-                        </div>
-
-                        <div>
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-sm font-medium">Proof</h3>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 py-1"
-                              disabled={true}
-                            >
-                              <Copy className="h-3 w-3" />
-                            </Button>
-                          </div>
-                          <div className="bg-muted/50 p-3 rounded text-xs font-mono text-muted-foreground">
-                            No proof generated
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                  }
+                >
+                  <div className="h-full flex flex-col" style={{ backgroundColor: '#100E0F' }}>
+                    <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
+                      {renderConsoleContent()}
+                    </div>
                   </div>
-                </section>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </ResizablePanel>
-        </ResizablePanelGroup>
-      </section>
+                </CollapsiblePanel>
+              </ResizablePanelGroup>
+            </ResizablePanel>
 
-      {/* Footer */}
-      <footer className="bg-muted/90 border-t border-border px-4 py-2 text-xs text-muted-foreground flex justify-between items-center shrink-0">
-        <span>Noir v1.0.0-beta.9 | Barretenberg v0.84.0</span>
-        <span>
-          Made by{" "}
-          <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            Andee
-          </a> {" "}
-          with ☕️
-          . Contribute on{" "}
-          <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-            GitHub
-          </a>
-        </span>
-      </footer>
-      
-      <ShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        code={files["main.nr"]}
-        inputs={inputs}
-        // No TOML file needed
-        proofData={proofData}
-      />
+            {/* Resizable Handle between Editor Area and Right Panel */}
+            <ResizableHandle
+              className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
+            />
+
+            {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
+            <ResizablePanel defaultSize={41} minSize={20}>
+              <section className="h-full flex flex-col" aria-label="Right Panel" ref={rightPanelRef}>
+                <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
+                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
+                    {rightPanelTabs.map((tab) => (
+                      <button
+                        key={tab.value}
+                        onClick={() => setRightPanelView(tab.value)}
+                        className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === tab.value
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        style={{ fontSize: '13px' }}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                </header>
+                <div className="overflow-y-auto flex-1 min-h-0" style={{ backgroundColor: '#100E0F' }}>
+                  {/* Inputs Panel */}
+                  <div className={rightPanelView === 'inputs' ? 'block' : 'hidden'}>
+                    <div className="p-4">
+                      {/* Inputs Section */}
+                      <div className="mb-6">
+                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Inputs</h3>
+                        {parameterOrder.length === 0 ? (
+                          <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                            No inputs
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            {parameterOrder.map((key) => (
+                              <div key={key}>
+                                <label className="font-medium mb-2 block select-none text-muted-foreground" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
+                                <input
+                                  type="text"
+                                  value={inputs[key] || ''}
+                                  onChange={(e) => handleInputChange(key, e.target.value)}
+                                  className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none ring-1 transition-colors font-mono ${inputValidationErrors[key]
+                                    ? 'border-red-500/50 focus:ring-red-500/50'
+                                    : 'border-border ring-border'
+                                    }`}
+                                  style={{ fontSize: '13px' }}
+                                  disabled={isRunning}
+                                />
+                                {inputValidationErrors[key] && (
+                                  <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Visual Separator */}
+                      <div className="border-t border-border my-4"></div>
+
+                      {/* Outputs Section */}
+                      <div>
+                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Outputs</h3>
+                        {proofData ? (
+                          <div className="space-y-4">
+                            {proofData.publicInputs && proofData.publicInputs.length > 0 && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                                  <button
+                                    onClick={() => handleCopyField(proofData.publicInputs!.join('\n'))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="bg-muted/50 border border-border rounded">
+                                  <div className="p-3 font-mono space-y-1 overflow-x-auto output-scrollbar" style={{ fontSize: '13px' }}>
+                                    {proofData.publicInputs.map((input: string, i: number) => (
+                                      <div key={i}>{input}</div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {proofData.returnValue && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
+                                  <button
+                                    onClick={() => handleCopyField(proofData.returnValue!)}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="bg-muted/50 border border-border rounded">
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
+                                    {proofData.returnValue}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {proofData.witness && proofData.witness.length > 0 && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
+                                  <button
+                                    onClick={() => handleCopyField(Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
+                                <div className="bg-muted/50 border border-border rounded">
+                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
+                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            <div>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
+                                {proofData.proof && proofData.proof.length > 0 && (
+                                  <button
+                                    onClick={() => handleCopyField(Array.from(proofData.proof!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
+                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
+                                    title="Copy to clipboard"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <div className="bg-muted/50 border border-border rounded">
+                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
+                                  {proofData.proof && proofData.proof.length > 0
+                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
+                                    : 'No proof generated'}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-4">
+                            <div>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No public inputs
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No return value
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No witness data
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
+                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
+                                No proof generated
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Profiler Panel */}
+                  <div className={rightPanelView === 'profiler' ? 'block' : 'hidden'}>
+                    <div className="flex flex-col">
+                      {/* Profiler Controls */}
+                      <div className="px-2 sm:px-4 py-3 border-b border-border bg-transparent">
+                        {/* Single row layout for normal width, 2-row for narrow */}
+                        <div className={`${rightPanelWidth > 320 ? 'flex' : 'hidden'} items-center justify-between`}>
+                          {/* Normal width: Single row layout */}
+                          <Button
+                            onClick={handleComplexityRefresh}
+                            disabled={isComplexityProfiling}
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 flex-shrink-0"
+                          >
+                            <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
+                          </Button>
+
+                          <div className="flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
+                            <button
+                              onClick={() => setComplexityViewMode('metrics')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Metrics
+                            </button>
+                            <button
+                              onClick={() => setComplexityViewMode('flamegraph')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Flamegraph
+                            </button>
+                          </div>
+
+                          <div className="flex items-center gap-2 select-none flex-shrink-0" style={{ fontSize: '13px' }}>
+                            <Switch
+                              checked={enableHeatmap}
+                              onCheckedChange={setEnableHeatmap}
+                              className="scale-75"
+                            />
+                            <span className="text-foreground">Heatmap</span>
+                          </div>
+                        </div>
+
+                        {/* Narrow width: Two row layout */}
+                        <div className={`${rightPanelWidth <= 320 ? 'block' : 'hidden'} space-y-2`}>
+                          <div className="flex items-center justify-between">
+                            <Button
+                              onClick={handleComplexityRefresh}
+                              disabled={isComplexityProfiling}
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2"
+                            >
+                              <RefreshCw className={`h-3 w-3 mr-1 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
+                              <span className="text-xs">Refresh</span>
+                            </Button>
+
+                            <div className="flex items-center gap-2 select-none" style={{ fontSize: '13px' }}>
+                              <Switch
+                                checked={enableHeatmap}
+                                onCheckedChange={setEnableHeatmap}
+                                className="scale-75"
+                              />
+                              <span className="text-foreground">Heatmap</span>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-center">
+                            <div className="flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
+                              <button
+                                onClick={() => setComplexityViewMode('metrics')}
+                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
+                                  ? 'text-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                              >
+                                Metrics
+                              </button>
+                              <button
+                                onClick={() => setComplexityViewMode('flamegraph')}
+                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
+                                  ? 'text-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                              >
+                                Flamegraph
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Complexity Analysis Panel */}
+                      <div>
+                        <CombinedComplexityPanel
+                          sourceCode={files[activeFile] || ''}
+                          cargoToml={files['Nargo.toml'] || ''}
+                          className=""
+                          enableHeatmap={enableHeatmap}
+                          viewMode={complexityViewMode}
+                          onViewModeChange={setComplexityViewMode}
+                          isProfiling={isComplexityProfiling}
+                          onProfilingStart={() => setIsComplexityProfiling(true)}
+                          onProfilingComplete={(result) => {
+                            setComplexityProfilerResult(result);
+                            setIsComplexityProfiling(false);
+                          }}
+                          onProfilingError={() => setIsComplexityProfiling(false)}
+                          profilerResult={complexityProfilerResult}
+                          onLineClick={(lineNumber) => {
+                            if (monacoEditorRef.current) {
+                              monacoEditorRef.current.setPosition({ lineNumber, column: 1 });
+                              monacoEditorRef.current.focus();
+                            }
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Benchmark Panel */}
+                  <div className={rightPanelView === 'benchmark' ? 'block' : 'hidden'}>
+                    <BenchmarkPanel
+                      sourceCode={files["main.nr"]}
+                      inputs={inputs}
+                      cargoToml={files["Nargo.toml"]}
+                      onConsoleMessage={addConsoleMessage}
+                      onClearConsole={clearConsoleMessages}
+                    />
+                  </div>
+
+                  {/* Inspector Panel */}
+                  <div className={rightPanelView === 'inspector' ? 'block h-full flex flex-col' : 'hidden'}>
+                    <DebugControlPanel
+                      sourceCode={files["main.nr"]}
+                      cargoToml={files["Nargo.toml"]}
+                      inputs={inputs}
+                    />
+                    <InspectorPanel className="flex-1" />
+                  </div>
+
+                </div>
+              </section>
+            </ResizablePanel>
+          </ResizablePanelGroup>
+        </section>
+
+        {/* Footer */}
+        <footer className="bg-muted/90 border-t border-border px-4 py-2 text-muted-foreground flex justify-between items-center shrink-0" style={{ fontSize: '13px' }}>
+          <span>Noir v1.0.0-beta.11 | Barretenberg v1.0.0</span>
+          <div className="flex items-center space-x-4">
+            <a href="https://x.com/andeebtceth" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <BsTwitterX className="h-4 w-4" />
+            </a>
+            <a href="https://github.com/0xandee/noir-playground" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+              <BsGithub className="h-4 w-4" />
+            </a>
+          </div>
+        </footer>
+
+        <ShareDialog
+          open={shareDialogOpen}
+          onOpenChange={setShareDialogOpen}
+          code={files["main.nr"]}
+          inputs={inputs}
+          cargoToml={files["Nargo.toml"]}
+          proofData={proofData}
+        />
       </main>
     </TooltipProvider>
   );

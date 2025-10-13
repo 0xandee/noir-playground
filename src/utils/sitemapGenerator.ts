@@ -46,7 +46,7 @@ export async function generateSitemap(options: SitemapOptions = {}): Promise<str
         });
       }
     } catch (error) {
-      console.warn('Failed to load snippets for sitemap generation:', error);
+      // Failed to load snippets for sitemap generation
     }
   }
 
@@ -100,7 +100,7 @@ async function getPublicSnippets(maxSnippets: number) {
     // For now, returning empty array as we don't have access to list all snippets
     return [];
   } catch (error) {
-    console.warn('Could not fetch public snippets:', error);
+    // Could not fetch public snippets
     return [];
   }
 }
@@ -131,9 +131,9 @@ export async function saveSitemapToPublic(sitemapXML: string, filename = 'sitema
       const sitemapPath = path.join(publicDir, filename);
       
       fs.writeFileSync(sitemapPath, sitemapXML, 'utf8');
-      console.log(`Sitemap saved to ${sitemapPath}`);
+      // Sitemap saved
     } catch (error) {
-      console.warn('Could not save sitemap - Node.js modules not available in browser environment');
+      // Could not save sitemap - Node.js modules not available in browser environment
     }
   }
 }

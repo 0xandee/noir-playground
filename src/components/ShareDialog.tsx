@@ -31,6 +31,8 @@ interface ShareDialogProps {
   code: string;
   /** Current input values */
   inputs: Record<string, any>;
+  /** Optional Nargo.toml configuration */
+  cargoToml?: string;
   /** Optional proof and witness data */
   proofData?: {
     proof?: Uint8Array;
@@ -43,6 +45,7 @@ export function ShareDialog({
   onOpenChange,
   code,
   inputs,
+  cargoToml,
   proofData,
 }: ShareDialogProps) {
   // State management
@@ -100,6 +103,7 @@ export function ShareDialog({
         title: title.trim(),
         code: code, // Always include code
         inputs: includeInputs ? inputs : {},
+        cargoToml: cargoToml || null, // Always include Nargo.toml if provided
         proof: includeProof && proofData?.proof ? proofData.proof : null,
         witness: includeWitness && proofData?.witness ? proofData.witness : null,
         publicInputs: includePublicInputs && proofData?.publicInputs ? proofData.publicInputs : null,
@@ -110,7 +114,7 @@ export function ShareDialog({
 
       // Pre-generate preview image for better SEO (fire-and-forget)
       previewService.preGenerateSharePreview(savedSnippet).catch(error => {
-        console.warn('Failed to pre-generate preview image:', error);
+        // Failed to pre-generate preview image
       });
 
       // Generate share URL
@@ -121,9 +125,7 @@ export function ShareDialog({
       // Automatically copy to clipboard
       await navigator.clipboard.writeText(url);
 
-      console.log('Snippet shared successfully with ID:', savedSnippet.id);
     } catch (err) {
-      console.error('Error sharing snippet:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to share snippet';
       
       
@@ -154,7 +156,7 @@ export function ShareDialog({
       setTimeout(() => setCopyFeedback(false), 1500);
       
     } catch (err) {
-      console.error('Failed to copy URL:', err);
+      // Failed to copy URL
     }
   };
 
@@ -298,7 +300,7 @@ export function ShareDialog({
                         title="Copy URL"
                       >
                         <Copy className={`h-4 w-4 ${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`} />
-                        <span className={`text-xs ${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <span className={`${copyFeedback ? 'text-green-500' : 'text-muted-foreground hover:text-foreground'}`} style={{fontSize: '13px'}}>
                           Copy link
                         </span>
                       </button>
@@ -308,7 +310,7 @@ export function ShareDialog({
                     </TooltipContent>
                   </Tooltip>
                 </div>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground" style={{fontSize: '13px'}}>
                   URL automatically copied to clipboard
                 </p>
               </div>

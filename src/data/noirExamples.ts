@@ -4,30 +4,27 @@ export interface NoirExample {
   description: string;
   code: string;
   inputs: Record<string, string>;
+  cargoToml?: string;
 }
 
 export const noirExamples: NoirExample[] = [
   {
     id: "playground",
     name: "Playground",
-    description: "The default playground with assertions",
+    description: "Default playground using nodash library - demonstrates server-side compilation with git dependencies",
     code: `pub fn main(x: Field, y: pub Field) -> pub Field {
-    // Verify that x and y are both non-zero
-    assert(x != 0);
-    assert(y != 0);
-    
-    // Compute the sum and verify it's greater than both inputs
-    let sum = x + y;
-    assert(sum as u64 > x as u64);
-    assert(sum as u64 > y as u64);
-    
-    // Return the sum as proof output
-    sum
+    nodash::poseidon2([x, y])
 }`,
     inputs: {
       x: "10",
       y: "25"
-    }
+    },
+    cargoToml: `[package]
+name = "playground"
+type = "bin"
+
+[dependencies]
+nodash = { git = "https://github.com/olehmisar/nodash", tag = "v0.42.0" }`
   },
   {
     id: "basic-types",
@@ -81,7 +78,7 @@ export const noirExamples: NoirExample[] = [
   },
   {
     id: "cryptographic",
-    name: "Cryptographic Example",
+    name: "Cryptographic",
     description: "Pedersen hash and merkle path verification",
     code: `pub fn main(
     secret: Field,
@@ -111,7 +108,7 @@ export const noirExamples: NoirExample[] = [
   },
   {
     id: "complex-structures",
-    name: "Complex Data Structures",
+    name: "Complex",
     description: "Multiple arrays and complex data types",
     code: `pub fn main(
     balance: u64,
@@ -130,5 +127,49 @@ export const noirExamples: NoirExample[] = [
       valid_txs: "[1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1]",
       timestamp: "1640995200"
     }
+  },
+  {
+    id: "with-dependencies",
+    name: "External Library",
+    description: "Using bignum library from GitHub - server natively resolves git dependencies with no CORS issues",
+    code: `// This example demonstrates using external Noir libraries
+// Server-side compilation handles git dependencies natively (no CORS!)
+// The bignum library and its transitive dependencies are automatically resolved
+use bignum;
+
+pub fn main(x: Field, y: pub Field) -> pub Field {
+    // The bignum library provides arbitrary-precision arithmetic operations
+    // This is a simple example that shows the library compiles successfully
+
+    // For demonstration, we'll just use basic Field operations
+    // Real bignum usage would involve creating BigNum instances for large numbers
+
+    // Basic computation
+    let result = x + y;
+
+    // You can explore bignum capabilities:
+    // - U256, U512, U1024, U2048, U4096, U8192 for different bit sizes
+    // - Field-specific operations for various elliptic curves
+    // - Modular arithmetic for cryptographic operations
+
+    result
+}`,
+    inputs: {
+      x: "100",
+      y: "200"
+    },
+    cargoToml: `[package]
+name = "playground"
+type = "bin"
+authors = [""]
+compiler_version = ">=1.0.0"
+
+[dependencies]
+# Bignum library for arbitrary-precision arithmetic
+bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }
+
+# Other available libraries:
+# poseidon = { tag = "v0.1.1", git = "https://github.com/noir-lang/poseidon" }
+# See https://github.com/noir-lang/awesome-noir for more libraries`
   }
 ];

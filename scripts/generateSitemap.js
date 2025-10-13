@@ -61,10 +61,9 @@ function generateSitemap() {
   
   try {
     fs.writeFileSync(sitemapPath, sitemapXML, 'utf8');
-    console.log(`✅ Sitemap generated successfully at ${sitemapPath}`);
-    console.log(`📊 Generated sitemap with ${urls.length} URLs`);
+    // Sitemap generated successfully
   } catch (error) {
-    console.error('❌ Failed to generate sitemap:', error);
+    // Failed to generate sitemap
     process.exit(1);
   }
 }
