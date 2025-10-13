@@ -58,7 +58,7 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
     await stopDebugSession();
   };
 
-  const handleStep = async (command: 'next' | 'stepIn' | 'stepOut' | 'continue') => {
+  const handleStep = async (command: 'next' | 'into' | 'out' | 'continue') => {
     const success = await executeStep(command);
 
     if (!success) {
@@ -122,7 +122,7 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
             </Button>
 
             <Button
-              onClick={() => handleStep('stepIn')}
+              onClick={() => handleStep('into')}
               disabled={isStepDisabled}
               variant="ghost"
               size="sm"
@@ -134,7 +134,7 @@ export const DebugControlPanel: React.FC<DebugControlPanelProps> = ({
             </Button>
 
             <Button
-              onClick={() => handleStep('stepOut')}
+              onClick={() => handleStep('out')}
               disabled={isStepDisabled}
               variant="ghost"
               size="sm"

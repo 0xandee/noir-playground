@@ -36,9 +36,9 @@ export interface StartDebugSessionResponse {
 }
 
 /**
- * Step command types
+ * Step command types (DAP-standard names)
  */
-export type StepCommand = 'next' | 'stepIn' | 'stepOut' | 'continue';
+export type StepCommand = 'next' | 'into' | 'out' | 'continue';
 
 /**
  * Request to execute a step command
