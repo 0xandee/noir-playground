@@ -1,13 +1,18 @@
+<div align="center">
+
 # 🔮 Noir Playground
 
 A browser-based Noir zero-knowledge proof development environment with Monaco editor integration.
 
 [![Noir](https://img.shields.io/badge/Noir-v1.0.0--beta.11-black?style=flat-square)](https://noir-lang.org/)
-[![Barretenberg](https://img.shields.io/badge/Barretenberg-v1.0.0-black?style=flat-square)](https://github.com/AztecProtocol/barretenberg)
+[![Barretenberg](https://img.shields.io/badge/Barretenberg-v1.0.0-black?style=flat-square)](https://github.com/AztecPro
+tocol/barretenberg)
 
 🚀 **[Live Demo](https://noir-playground.app)** | 📚 **[Documentation](./docs/noirjs-barretenberg-integration.md)**
 
-![Noir Playground Interface](./docs/playground-screenshot.png)
+</div>
+
+<img width="1404" height="912" alt="image" src="https://github.com/user-attachments/assets/750127f8-d976-468b-9bf5-0b71cbb7cee6" />
 
 ## Quick Start
 
@@ -52,24 +57,49 @@ npm run dev  # Runs on http://localhost:5173
 -   **Zero-knowledge proof** generation and verification using UltraHonkBackend
 
 ### Advanced Development Tools
--   **🐛 Interactive Debugging** - VSCode-style debugger with DAP (Debug Adapter Protocol) integration
-    -   Step-through execution (next/stepIn/stepOut/continue)
-    -   Breakpoint management with glyph margin controls
-    -   Real-time variable inspection and witness map viewing
-    -   ACIR opcode exploration at each execution step
--   **⚡ Dual Compilation Modes**
-    -   Server-side compilation (recommended): Native `nargo compile`, 2-5x faster, no CORS issues
-    -   WASM compilation (fallback): Browser-based, works without server
--   **📊 Circuit Complexity Profiling** with real-time heatmaps
-    -   Visual heat overlays showing ACIR opcodes, Brillig opcodes, and gate counts
-    -   Inline badges with per-line complexity metrics
-    -   Interactive hotspot navigator with click-to-jump functionality
--   **📦 External Library Support**
-    -   Git dependency resolution from GitHub (e.g., `noir-bignum`, `poseidon`)
-    -   Automatic recursive transitive dependency resolution
-    -   Intelligent IndexedDB caching (95% faster subsequent loads)
--   **🔗 Code Sharing** with dynamic SEO and social media previews
--   **Professional UI** with dark theme optimization and responsive design
+
+#### 🐛 Interactive Debugging
+
+<img width="1405" alt="Interactive debugging interface showing step controls, breakpoints, and variable inspection" 
+src="https://github.com/user-attachments/assets/78269aef-9d1d-47d0-ac86-883d36d3ec05" />
+
+VSCode-style debugger with DAP (Debug Adapter Protocol) integration:
+
+- **Step-through execution** - next/stepIn/stepOut/continue commands
+- **Breakpoint management** - Visual glyph margin controls
+- **Real-time inspection** - Variable values and witness map viewing
+
+---
+
+#### 📊 Circuit Complexity Profiling
+
+<img width="1407" alt="Circuit complexity heatmap showing color-coded line metrics and hotspot navigator" 
+src="https://github.com/user-attachments/assets/ee4a6d31-8404-4ec1-9ee2-c101cc44b3c2" />
+
+Real-time heatmap visualization with interactive analysis:
+
+- **Visual heat overlays** - ACIR opcodes, Brillig opcodes, and gate counts
+- **Inline metrics** - Per-line complexity badges with percentages
+- **Hotspot navigator** - Click-to-jump to high-complexity lines
+
+---
+
+#### 📦 External Library Support
+
+<img width="1407" alt="External library integration showing git dependency resolution and caching statistics" 
+src="https://github.com/user-attachments/assets/b52c0e5f-ffac-43c9-bbe8-ed27c554822d" />
+
+Seamless integration with Noir ecosystem libraries:
+
+- **Git dependencies** - Auto-resolve from GitHub (`noir-bignum`, `poseidon`, etc.)
+- **Recursive resolution** - Automatic transitive dependency handling
+- **Smart caching** - IndexedDB storage with 95% faster subsequent loads
+
+---
+
+#### **⚡ Dual Compilation Modes**
+-   Server-side compilation (recommended): Native `nargo compile`, 2-5x faster, no CORS issues
+-   WASM compilation (fallback): Browser-based, works without server
 
 ## Example
 
@@ -186,34 +216,14 @@ npm run dev  # Runs on port 5173, connects to server
     -   **Debug API**: DAP (Debug Adapter Protocol) implementation for interactive debugging
     -   **Docker Support**: Pre-built container with noir-profiler CLI and Barretenberg backend
 
-## Use Cases
-
--   **Learning Noir** - Interactive playground with instant feedback
--   **Prototyping ZK circuits** - Rapid iteration without local setup
--   **Teaching ZK concepts** - Visual workflow demonstration
--   **Experimenting** - Safe environment for testing ideas
-
-## Recent Additions
-
--   ✅ **Real-time circuit complexity metrics and heatmaps** - Visual heat overlays with per-line ACIR/Brillig/gate analysis
--   ✅ **Runtime witness value probing** - Interactive debugger with witness map inspection and variable viewing
--   ✅ **External library support with caching** - Git dependency resolution with IndexedDB caching (95% faster)
--   ✅ **Server-side compilation** - Native `nargo compile` integration with 2-5x performance boost
--   ✅ **Interactive debugging** - Full DAP implementation with breakpoints, step execution, and state inspection
-
 ## Roadmap
 
 -   [ ] **Interactive DAG renders of ACIR bytecodes** - Visual flowchart representation of compiled circuit logic
--   [ ] **Side-by-side constraint inspector** - Compare Noir source code with generated ACIR constraints line-by-line
--   [ ] **Circuit optimization analyzer** - Automated suggestions for reducing gate count and complexity
--   [ ] **VS Code extension integration** - Port core features to a native IDE extension for local development
--   [ ] **Collaborative editing** - Multi-user real-time code sharing and debugging sessions
-
-## Known Limitations
-
--   **Mobile support**: Monaco editor performance limitations require desktop browsers
--   **Dependency bundling**: Cannot preload Noir stdlib locally due to [noir#7823](https://github.com/noir-lang/noir/issues/7823)
--   **Private repositories**: Git dependency resolution only supports public GitHub repositories
+-   [x] **Real-time circuit complexity metrics and heatmaps** - Visual heat overlays with per-line ACIR/Brillig/gate analysis
+-   [x] **Runtime witness value probing** - Interactive debugger with witness map inspection and variable viewing
+-   [x] **Side-by-side constraint inspector** - Compare Noir source code with generated ACIR constraints line-by-line
+-   [x] **External Library Support** - Seamless integration with Noir ecosystem libraries
+-   [x] **Benchmark System** - Monitor execution, proving, and verification times
 
 ## UI Inspiration
 
