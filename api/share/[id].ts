@@ -1,12 +1,31 @@
 // Vercel Serverless Function for dynamic meta tags
 import { IncomingMessage, ServerResponse } from 'http';
 
+// Sanitization utilities to prevent XSS attacks
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function escapeJsonLd(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
 // Simple snippet data fetcher
 async function getSnippetData(id: string) {
   try {
     const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/shared_snippets?id=eq.${id}`, {
       headers: {
-        'apikey': process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
+        'apikey': process.env.SUPABASE_ANON_KEY || '',
         'Accept': 'application/json',
       },
     });
@@ -27,7 +46,7 @@ interface VercelRequest extends IncomingMessage {
 
 interface VercelResponse extends ServerResponse {
   status: (code: number) => VercelResponse;
-  json: (body: any) => void;
+  json: (body: unknown) => void;
   send: (body: string) => void;
   redirect: (code: number, url: string) => void;
   setHeader: (name: string, value: string) => void;
@@ -45,20 +64,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const isCrawler = /facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegram|slackbot|bot|crawler|spider/i.test(userAgent);
 
   if (isCrawler) {
+    // Compute dynamic base URL from request headers
+    const protocol = req.headers['x-forwarded-proto'] || 'https';
+    const host = req.headers.host || 'noir-playground.app';
+    const baseUrl = `${protocol}://${host}`;
+
     // Fetch snippet data
     const snippet = await getSnippetData(id);
 
+    // Sanitize snippet title to prevent XSS
+    const sanitizedTitle = snippet?.title ? escapeHtml(snippet.title) : '';
+    const sanitizedTitleJsonLd = snippet?.title ? escapeJsonLd(snippet.title) : '';
+
     // Generate meta tags
-    const title = snippet?.title
-      ? `${snippet.title} - Noir Code Snippet | Noir Playground`
+    const title = sanitizedTitle
+      ? `${sanitizedTitle} - Noir Code Snippet | Noir Playground`
       : 'Noir Code Snippet | Noir Playground';
 
     const description = snippet?.code
       ? `Explore this Noir zero-knowledge proof snippet. Interactive code with Monaco editor, compilation, and proof generation.`
       : 'Interactive browser-based environment for developing zero-knowledge proofs with Noir.';
 
-    const canonicalUrl = `https://noir-playground.app/share/${id}`;
-    const ogImage = 'https://noir-playground.app/noir-playground-og.png';
+    const canonicalUrl = `${baseUrl}/share/${id}`;
+    const ogImage = `${baseUrl}/noir-playground-og.png`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -95,7 +123,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     {
       "@context": "https://schema.org",
       "@type": "SoftwareSourceCode",
-      "name": "${snippet?.title || 'Noir Code Snippet'}",
+      "name": "${sanitizedTitleJsonLd || 'Noir Code Snippet'}",
       "description": "${description}",
       "url": "${canonicalUrl}",
       "programmingLanguage": "Noir",
@@ -112,7 +140,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         <div style="text-align: center;">
           <h1>${title}</h1>
           <p>Loading Noir Playground...</p>
-          <p><a href="https://noir-playground.app">Visit Noir Playground</a></p>
+          <p><a href="${baseUrl}">Visit Noir Playground</a></p>
         </div>
       </div>
     </div>
@@ -121,7 +149,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     <script>
       // Only redirect if not a bot/crawler
       if (!/bot|crawler|spider|crawling|facebookexternalhit|twitterbot/i.test(navigator.userAgent)) {
-        window.location.href = 'https://noir-playground.app/share/${id}';
+        window.location.href = '${baseUrl}/share/${id}';
       }
     </script>
   </body>
@@ -133,5 +161,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   // For regular users, redirect to the React app
-  res.redirect(302, `https://noir-playground.app/share/${id}`);
+  const protocol = req.headers['x-forwarded-proto'] || 'https';
+  const host = req.headers.host || 'noir-playground.app';
+  const baseUrl = `${protocol}://${host}`;
+  res.redirect(302, `${baseUrl}/share/${id}`);
 }

@@ -1,8 +1,28 @@
 // Netlify Function for dynamic meta tags
+
+// Sanitization utilities to prevent XSS attacks
+function escapeHtml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function escapeJsonLd(text) {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\t/g, '\\t');
+}
+
 exports.handler = async (event, context) => {
   const { path } = event;
   const id = path.split('/').pop();
-  
+
   if (!id) {
     return {
       statusCode: 404,
@@ -15,18 +35,23 @@ exports.handler = async (event, context) => {
   const isCrawler = /facebookexternalhit|twitterbot|linkedinbot|whatsapp|telegram|slackbot|bot|crawler|spider/i.test(userAgent);
   
   if (isCrawler) {
+    // Compute dynamic base URL from request headers
+    const protocol = event.headers['x-forwarded-proto'] || 'https';
+    const host = event.headers.host || 'noir-playground.app';
+    const baseUrl = `${protocol}://${host}`;
+
     // For crawlers, serve HTML with dynamic meta tags
     let snippet = null;
-    
+
     try {
       // Fetch snippet data from Supabase
       const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/shared_snippets?id=eq.${id}`, {
         headers: {
-          'apikey': process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '',
+          'apikey': process.env.SUPABASE_ANON_KEY || '',
           'Accept': 'application/json',
         },
       });
-      
+
       if (response.ok) {
         const data = await response.json();
         snippet = data[0] || null;
@@ -34,18 +59,22 @@ exports.handler = async (event, context) => {
     } catch (error) {
       console.error('Error fetching snippet:', error);
     }
-    
+
+    // Sanitize snippet title to prevent XSS
+    const sanitizedTitle = snippet?.title ? escapeHtml(snippet.title) : '';
+    const sanitizedTitleJsonLd = snippet?.title ? escapeJsonLd(snippet.title) : '';
+
     // Generate meta tags
-    const title = snippet?.title 
-      ? `${snippet.title} - Noir Code Snippet | Noir Playground`
+    const title = sanitizedTitle
+      ? `${sanitizedTitle} - Noir Code Snippet | Noir Playground`
       : 'Noir Code Snippet | Noir Playground';
-      
-    const description = snippet?.code 
+
+    const description = snippet?.code
       ? `Explore this Noir zero-knowledge proof snippet. Interactive code with Monaco editor, compilation, and proof generation.`
       : 'Interactive browser-based environment for developing zero-knowledge proofs with Noir.';
-      
-    const canonicalUrl = `https://noir-playground.app/share/${id}`;
-    const ogImage = 'https://noir-playground.app/noir-playground-og.png';
+
+    const canonicalUrl = `${baseUrl}/share/${id}`;
+    const ogImage = `${baseUrl}/noir-playground-og.png`;
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -82,7 +111,7 @@ exports.handler = async (event, context) => {
     {
       "@context": "https://schema.org",
       "@type": "SoftwareSourceCode",
-      "name": "${snippet?.title || 'Noir Code Snippet'}",
+      "name": "${sanitizedTitleJsonLd || 'Noir Code Snippet'}",
       "description": "${description}",
       "url": "${canonicalUrl}",
       "programmingLanguage": "Noir",
@@ -99,16 +128,16 @@ exports.handler = async (event, context) => {
         <div style="text-align: center;">
           <h1>${title}</h1>
           <p>Loading Noir Playground...</p>
-          <p><a href="https://noir-playground.app">Visit Noir Playground</a></p>
+          <p><a href="${baseUrl}">Visit Noir Playground</a></p>
         </div>
       </div>
     </div>
-    
+
     <!-- Redirect script for human users -->
     <script>
       // Only redirect if not a bot/crawler
       if (!/bot|crawler|spider|crawling|facebookexternalhit|twitterbot/i.test(navigator.userAgent)) {
-        window.location.href = 'https://noir-playground.app/share/${id}';
+        window.location.href = '${baseUrl}/share/${id}';
       }
     </script>
   </body>
@@ -123,12 +152,15 @@ exports.handler = async (event, context) => {
       body: html
     };
   }
-  
+
   // For regular users, redirect to the React app
+  const protocol = event.headers['x-forwarded-proto'] || 'https';
+  const host = event.headers.host || 'noir-playground.app';
+  const baseUrl = `${protocol}://${host}`;
   return {
     statusCode: 302,
     headers: {
-      'Location': `https://noir-playground.app/share/${id}`
+      'Location': `${baseUrl}/share/${id}`
     }
   };
 };
