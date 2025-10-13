@@ -5,8 +5,7 @@
 A browser-based Noir zero-knowledge proof development environment with Monaco editor integration.
 
 [![Noir](https://img.shields.io/badge/Noir-v1.0.0--beta.11-black?style=flat-square)](https://noir-lang.org/)
-[![Barretenberg](https://img.shields.io/badge/Barretenberg-v1.0.0-black?style=flat-square)](https://github.com/AztecPro
-tocol/barretenberg)
+[![Barretenberg](https://img.shields.io/badge/Barretenberg-v1.0.0-black?style=flat-square)](https://github.com/AztecProtocol/barretenberg)
 
 🚀 **[Live Demo](https://noir-playground.app)** | 📚 **[Documentation](./docs/noirjs-barretenberg-integration.md)**
 
