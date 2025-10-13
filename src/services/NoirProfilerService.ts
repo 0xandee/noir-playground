@@ -76,10 +76,8 @@ export class NoirProfilerService {
    */
   private getCompiler() {
     if (this.useServerCompiler) {
-      console.log('[NoirProfilerService] Using server-side compiler for profiling');
       return noirServerCompiler;
     } else {
-      console.log('[NoirProfilerService] Using WASM compiler for profiling');
       return noirWasmCompiler;
     }
   }
@@ -99,7 +97,6 @@ export class NoirProfilerService {
       // Use the selected compiler (server or WASM based on configuration)
       const compiler = this.getCompiler();
       const compilerType = this.useServerCompiler ? 'server' : 'WASM';
-      console.log(`[NoirProfilerService] Compiling with ${compilerType} compiler for profiling...`);
 
       const compilationResult = await compiler.compileProgram(request.sourceCode, cargoTomlToUse);
 
@@ -379,13 +376,11 @@ export class NoirProfilerService {
    */
   private generateOpcodeConsoleTable(complexityReport: CircuitComplexityReport, serverMetrics?: { totalAcirOpcodes: number; totalBrilligOpcodes: number; totalGates: number }): void {
     if (!complexityReport || !complexityReport.files?.length) {
-      console.warn('No complexity report data available for console table');
       return;
     }
 
     const fileMetrics = complexityReport.files[0];
     if (!fileMetrics?.lines?.length) {
-      console.warn('No line metrics available for console table');
       return;
     }
 

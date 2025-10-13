@@ -43,10 +43,8 @@ export class NoirService {
    */
   private getCompiler() {
     if (this.useServerCompiler) {
-      console.log('[NoirService] Using server-side compiler');
       return noirServerCompiler;
     } else {
-      console.log('[NoirService] Using WASM compiler');
       return noirWasmCompiler;
     }
   }
@@ -359,7 +357,7 @@ export class NoirService {
         return bytecode.length;
       }
     } catch (error) {
-      console.warn('Failed to extract circuit size:', error);
+      // Failed to extract circuit size
     }
 
     return undefined;

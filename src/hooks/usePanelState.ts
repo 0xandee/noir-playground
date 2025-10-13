@@ -27,7 +27,6 @@ export function usePanelState() {
         setPanelState({ ...defaultPanelState, ...parsedState });
       }
     } catch (error) {
-      console.warn('Failed to load panel states from localStorage:', error);
     }
   }, []);
 
@@ -36,7 +35,6 @@ export function usePanelState() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(panelState));
     } catch (error) {
-      console.warn('Failed to save panel states to localStorage:', error);
     }
   }, [panelState]);
 

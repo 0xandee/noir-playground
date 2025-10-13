@@ -30,7 +30,6 @@ export function CacheManagementPanel() {
       const cacheStats = await dependencyCacheService.getStats();
       setStats(cacheStats);
     } catch (error) {
-      console.error('Failed to load cache stats:', error);
       toast.error('Failed to load cache statistics');
     } finally {
       setIsLoading(false);
@@ -47,7 +46,6 @@ export function CacheManagementPanel() {
       await loadStats(); // Reload stats after clearing
       toast.success('Cache cleared successfully');
     } catch (error) {
-      console.error('Failed to clear cache:', error);
       toast.error('Failed to clear cache');
     } finally {
       setIsLoading(false);

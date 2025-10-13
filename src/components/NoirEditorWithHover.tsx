@@ -5,6 +5,7 @@ import { LineAnalysisService, LineAnalysisResult } from '@/services/LineAnalysis
 import { HeatmapDecorationService, DecorationOptions } from '@/services/HeatmapDecorationService';
 import { NoirProfilerService } from '@/services/NoirProfilerService';
 import { CircuitComplexityReport, MetricType, MetricsDelta, ExpressionMetrics, LineMetrics } from '@/types/circuitMetrics';
+import { useDebug } from '@/contexts/DebugContext';
 
 interface NoirEditorWithHoverProps {
   value: string;
@@ -172,6 +173,11 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
   const hoverProviderRegistered = useRef<boolean>(false);
   const decorationIds = useRef<string[]>([]);
 
+  // Debug context for current line highlighting and breakpoints
+  const { currentLine, isDebugging, breakpoints, toggleBreakpoint } = useDebug();
+  const debugLineDecorationIds = useRef<string[]>([]);
+  const breakpointDecorationIds = useRef<string[]>([]);
+
   // New heatmap-related state and services
   const heatmapService = useRef<HeatmapDecorationService>(new HeatmapDecorationService());
   const profilerService = useRef<NoirProfilerService>(new NoirProfilerService());
@@ -182,6 +188,7 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
   // Refs to track current state for hover provider
   const enableHeatmapRef = useRef(enableHeatmap);
   const complexityReportRef = useRef(complexityReport);
+  const breakpointsRef = useRef(breakpoints);
 
   // Expose editor ref to parent
   useImperativeHandle(ref, () => editorRef.current);
@@ -194,6 +201,10 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
   useEffect(() => {
     complexityReportRef.current = complexityReport;
   }, [complexityReport]);
+
+  useEffect(() => {
+    breakpointsRef.current = breakpoints;
+  }, [breakpoints]);
 
   // Value prop logging removed
 
@@ -236,7 +247,6 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
 
           heatmapService.current.applyHeatmapDecorations(report, decorationOptions, undefined, 'main.nr');
         } catch (decorationError) {
-          console.warn('Failed to apply heatmap decorations:', decorationError);
           // Continue without heatmap decorations
         }
       }
@@ -450,6 +460,55 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
       .monaco-hover .monaco-scrollable-element > .scrollbar {
         display: none !important;
       }
+
+      /* Debug current line highlighting */
+      .debug-current-line {
+        background-color: rgba(255, 204, 0, 0.15) !important;
+        border-left: 3px solid #ffcc00 !important;
+      }
+
+      /* Breakpoint decorations */
+      .breakpoint-glyph {
+        background-color: #e51400 !important;
+        border-radius: 50% !important;
+        width: 10px !important;
+        height: 10px !important;
+        margin-left: 7px !important;  /* Horizontal alignment with line numbers */
+        margin-top: 5px !important;   /* Vertical centering: (21px line-height - 10px) / 2 */
+        cursor: pointer !important;    /* Show pointer cursor on breakpoint itself */
+      }
+
+      .breakpoint-unverified-glyph {
+        background-color: #888 !important;
+        border: 1px solid #555 !important;
+        border-radius: 50% !important;
+        width: 10px !important;
+        height: 10px !important;
+        margin-left: 7px !important;  /* Horizontal alignment with line numbers */
+        margin-top: 5px !important;   /* Vertical centering: (21px line-height - 10px) / 2 */
+        cursor: pointer !important;    /* Show pointer cursor on breakpoint itself */
+      }
+
+      /* Breakpoint hover placeholder - shows where users can place breakpoints */
+      /* Add pointer cursor to entire glyph margin area */
+      .monaco-editor .glyph-margin {
+        cursor: pointer !important;
+      }
+
+      .monaco-editor .margin-view-overlays {
+        cursor: pointer !important;
+      }
+
+      /* Hover placeholder for breakpoints (applied via JavaScript) */
+      .breakpoint-hover-placeholder {
+        background-color: rgba(229, 20, 0, 0.3) !important;
+        border-radius: 50% !important;
+        width: 10px !important;
+        height: 10px !important;
+        margin-left: 7px !important;
+        margin-top: 5px !important;
+        cursor: pointer !important;    /* Show pointer cursor on hover placeholder */
+      }
     `;
     document.head.appendChild(style);
 
@@ -514,9 +573,31 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
       hoverProviderRegistered.current = true;
     }
 
-    // Add click handler for line analysis
+    // Add hover effect for breakpoint placeholder using mouse move
+    let hoverDecorationIds: string[] = [];
+    let lastHoveredLine: number | null = null;
+
+    // Add click handler for breakpoints in glyph margin
     editor.onMouseDown((e) => {
-      if (e.target.position) {
+      // Check if click is in glyph margin (where breakpoints are shown)
+      if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
+        if (e.target.position) {
+          const lineNumber = e.target.position.lineNumber;
+
+          // Clear hover decoration immediately when clicking
+          const model = editor.getModel();
+          if (model && hoverDecorationIds.length > 0) {
+            model.deltaDecorations(hoverDecorationIds, []);
+            hoverDecorationIds = [];
+            lastHoveredLine = null;
+          }
+
+          // Toggle breakpoint at this line
+          toggleBreakpoint(lineNumber);
+          e.event.stopPropagation();
+        }
+      } else if (e.target.position) {
+        // Handle line analysis click for other areas
         const lineNumber = e.target.position.lineNumber;
         const lineText = editor.getModel()?.getLineContent(lineNumber) || '';
 
@@ -531,6 +612,47 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
           }).catch(error => {
             // Click analysis failed
           });
+        }
+      }
+    });
+
+    editor.onMouseMove((e) => {
+      const model = editor.getModel();
+      if (!model) return;
+
+      // Check if mouse is in glyph margin
+      if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
+        const lineNumber = e.target.position?.lineNumber;
+
+        if (lineNumber && lineNumber !== lastHoveredLine) {
+          // Clear previous hover decoration
+          if (hoverDecorationIds.length > 0) {
+            model.deltaDecorations(hoverDecorationIds, []);
+            hoverDecorationIds = [];
+          }
+
+          // Don't show hover if breakpoint already exists on this line (use ref for current value)
+          const hasBreakpoint = breakpointsRef.current.some(bp => bp.line === lineNumber);
+          if (!hasBreakpoint) {
+            // Add hover decoration
+            hoverDecorationIds = model.deltaDecorations([], [{
+              range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+              options: {
+                isWholeLine: false,
+                glyphMarginClassName: 'breakpoint-hover-placeholder',
+                stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+              }
+            }]);
+          }
+
+          lastHoveredLine = lineNumber;
+        }
+      } else {
+        // Mouse left glyph margin, clear hover decoration
+        if (hoverDecorationIds.length > 0) {
+          model.deltaDecorations(hoverDecorationIds, []);
+          hoverDecorationIds = [];
+          lastHoveredLine = null;
         }
       }
     });
@@ -610,7 +732,6 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
         heatmapService.current.clearDecorations();
       }
     } catch (error) {
-      console.warn('Failed to apply heatmap configuration changes:', error);
     }
   }, [enableHeatmap, heatmapMetricType, heatmapThreshold, showInlineMetrics, showGutterHeat, complexityReport]);
 
@@ -620,6 +741,97 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
       scheduleHeatmapUpdate(value);
     }
   }, [cargoToml, enableHeatmap, value, scheduleHeatmapUpdate]);
+
+  // Effect to display breakpoint indicators in gutter
+  useEffect(() => {
+    if (!editorRef.current) return;
+
+    const model = editorRef.current.getModel();
+    if (!model) return;
+
+    // Clear existing breakpoint decorations
+    if (breakpointDecorationIds.current.length > 0) {
+      model.deltaDecorations(breakpointDecorationIds.current, []);
+      breakpointDecorationIds.current = [];
+    }
+
+    // Create decorations for each breakpoint
+    const decorations = breakpoints.map(bp => ({
+      range: new monaco.Range(bp.line, 1, bp.line, 1),
+      options: {
+        isWholeLine: false,
+        glyphMarginClassName: bp.verified === false
+          ? 'breakpoint-unverified-glyph'
+          : 'breakpoint-glyph',
+        stickiness: monaco.editor.TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges
+      }
+    }));
+
+    // Apply breakpoint decorations
+    if (decorations.length > 0) {
+      const newDecorationIds = model.deltaDecorations([], decorations);
+      breakpointDecorationIds.current = newDecorationIds;
+    }
+  }, [breakpoints]);
+
+  // Effect to highlight current debug line
+  useEffect(() => {
+    try {
+      // Validation: Check if editor is mounted
+      if (!editorRef.current) {
+        return;
+      }
+
+      const model = editorRef.current.getModel();
+      if (!model) {
+        return;
+      }
+
+      // Clear existing debug line decorations
+      if (debugLineDecorationIds.current.length > 0) {
+        try {
+          model.deltaDecorations(debugLineDecorationIds.current, []);
+          debugLineDecorationIds.current = [];
+        } catch (clearError) {
+          // Reset the decoration IDs even if clearing failed
+          debugLineDecorationIds.current = [];
+        }
+      }
+
+      // Apply debug line decoration if debugging and currentLine is set
+      if (isDebugging && currentLine !== null && currentLine > 0) {
+
+        // Validate line number is within bounds
+        const lineCount = model.getLineCount();
+        if (currentLine > lineCount) {
+          return;
+        }
+
+        const decoration = {
+          range: new monaco.Range(currentLine, 1, currentLine, 1),
+          options: {
+            isWholeLine: true,
+            className: 'debug-current-line',
+            overviewRuler: {
+              color: '#ffcc00',
+              position: monaco.editor.OverviewRulerLane.Full
+            }
+          }
+        };
+
+        try {
+          const newDecorationIds = model.deltaDecorations([], [decoration]);
+          debugLineDecorationIds.current = newDecorationIds;
+
+          // Scroll to the current line and center it
+          editorRef.current.revealLineInCenter(currentLine, monaco.editor.ScrollType.Smooth);
+        } catch (decorationError) {
+        }
+      } else {
+      }
+    } catch (error) {
+    }
+  }, [currentLine, isDebugging]);
 
   // Cleanup caches when component unmounts
   useEffect(() => {
@@ -665,7 +877,11 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
           hover: {
             enabled: true,
             delay: 300
-          }
+          },
+          // Enable glyph margin for debug indicators (breakpoints, current line marker)
+          glyphMargin: true,
+          // Enable overview ruler lanes for debug position markers
+          overviewRulerLanes: 3
         }}
       />
 

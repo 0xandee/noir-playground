@@ -148,13 +148,11 @@ export class BenchmarkService {
         (step: ExecutionStep) => {
           // Safety check for step
           if (!step) {
-            console.warn('BenchmarkService: Received undefined/null step from NoirService');
             return;
           }
 
           // Check step structure and status
           if (typeof step !== 'object' || !('status' in step) || !step.status) {
-            console.warn('BenchmarkService: Invalid step structure:', step);
             return;
           }
 
@@ -231,7 +229,6 @@ export class BenchmarkService {
   private mapExecutionStepToStage(message: string): StageName | null {
     // Safety check for message
     if (!message || typeof message !== 'string') {
-      console.warn('BenchmarkService: Invalid message provided to mapExecutionStepToStage', message);
       return null;
     }
 
@@ -256,13 +253,11 @@ export class BenchmarkService {
   ): number {
     // Safety check to ensure step and stage are defined
     if (!step || !stage) {
-      console.warn('BenchmarkService: Invalid step or stage provided to updateStageFromStep');
       return lastCumulativeTime;
     }
 
     // Safety check for step.status
     if (!step.status) {
-      console.warn('BenchmarkService: ExecutionStep missing status property', step);
       return lastCumulativeTime;
     }
 
@@ -423,10 +418,6 @@ export class BenchmarkService {
       if (!currentStage || !baselineStage ||
           typeof currentStage.avgTime !== 'number' ||
           typeof baselineStage.avgTime !== 'number') {
-        console.warn(`BenchmarkService: Invalid stage data for comparison: ${stageName}`, {
-          currentStage,
-          baselineStage
-        });
         return {
           stage: stageName,
           timeDelta: 0,

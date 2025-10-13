@@ -71,13 +71,11 @@ export class HeatmapDecorationService {
     const fileMetrics = this.findMatchingFileMetrics(report.files, currentFileName);
 
     if (!fileMetrics) {
-      console.warn(`No metrics found for file: ${currentFileName}, skipping heatmap decorations`);
       return;
     }
 
     // Validate file metrics structure
     if (!fileMetrics.lines || !Array.isArray(fileMetrics.lines)) {
-      console.warn('Invalid file metrics structure, skipping heatmap decorations');
       return;
     }
 
@@ -129,7 +127,6 @@ export class HeatmapDecorationService {
     if (currentFileName !== 'main.nr') {
       match = files.find(file => file.fileName === 'main.nr' || file.fileName.endsWith('/main.nr'));
       if (match) {
-        console.warn(`File ${currentFileName} not found, using main.nr as fallback`);
         return match;
       }
     }
@@ -153,7 +150,6 @@ export class HeatmapDecorationService {
       .filter((line: LineMetrics) => {
         // Ensure line has required properties
         if (!line || typeof line.normalizedHeat !== 'number') {
-          console.warn('Line metrics missing normalizedHeat property:', line);
           return false;
         }
         // For inline decorations, show lines with any opcodes regardless of threshold
@@ -208,7 +204,6 @@ export class HeatmapDecorationService {
       .filter(data => {
         // Validate line number is within bounds
         if (data.lineNumber < 1 || data.lineNumber > lineCount) {
-          console.warn(`Invalid line number ${data.lineNumber} for gutter decoration. Valid range: 1-${lineCount}`);
           return false;
         }
         return true;
@@ -217,8 +212,7 @@ export class HeatmapDecorationService {
         return {
           range: new monaco.Range(data.lineNumber, 1, data.lineNumber, 1),
           options: {
-            isWholeLine: false,
-            glyphMarginClassName: `heatmap-gutter-${this.getHeatLevel(data.heatValue)}`
+            isWholeLine: false
           }
         };
       });
@@ -244,7 +238,6 @@ export class HeatmapDecorationService {
       .filter(data => {
         // Validate line number is within bounds
         if (data.lineNumber < 1 || data.lineNumber > lineCount) {
-          console.warn(`Invalid line number ${data.lineNumber} for heatmap decoration. Valid range: 1-${lineCount}`);
           return false;
         }
         return true;
@@ -556,14 +549,6 @@ export class HeatmapDecorationService {
       const backgroundColorWithOpacity = `rgba(${baseColor}, ${backgroundOpacity})`;
 
       return `
-        /* Gutter heat indicators for ${level} */
-        .heatmap-gutter-${level}::before {
-          content: "▌";
-          color: ${colorWithOpacity};
-          font-weight: bold;
-          font-size: 13px;
-        }
-
         /* Inline metric badges for ${level} */
         .heatmap-inline-${level} {
           color: ${colorWithOpacity} !important;

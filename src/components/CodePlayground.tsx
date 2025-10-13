@@ -31,6 +31,7 @@ import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
 import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
+import { DebugControlPanel, InspectorPanel } from "./debug";
 import * as monaco from 'monaco-editor';
 
 interface CodePlaygroundProps {
@@ -52,19 +53,43 @@ const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
-    "main.nr": initialCode || `use bignum;
+    "main.nr": initialCode || `pub fn main(
+    x: Field,
+    y: pub Field
+) -> pub Field {
+    // Main function - demonstrates function calls for step debugging
+    let sum = add(x, y);
+    let product = multiply(x, y);
+    let result = compute_final(sum, product);
+    result
+}
 
-pub fn main(x: Field, y: pub Field) -> pub Field {
-    x + y
+fn add(a: Field, b: Field) -> Field {
+    // Helper function: Addition
+    let result = a + b;
+    result
+}
+
+fn multiply(a: Field, b: Field) -> Field {
+    // Helper function: Multiplication
+    let result = a * b;
+    result
+}
+
+fn compute_final(sum: Field, product: Field) -> Field {
+    // Helper function: Final computation
+    let adjusted = sum + product;
+    let final_value = adjusted * 2;
+    assert(final_value != 0);
+    final_value
 }`,
     "Nargo.toml": initialCargoToml || `[package]
-name = "playground"
+name = "debug_test"
 type = "bin"
 authors = [""]
 compiler_version = ">=1.0.0"
 
-[dependencies]
-bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
+[dependencies]`
   });
   const [isRunning, setIsRunning] = useState(false);
   const [proveAndVerify, setProveAndVerify] = useState(true);
@@ -76,7 +101,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
     returnValue?: string;
     witness?: Uint8Array;
   } | null>(initialProofData || null);
-  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "25" });
+  const [inputs, setInputs] = useState<Record<string, string>>(initialInputs || { x: "10", y: "5" });
   const [inputTypes, setInputTypes] = useState<Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>>({
     x: { type: "Field", isPublic: false },
     y: { type: "Field", isPublic: true }
@@ -90,12 +115,13 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'inspector'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
   const rightPanelTabs = [
     { value: 'inputs' as const, label: 'Input/Output' },
+    { value: 'inspector' as const, label: 'Debugger' },
     { value: 'profiler' as const, label: 'Profiler' },
     { value: 'benchmark' as const, label: 'Benchmark' }
   ];
@@ -310,7 +336,6 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
     try {
       await navigator.clipboard.writeText(content);
     } catch (err) {
-      console.error('Failed to copy:', err);
     }
   };
 
@@ -554,7 +579,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
                     <header className="" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
                       {/* File Tabs */}
                       <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
-                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
+                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
                           {Object.keys(files).map((filename) => (
                             <button
                               key={filename}
@@ -670,7 +695,7 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
             <ResizablePanel defaultSize={41} minSize={20}>
               <section className="h-full flex flex-col" aria-label="Right Panel" ref={rightPanelRef}>
                 <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
-                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm scrollbar-thin scrollbar-track-transparent scrollbar-thumb-muted-foreground/20 hover:scrollbar-thumb-muted-foreground/40" style={{ backgroundColor: '#191819' }}>
+                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
                     {rightPanelTabs.map((tab) => (
                       <button
                         key={tab.value}
@@ -986,6 +1011,16 @@ bignum = { tag = "v0.8.0", git = "https://github.com/noir-lang/noir-bignum" }`
                       onConsoleMessage={addConsoleMessage}
                       onClearConsole={clearConsoleMessages}
                     />
+                  </div>
+
+                  {/* Inspector Panel */}
+                  <div className={rightPanelView === 'inspector' ? 'block h-full flex flex-col' : 'hidden'}>
+                    <DebugControlPanel
+                      sourceCode={files["main.nr"]}
+                      cargoToml={files["Nargo.toml"]}
+                      inputs={inputs}
+                    />
+                    <InspectorPanel className="flex-1" />
                   </div>
 
                 </div>

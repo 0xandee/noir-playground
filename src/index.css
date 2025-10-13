@@ -156,4 +156,27 @@ All colors MUST be HSL.
     scrollbar-width: thin;
     scrollbar-color: rgba(128, 128, 128, 0.3) transparent;
   }
+
+  /* Tab navigation scrollbar - extra subtle */
+  .tab-scrollbar::-webkit-scrollbar {
+    height: 5px;
+  }
+
+  .tab-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .tab-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(128, 128, 128, 0.15);
+    border-radius: 3px;
+  }
+
+  .tab-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(128, 128, 128, 0.25);
+  }
+
+  .tab-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.15) transparent;
+  }
 }
