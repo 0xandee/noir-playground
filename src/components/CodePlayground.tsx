@@ -31,8 +31,6 @@ import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
 import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
-import { WitnessInspectorPanel } from "./witness/WitnessInspectorPanel";
-import { ConstraintVisualizerPanel } from "./constraint-visualizer";
 import { DebugControlPanel, InspectorPanel } from "./debug";
 import * as monaco from 'monaco-editor';
 
@@ -114,7 +112,7 @@ compiler_version = ">=1.0.0"
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'witness' | 'visualizer' | 'inspector'>('inputs');
+  const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'inspector'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
@@ -122,8 +120,6 @@ compiler_version = ">=1.0.0"
     { value: 'inputs' as const, label: 'Input/Output' },
     { value: 'profiler' as const, label: 'Profiler' },
     { value: 'benchmark' as const, label: 'Benchmark' },
-    { value: 'witness' as const, label: 'Witness Inspector' },
-    { value: 'visualizer' as const, label: 'Constraint Visualizer' },
     { value: 'inspector' as const, label: 'Inspector' }
   ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
@@ -1012,23 +1008,6 @@ compiler_version = ">=1.0.0"
                       cargoToml={files["Nargo.toml"]}
                       onConsoleMessage={addConsoleMessage}
                       onClearConsole={clearConsoleMessages}
-                    />
-                  </div>
-
-                  {/* Witness Inspector Panel */}
-                  <div className={rightPanelView === 'witness' ? 'block' : 'hidden'}>
-                    <WitnessInspectorPanel
-                      sourceCode={files["main.nr"]}
-                      cargoToml={files["Nargo.toml"]}
-                      witness={proofData?.witness}
-                    />
-                  </div>
-
-                  {/* Constraint Visualizer Panel */}
-                  <div className={rightPanelView === 'visualizer' ? 'block' : 'hidden'}>
-                    <ConstraintVisualizerPanel
-                      sourceCode={files["main.nr"]}
-                      cargoToml={files["Nargo.toml"]}
                     />
                   </div>
 
