@@ -5,7 +5,9 @@ import { RefreshCw, Info, BarChart3, Table, Activity } from 'lucide-react';
 import { SVGFlamegraphViewer } from './SVGFlamegraphViewer';
 import { CircuitMetrics } from './CircuitMetrics';
 import { ComplexityTableView } from './ComplexityTableView';
+import { OptimizationInsightsView } from './OptimizationInsightsView';
 import { NoirProfilerService, ProfilerResult } from '@/services/NoirProfilerService';
+import { OptimizationAnalysisService } from '@/services/OptimizationAnalysisService';
 import { LoadingState } from '@/components/ui/loading-state';
 
 
@@ -16,9 +18,9 @@ interface CombinedComplexityPanelProps {
   onFunctionClick?: (functionName: string) => void;
   className?: string;
   enableHeatmap?: boolean;
-  onViewModeChange?: (viewMode: 'metrics' | 'flamegraph') => void;
+  onViewModeChange?: (viewMode: 'metrics' | 'flamegraph' | 'insights') => void;
   onRefresh?: () => void;
-  viewMode?: 'metrics' | 'flamegraph';
+  viewMode?: 'metrics' | 'flamegraph' | 'insights';
   isProfiling?: boolean;
   profilerResult?: ProfilerResult | null;
   onProfilingStart?: () => void;
@@ -42,7 +44,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   onProfilingComplete,
   onProfilingError
 }) => {
-  const [internalViewMode, setInternalViewMode] = useState<'metrics' | 'flamegraph'>('metrics');
+  const [internalViewMode, setInternalViewMode] = useState<'metrics' | 'flamegraph' | 'insights'>('metrics');
   const [internalProfilerResult, setInternalProfilerResult] = useState<ProfilerResult | null>(null);
   const [internalIsProfiling, setInternalIsProfiling] = useState(false);
 
@@ -51,7 +53,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   const profilerResult = externalProfilerResult ?? internalProfilerResult;
   const isProfiling = externalIsProfiling ?? internalIsProfiling;
 
-  const setViewMode = (mode: 'metrics' | 'flamegraph') => {
+  const setViewMode = (mode: 'metrics' | 'flamegraph' | 'insights') => {
     if (onViewModeChange) {
       onViewModeChange(mode);
     } else {
@@ -65,6 +67,7 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
   const [lastProfiled, setLastProfiled] = useState<Date | null>(null);
 
   const profilerService = useMemo(() => new NoirProfilerService(), []);
+  const optimizationAnalysisService = useMemo(() => new OptimizationAnalysisService(), []);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const prevEnableHeatmapRef = useRef<boolean>(enableHeatmap);
   const shouldProfileRef = useRef<boolean>(false);
@@ -76,6 +79,17 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       ? profilerService.getTableData(profilerResult.complexityReport)
       : [];
   }, [profilerResult?.complexityReport, profilerService]);
+
+  // Memoize optimization insights report
+  const optimizationReport = useMemo(() => {
+    if (!profilerResult?.complexityReport || !sourceCode) {
+      return null;
+    }
+    return optimizationAnalysisService.analyzeCircuit(
+      profilerResult.complexityReport,
+      sourceCode
+    );
+  }, [profilerResult?.complexityReport, sourceCode, optimizationAnalysisService]);
 
   const handleProfiling = useCallback(async () => {
     if (!sourceCode.trim()) {
@@ -226,8 +240,8 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
       )}
 
       {profilerResult && !isProfiling && (
-        <div className={viewMode === 'flamegraph' ? 'px-4 pt-4' : ''}>
-          {/* Content Area - Flamegraph or Metrics View */}
+        <div className={viewMode === 'flamegraph' ? 'px-4 pt-4' : viewMode === 'insights' ? 'px-4 pt-4' : ''}>
+          {/* Content Area - Flamegraph, Metrics, or Insights View */}
           <div>
             {viewMode === 'flamegraph' ? (
               /* Dual SVG Viewers - Vertical Stack */
@@ -253,6 +267,23 @@ export const CombinedComplexityPanel: React.FC<CombinedComplexityPanelProps> = (
                     className=""
                   />
                 </div>
+              </div>
+            ) : viewMode === 'insights' ? (
+              /* Optimization Insights View */
+              <div className="pb-4">
+                {optimizationReport ? (
+                  <OptimizationInsightsView
+                    report={optimizationReport}
+                    onLineClick={handleLineClick}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center p-8 min-h-[300px]">
+                    <div className="text-center text-muted-foreground">
+                      <Info className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                      <p>No optimization insights available</p>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               /* Metrics View */
