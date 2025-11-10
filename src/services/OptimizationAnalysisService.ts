@@ -26,6 +26,7 @@ const DEFAULT_CONFIG: OptimizationAnalysisConfig = {
     loops: true,
     arithmetic: true,
     arrays: true,
+    hashOperations: true,
     bestPractices: true,
   },
 };
@@ -64,6 +65,10 @@ export class OptimizationAnalysisService {
 
     if (this.config.enabledAnalyzers.arrays) {
       suggestions.push(...this.analyzeArrays(report, sourceCode));
+    }
+
+    if (this.config.enabledAnalyzers.hashOperations) {
+      suggestions.push(...this.analyzeHashOperations(report, sourceCode));
     }
 
     if (this.config.enabledAnalyzers.bestPractices) {
@@ -276,7 +281,7 @@ export class OptimizationAnalysisService {
           severity: 'medium',
           category: 'arithmetic',
           title: 'Division',
-          description: `Division requires expensive field inversion—multiply by modular inverse for constants or restructure logic to avoid division`,
+          description: `Division requires expensive field inversion - multiply by modular inverse for constants or restructure logic to avoid division`,
           impact: {
             estimatedSavings: lineMetrics ? Math.floor(lineMetrics.gates * 0.4) : 20,
             savingsPercentage: lineMetrics ? lineMetrics.percentage * 0.4 : 0,
@@ -341,6 +346,58 @@ export class OptimizationAnalysisService {
   }
 
   /**
+   * Analyze hash function usage patterns
+   */
+  private analyzeHashOperations(
+    report: CircuitComplexityReport,
+    sourceCode: string
+  ): OptimizationSuggestion[] {
+    const suggestions: OptimizationSuggestion[] = [];
+    const sourceLines = sourceCode.split('\n');
+
+    // Regex to detect common hash functions
+    const hashFunctionRegex = /(poseidon|pedersen|keccak|blake2s|sha256|mimc)/i;
+
+    sourceLines.forEach((line, index) => {
+      const lineNumber = index + 1;
+      const lineMetrics = report.hotspots.find(
+        (h) => h.lineNumber === lineNumber
+      );
+
+      // Check if line contains a hash function call
+      if (line.match(hashFunctionRegex)) {
+        // Check if we're inside a loop (look back up to 10 lines)
+        const previousLines = sourceLines.slice(Math.max(0, index - 10), index);
+        const isInsideLoop = previousLines.some((l) =>
+          l.match(/for\s+\w+\s+in\s+.+\{/)
+        );
+
+        if (isInsideLoop) {
+          // High severity: hash inside loop
+          suggestions.push({
+            id: `hash-in-loop-${lineNumber}`,
+            lineNumber,
+            severity: 'high',
+            category: 'algorithm',
+            title: 'Hash function inside loop',
+            description: `Hash function called inside loop - move hash calls outside loop or batch with Merkle tree structure`,
+            impact: {
+              estimatedSavings: lineMetrics
+                ? Math.floor(lineMetrics.gates * 0.5)
+                : 100,
+              savingsPercentage: lineMetrics ? lineMetrics.percentage * 0.5 : 0,
+            },
+            codeSnippet: line.trim(),
+            learnMoreUrl: 'https://noir-lang.org/docs/noir/standard_library/cryptographic_primitives',
+          });
+        }
+      }
+    });
+
+    return suggestions;
+  }
+
+  /**
    * Analyze general best practices
    */
   private analyzeBestPractices(
@@ -363,6 +420,23 @@ export class OptimizationAnalysisService {
           savingsPercentage: 20,
         },
         learnMoreUrl: 'https://noir-lang.org/docs/noir/concepts/data_types',
+      });
+    }
+
+    // Check for missing recursive attribute on large circuits
+    if (report.totalGates > 50000 && !sourceCode.includes('#[recursive]')) {
+      suggestions.push({
+        id: 'best-practice-missing-recursive',
+        lineNumber: 0,
+        severity: 'medium',
+        category: 'best-practice',
+        title: 'Large circuit without recursive composition',
+        description: `Circuit has ${report.totalGates.toLocaleString()} gates without #[recursive] attribute - consider using recursive proof composition to split into sub-circuits`,
+        impact: {
+          estimatedSavings: Math.floor(report.totalGates * 0.15),
+          savingsPercentage: 15,
+        },
+        learnMoreUrl: 'https://noir-lang.org/docs/noir/concepts/recursion',
       });
     }
 

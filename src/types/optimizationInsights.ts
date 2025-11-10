@@ -112,6 +112,7 @@ export interface OptimizationAnalysisConfig {
     loops: boolean;
     arithmetic: boolean;
     arrays: boolean;
+    hashOperations: boolean;
     bestPractices: boolean;
   };
 }
