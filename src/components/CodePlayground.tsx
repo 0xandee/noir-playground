@@ -140,7 +140,7 @@ compiler_version = ">=1.0.0"
   const { panelState, togglePanel } = usePanelState();
 
   // Complexity panel state
-  const [complexityViewMode, setComplexityViewMode] = useState<'metrics' | 'flamegraph'>('metrics');
+  const [complexityViewMode, setComplexityViewMode] = useState<'metrics' | 'flamegraph' | 'insights'>('metrics');
   const [complexityProfilerResult, setComplexityProfilerResult] = useState<ProfilerResult | null>(null);
   const [isComplexityProfiling, setIsComplexityProfiling] = useState(false);
 
@@ -902,6 +902,16 @@ compiler_version = ">=1.0.0"
                               Metrics
                             </button>
                             <button
+                              onClick={() => setComplexityViewMode('insights')}
+                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'insights'
+                                ? 'text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                              style={{ fontSize: '13px', ...(complexityViewMode === 'insights' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                            >
+                              Insights
+                            </button>
+                            <button
                               onClick={() => setComplexityViewMode('flamegraph')}
                               className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
                                 ? 'text-foreground shadow-sm'
@@ -958,6 +968,16 @@ compiler_version = ">=1.0.0"
                                 style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
                               >
                                 Metrics
+                              </button>
+                              <button
+                                onClick={() => setComplexityViewMode('insights')}
+                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'insights'
+                                  ? 'text-foreground shadow-sm'
+                                  : 'text-muted-foreground hover:text-foreground'
+                                  }`}
+                                style={{ fontSize: '13px', ...(complexityViewMode === 'insights' ? { backgroundColor: '#1e1e1e' } : {}) }}
+                              >
+                                Insights
                               </button>
                               <button
                                 onClick={() => setComplexityViewMode('flamegraph')}
