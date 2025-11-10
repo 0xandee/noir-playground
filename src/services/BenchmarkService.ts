@@ -299,6 +299,21 @@ export class BenchmarkService {
     );
 
     const times = successfulRuns.map(run => run.totalTime);
+
+    // Handle case when all runs failed (empty times array)
+    if (times.length === 0) {
+      return {
+        totalRuns: runs.length,
+        successfulRuns: 0,
+        failedRuns: runs.length,
+        avgTotalTime: 0,
+        minTotalTime: 0,
+        maxTotalTime: 0,
+        stdDevTime: 0,
+        avgProofSize: 0,
+      };
+    }
+
     const avgTime = times.reduce((a, b) => a + b, 0) / times.length;
     const stdDevTime = Math.sqrt(
       times.reduce((sum, time) => sum + Math.pow(time - avgTime, 2), 0) / times.length
@@ -439,11 +454,16 @@ export class BenchmarkService {
       };
     });
 
-    const overallImprovement = ((baseline.summary.avgTotalTime - current.summary.avgTotalTime) / baseline.summary.avgTotalTime) * 100;
+    // Handle case when baseline has zero avgTotalTime (all runs failed)
+    const overallImprovement = baseline.summary.avgTotalTime > 0
+      ? ((baseline.summary.avgTotalTime - current.summary.avgTotalTime) / baseline.summary.avgTotalTime) * 100
+      : 0;
 
-    const summary = overallImprovement > 0
-      ? `Overall performance improved by ${overallImprovement.toFixed(1)}%`
-      : `Overall performance regressed by ${Math.abs(overallImprovement).toFixed(1)}%`;
+    const summary = baseline.summary.avgTotalTime === 0
+      ? 'Cannot compare - baseline has no successful runs'
+      : overallImprovement > 0
+        ? `Overall performance improved by ${overallImprovement.toFixed(1)}%`
+        : `Overall performance regressed by ${Math.abs(overallImprovement).toFixed(1)}%`;
 
     return {
       baseline,

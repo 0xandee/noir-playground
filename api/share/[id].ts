@@ -48,7 +48,6 @@ interface VercelResponse extends ServerResponse {
   status: (code: number) => VercelResponse;
   json: (body: unknown) => void;
   send: (body: string) => void;
-  redirect: (code: number, url: string) => void;
   setHeader: (name: string, value: string) => void;
 }
 
@@ -164,5 +163,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const protocol = req.headers['x-forwarded-proto'] || 'https';
   const host = req.headers.host || 'noir-playground.app';
   const baseUrl = `${protocol}://${host}`;
-  res.redirect(302, `${baseUrl}/share/${id}`);
+  res.writeHead(302, { Location: `${baseUrl}/share/${id}` });
+  res.end();
 }
