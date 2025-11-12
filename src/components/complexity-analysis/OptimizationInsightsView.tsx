@@ -49,23 +49,9 @@ export const OptimizationInsightsView: React.FC<
   if (report.suggestions.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
-        <div className="rounded-full bg-green-100 dark:bg-green-900 p-3 mb-4">
-          <Zap className="h-8 w-8 text-green-600 dark:text-green-400" />
-        </div>
         <h3 className="text-lg font-semibold mb-2">
           No Optimization Suggestions
         </h3>
-        <p className="text-sm text-muted-foreground max-w-md mb-4">
-          {getComplexityDescription(
-            report.circuitComplexity,
-            report.totalGates
-          )}
-        </p>
-        <Badge
-          className={`${getComplexityColor(report.circuitComplexity)} text-white`}
-        >
-          {report.circuitComplexity.toUpperCase()} COMPLEXITY
-        </Badge>
       </div>
     );
   }
