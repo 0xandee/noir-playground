@@ -15,8 +15,12 @@ npm run sitemap:generate # Generate sitemap.xml manually
 
 # Testing
 # Uses Playwright for end-to-end testing
-npx playwright test      # Run all tests
-npx playwright test --ui # Run tests with UI mode
+npx playwright test                              # Run all tests
+npx playwright test --ui                         # Run tests with UI mode
+npx playwright test tests/specific-file.spec.ts # Run a single test file
+npx playwright test -g "test name"              # Run tests matching a pattern
+npx playwright test --debug                     # Debug mode with browser visible
+npx playwright test --headed                    # Run in headed mode (non-headless)
 
 # Manual Testing
 # Comprehensive manual test cases available in MANUAL_TEST_CASES.md
@@ -237,7 +241,7 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
 - CORS-compliant sources only (GitHub raw files work by default)
 
 #### Version Compatibility Considerations
-**Important**: Not all library versions are compatible with the current Noir compiler (v1.0.0-beta.11). When testing or using external libraries:
+**Important**: Not all library versions are compatible with the current Noir compiler (v1.0.0-beta.15). When testing or using external libraries:
 
 - **Check library release dates**: Libraries released before major Noir compiler updates may have breaking changes
 - **Use latest stable versions**: Prefer recent tags (e.g., bignum v0.8.0 over v0.6.0)
@@ -247,7 +251,7 @@ pub fn main(x: Field, y: pub Field) -> pub Field {
   - Deprecated syntax or APIs
   - Missing dependencies in older versions (e.g., bignum v0.6.0 lacks poseidon dependency)
 
-**Known Compatible Libraries** (tested with Noir v1.0.0-beta.11):
+**Known Compatible Libraries** (tested with Noir v1.0.0-beta.15):
 - `bignum` v0.8.0 → poseidon v0.1.1 ✅
 - `ecrecover` v1.0.0 → array_helpers v0.30.0 + keccak256 v0.1.0 ✅
 - `poseidon` v0.1.1 (standalone) ✅
@@ -281,6 +285,14 @@ The app includes a sophisticated code sharing system with dynamic SEO:
 - **Props interface**: Supports both standalone and shared snippet modes with `CodePlaygroundProps`
 - **Complexity analysis**: Integrates with `CombinedComplexityPanel` for circuit profiling and ACIR visualization
 - **Debug integration**: Connects to `DebugContext` for interactive debugging sessions
+
+#### Modularized Playground Components
+The CodePlayground has been split into focused sub-components for better maintainability:
+
+- **EditorPanel** (`src/components/playground/EditorPanel.tsx`): Monaco editor wrapper with tab management (main.nr/Nargo.toml), debug decorations, and heatmap overlays
+- **ToolsPanel** (`src/components/playground/ToolsPanel.tsx`): Right-side panel containing profiler, debugger controls, benchmark displays, and cache management
+- **ConsolePanel** (`src/components/playground/ConsolePanel.tsx`): Bottom panel showing compilation output, execution results, and proof data
+- **MobilePlaygroundLayout** (`src/components/playground/MobilePlaygroundLayout.tsx`): Responsive layout for tablet/mobile with limited feature set
 
 #### NoirEditorWithHover Component
 Enhanced Monaco editor with multiple overlay systems:
@@ -439,6 +451,38 @@ Manages Monaco editor visual decorations for complexity heatmaps:
 - **Gradient colors**: Dynamic color application based on complexity thresholds
 - **No glyph margin indicators**: Heatmap does not use glyph margin (dedicated to breakpoints only)
 
+#### BenchmarkService (`src/services/BenchmarkService.ts`)
+Tracks and manages performance benchmarks for circuit operations:
+- **Timing capture**: Records compilation, execution, proving, and verification durations
+- **History tracking**: Maintains benchmark history for comparison across runs
+- **Statistics calculation**: Computes averages, min/max values, and trends
+
+#### OptimizationAnalysisService (`src/services/OptimizationAnalysisService.ts`)
+Analyzes circuit profiling data to generate optimization suggestions:
+- **Pattern detection**: Identifies inefficient code patterns from profiler output
+- **Cost analysis**: Evaluates gate and opcode costs per line
+- **Suggestion generation**: Creates actionable optimization recommendations with severity levels
+
+#### LineAnalysisService (`src/services/LineAnalysisService.ts`)
+Provides line-level analysis for hover tooltips:
+- **Expression analysis**: Extracts complexity data for specific code expressions
+- **Tooltip generation**: Formats metrics data for Monaco editor hover providers
+
+#### SvgOpcodesParser (`src/services/SvgOpcodesParser.ts`)
+Parses SVG flamegraph output from the profiler:
+- **SVG parsing**: Extracts opcode data from profiler-generated SVG flamegraphs
+- **Line mapping**: Associates opcode costs with source code line numbers
+
+#### ConstraintMappingService (`src/services/ConstraintMappingService.ts`)
+Maps ACIR constraints back to source code for the constraint visualizer:
+- **Constraint extraction**: Parses compiled artifact for constraint data
+- **Source mapping**: Links constraints to original Noir source lines
+
+#### WitnessInspectorService (`src/services/WitnessInspectorService.ts`)
+Provides witness value inspection during execution:
+- **Witness extraction**: Retrieves witness values from execution artifacts
+- **Value formatting**: Formats field elements for human-readable display
+
 ### UI Component Patterns
 
 #### Monaco Editor Integration
@@ -559,3 +603,47 @@ VITE_DEBUG_SERVER_URL=http://localhost:4000
 ```
 
 For detailed documentation on server architecture, deployment, and API endpoints, see the [server repository](https://github.com/0xandee/noir-playground-server).
+
+## Troubleshooting
+
+### Common Issues
+
+#### WASM Loading Errors
+If you encounter WASM-related errors or the app fails to load:
+```bash
+# Clear Vite cache and restart
+rm -rf node_modules/.vite
+npm run dev
+```
+
+#### Server Connection Issues
+If profiling, debugging, or server compilation fails:
+```bash
+# Check if server is running
+curl http://localhost:4000/api/compile/check-nargo
+# Expected response: {"status":"ok","nargoVersion":"..."}
+
+# Check profiler endpoint
+curl http://localhost:4000/api/profile/health
+
+# Check debug endpoint
+curl http://localhost:4000/api/debug/health
+```
+
+#### Type Errors After Dependency Updates
+```bash
+# Clean install with Yarn
+rm -rf node_modules yarn.lock
+yarn install
+```
+
+#### Monaco Editor Not Loading
+- Ensure you're using a modern browser (Chrome, Firefox, Safari, Edge)
+- Check browser console for CORS or SharedArrayBuffer errors
+- Verify CORP/COOP headers are being served (check Network tab)
+
+#### Dependency Resolution Failures (WASM Compiler Mode)
+- Verify the library exists on GitHub and has the specified tag
+- Check if the library is compatible with current Noir version (v1.0.0-beta.15)
+- Try clearing the dependency cache via the Cache tab in the UI
+- Consider switching to server compilation mode for better dependency support

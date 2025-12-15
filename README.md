@@ -4,7 +4,7 @@
 
 A browser-based Noir zero-knowledge proof development environment with Monaco editor integration.
 
-[![Noir](https://img.shields.io/badge/Noir-v1.0.0--beta.11-black?style=flat-square)](https://noir-lang.org/)
+[![Noir](https://img.shields.io/badge/Noir-v1.0.0--beta.15-black?style=flat-square)](https://noir-lang.org/)
 [![Barretenberg](https://img.shields.io/badge/Barretenberg-v1.0.0-black?style=flat-square)](https://github.com/AztecProtocol/barretenberg)
 
 🚀 **[Live Demo](https://noir-playground.app)** 
@@ -201,9 +201,9 @@ npm run dev  # Runs on port 5173, connects to server
 -   Vite 5.4+ with WASM support
 -   Monaco Editor 0.52+
 -   ShadCN/UI + Tailwind CSS
--   **NoirJS Integration**: @noir-lang/noir_js ^1.0.0-beta.11
--   **Barretenberg Backend**: @aztec/bb.js ^1.0.0
--   **WASM Compilation**: @noir-lang/noir_wasm ^1.0.0-beta.11
+-   **NoirJS Integration**: @noir-lang/noir_js ^1.0.0-beta.15
+-   **Barretenberg Backend**: @aztec/bb.js ^3.0.0-nightly
+-   **WASM Compilation**: @noir-lang/noir_wasm ^1.0.0-beta.15
 
 > 📖 Learn more about the [NoirJS + Barretenberg integration](./docs/noirjs-barretenberg-integration.md) that powers this playground's zero-knowledge proof capabilities.
 
