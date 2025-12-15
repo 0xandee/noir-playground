@@ -438,8 +438,10 @@ compiler_version = ">=1.0.0"
     types: Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>;
     order: string[]
   } => {
+    // Strip single-line comments to prevent ')' in comments from breaking the regex
+    const codeWithoutComments = code.replace(/\/\/.*$/gm, '');
     const functionRegex = /fn\s+main\s*\([^)]*\)/;
-    const match = code.match(functionRegex);
+    const match = codeWithoutComments.match(functionRegex);
     if (!match) return {
       inputs: {},
       types: {},
