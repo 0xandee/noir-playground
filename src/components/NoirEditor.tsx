@@ -121,13 +121,22 @@ export const NoirEditor = forwardRef<monaco.editor.IStandaloneCodeEditor | null,
     // Force set the theme after registration
     monaco.editor.setTheme('noir-dark');
 
-    // Register Cmd+A / Ctrl+A for select all (fixes keybinding issue)
-    editor.addCommand(
-      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyA,
-      () => {
-        editor.trigger('keyboard', 'editor.action.selectAll', null);
-      }
-    );
+    // Fix Cmd+A / Ctrl+A for select all
+    // Use DOM event listener as Monaco's keybinding system has issues on Mac
+    const editorDomNode = editor.getDomNode();
+    if (editorDomNode) {
+      editorDomNode.addEventListener('keydown', (e: KeyboardEvent) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'a') {
+          e.preventDefault();
+          e.stopPropagation();
+          const model = editor.getModel();
+          if (model) {
+            const fullRange = model.getFullModelRange();
+            editor.setSelection(fullRange);
+          }
+        }
+      }, true); // Use capture phase to intercept before Monaco
+    }
   };
 
   const handleEditorChange = (value: string | undefined) => {
