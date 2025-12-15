@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Noir v1.0.0-beta.11 Circuit Execution', () => {
+test.describe('Noir v1.0.0-beta.15 Circuit Execution', () => {
   test('should load the playground without errors', async ({ page }) => {
     // Listen for console errors
     const consoleErrors: string[] = [];

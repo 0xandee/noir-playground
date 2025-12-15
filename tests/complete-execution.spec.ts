@@ -96,9 +96,9 @@ test.describe('Complete Circuit Execution Verification', () => {
     expect(wasmErrors, 'Should have no WASM instantiation errors').toHaveLength(0);
 
     if (wasmErrors.length === 0) {
-      console.log('\n✅ SUCCESS: Noir v1.0.0-beta.11 upgrade is working!');
+      console.log('\n✅ SUCCESS: Noir v1.0.0-beta.15 upgrade is working!');
       console.log('   - No WASM instantiation errors');
-      console.log('   - bb.js v1.2.1 is compatible');
+      console.log('   - bb.js v3.0.0-nightly is compatible');
       console.log('   - Circuit compilation started successfully');
     }
   });

@@ -27,14 +27,15 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
-    "sitemap:generate": "node scripts/generateSitemap.js"
+    "sitemap:generate": "node scripts/generateSitemap.js",
+    "postinstall": "cp node_modules/@noir-lang/acvm_js/web/acvm_js_bg.wasm public/wasm/ && cp node_modules/@noir-lang/noirc_abi/web/noirc_abi_wasm_bg.wasm public/wasm/"
   },
   "dependencies": {
-    "@aztec/bb.js": "1.0.0",
+    "@aztec/bb.js": "3.0.0-nightly.20251104",
     "@hookform/resolvers": "^3.9.0",
     "@monaco-editor/react": "^4.7.0",
-    "@noir-lang/noir_js": "1.0.0-beta.11",
-    "@noir-lang/noir_wasm": "1.0.0-beta.11",
+    "@noir-lang/noir_js": "1.0.0-beta.15",
+    "@noir-lang/noir_wasm": "1.0.0-beta.15",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
     "@radix-ui/react-aspect-ratio": "^1.1.0",

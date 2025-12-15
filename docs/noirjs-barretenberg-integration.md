@@ -81,9 +81,9 @@ This architecture draws inspiration from successful educational crypto tools lik
 
 ```json
 {
-  "@noir-lang/noir_js": "^1.0.0-beta.9",
-  "@aztec/bb.js": "^0.84.0",
-  "@noir-lang/noir_wasm": "^1.0.0-beta.9"
+  "@noir-lang/noir_js": "^1.0.0-beta.15",
+  "@aztec/bb.js": "^3.0.0-nightly.20251104",
+  "@noir-lang/noir_wasm": "^1.0.0-beta.15"
 }
 ```
 
