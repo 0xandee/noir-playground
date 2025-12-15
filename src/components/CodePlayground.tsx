@@ -7,6 +7,9 @@ import { ShareDialog } from "./ShareDialog";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
+import { expressionEvaluatorService } from "@/services/ExpressionEvaluatorService";
+import { EvaluationResult, EvaluationStatus } from "@/types/expression";
+import { analyzeExpression } from "@/utils/expressionUtils";
 import * as monaco from 'monaco-editor';
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -98,6 +101,11 @@ compiler_version = ">=1.0.0"
   }>>([]);
   const [inputValidationErrors, setInputValidationErrors] = useState<Record<string, string>>({});
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  // Expression evaluation state
+  const [evaluationResults, setEvaluationResults] = useState<Record<string, EvaluationResult>>({});
+  const [evaluationStatuses, setEvaluationStatuses] = useState<Record<string, EvaluationStatus>>({});
+  const evaluationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [rightPanelView, setRightPanelView] = useState<'inputs' | 'profiler' | 'benchmark' | 'inspector'>('inputs');
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
@@ -303,6 +311,51 @@ compiler_version = ">=1.0.0"
     };
   }, []);
 
+  // Expression evaluation effect - debounced to avoid excessive server calls
+  useEffect(() => {
+    // Check if any inputs contain expressions
+    const hasExpressions = Object.values(inputs).some(value => analyzeExpression(value).isExpression);
+
+    if (!hasExpressions) {
+      // No expressions - clear evaluation state
+      setEvaluationResults({});
+      setEvaluationStatuses({});
+      return;
+    }
+
+    // Debounce evaluation
+    if (evaluationTimeoutRef.current) {
+      clearTimeout(evaluationTimeoutRef.current);
+    }
+
+    evaluationTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await expressionEvaluatorService.evaluateInputs(
+          inputs,
+          {
+            inputs,
+            inputTypes,
+            cargoToml: files['Nargo.toml'],
+          },
+          (inputName, status, result) => {
+            setEvaluationStatuses(prev => ({ ...prev, [inputName]: status }));
+            if (result) {
+              setEvaluationResults(prev => ({ ...prev, [inputName]: result }));
+            }
+          }
+        );
+        setEvaluationResults(results);
+      } catch (error) {
+        console.error('Expression evaluation error:', error);
+      }
+    }, 500); // 500ms debounce
+
+    return () => {
+      if (evaluationTimeoutRef.current) {
+        clearTimeout(evaluationTimeoutRef.current);
+      }
+    };
+  }, [inputs, inputTypes, files]);
 
   const processStepQueue = () => {
     if (stepQueueRef.current.length === 0) {
@@ -337,10 +390,18 @@ compiler_version = ">=1.0.0"
 
     for (const [key, value] of Object.entries(inputs)) {
       const typeInfo = inputTypes[key];
+      const evalResult = evaluationResults[key];
+      const analysis = analyzeExpression(value);
+
+      // Use evaluated value if this is an expression that was successfully evaluated
+      let finalValue: string | number = value;
+      if (analysis.isExpression && evalResult?.success && evalResult.value !== undefined) {
+        finalValue = evalResult.value;
+      }
 
       if (typeInfo?.isArray) {
         try {
-          // Parse JSON array string
+          // Parse JSON array string (use original value for arrays, not evaluated)
           const arrayValues = JSON.parse(value);
           if (Array.isArray(arrayValues)) {
             // Validate array length
@@ -369,8 +430,22 @@ compiler_version = ">=1.0.0"
           throw error;
         }
       } else {
-        // Regular input processing
-        processedInputs[key] = isNaN(Number(value)) ? value : Number(value);
+        // Regular input processing - use evaluated value if available
+        const valueToProcess = String(finalValue);
+
+        // Handle hex values (from expression evaluation) - convert to decimal string
+        if (valueToProcess.startsWith('0x')) {
+          try {
+            // Convert hex to decimal string using BigInt for 256-bit field values
+            const decimalValue = BigInt(valueToProcess).toString();
+            processedInputs[key] = decimalValue;
+          } catch {
+            // If conversion fails, pass as-is
+            processedInputs[key] = valueToProcess;
+          }
+        } else {
+          processedInputs[key] = isNaN(Number(valueToProcess)) ? valueToProcess : Number(valueToProcess);
+        }
       }
     }
 
@@ -519,6 +594,8 @@ compiler_version = ">=1.0.0"
     inputValidationErrors,
     handleInputChange,
     inputTypes,
+    evaluationResults,
+    evaluationStatuses,
     proofData,
     handleCopyField,
     files,

@@ -6,6 +6,8 @@ import { CombinedComplexityPanel } from "../complexity-analysis/CombinedComplexi
 import { BenchmarkPanel } from "../benchmark/BenchmarkPanel";
 import { DebugControlPanel, InspectorPanel } from "../debug";
 import { ProfilerResult } from "@/services/NoirProfilerService";
+import { ExpressionInput } from "./ExpressionInput";
+import { EvaluationStatus, EvaluationResult } from "@/types/expression";
 import * as monaco from 'monaco-editor';
 
 interface ToolsPanelProps {
@@ -18,6 +20,9 @@ interface ToolsPanelProps {
   inputValidationErrors: Record<string, string>;
   handleInputChange: (key: string, value: string) => void;
   inputTypes: Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>;
+  // Expression evaluation state
+  evaluationResults?: Record<string, EvaluationResult>;
+  evaluationStatuses?: Record<string, EvaluationStatus>;
   proofData: {
     proof?: Uint8Array;
     witness?: Uint8Array;
@@ -54,6 +59,8 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
   inputValidationErrors,
   handleInputChange,
   inputTypes,
+  evaluationResults = {},
+  evaluationStatuses = {},
   proofData,
   handleCopyField,
   files,
@@ -119,26 +126,29 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {parameterOrder.map((key) => (
-                    <div key={key}>
-                      <label className="font-medium mb-2 block select-none text-muted-foreground" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
-                      <input
-                        type="text"
-                        inputMode={inputTypes[key].type.includes('Field') || inputTypes[key].type.includes('u') || inputTypes[key].type.includes('i') ? "decimal" : "text"}
+                  {parameterOrder.map((key) => {
+                    const typeInfo = inputTypes[key];
+                    const evalResult = evaluationResults[key];
+                    const evalStatus = evaluationStatuses[key] || 'idle';
+
+                    return (
+                      <ExpressionInput
+                        key={key}
+                        name={key}
                         value={inputs[key] || ''}
-                        onChange={(e) => handleInputChange(key, e.target.value)}
-                        className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none ring-1 transition-colors font-mono ${inputValidationErrors[key]
-                          ? 'border-red-500/50 focus:ring-red-500/50'
-                          : 'border-border ring-border'
-                          }`}
-                        style={{ fontSize: '13px' }}
+                        type={typeInfo?.type || 'Field'}
+                        isPublic={typeInfo?.isPublic || false}
+                        isArray={typeInfo?.isArray}
+                        arrayLength={typeInfo?.arrayLength}
+                        onChange={(value) => handleInputChange(key, value)}
+                        evaluatedValue={evalResult?.value}
+                        evaluationStatus={evalStatus}
+                        error={inputValidationErrors[key] || evalResult?.error}
                         disabled={isRunning}
+                        allInputNames={parameterOrder}
                       />
-                      {inputValidationErrors[key] && (
-                        <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

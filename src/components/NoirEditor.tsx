@@ -120,6 +120,14 @@ export const NoirEditor = forwardRef<monaco.editor.IStandaloneCodeEditor | null,
 
     // Force set the theme after registration
     monaco.editor.setTheme('noir-dark');
+
+    // Register Cmd+A / Ctrl+A for select all (fixes keybinding issue)
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyA,
+      () => {
+        editor.trigger('keyboard', 'editor.action.selectAll', null);
+      }
+    );
   };
 
   const handleEditorChange = (value: string | undefined) => {

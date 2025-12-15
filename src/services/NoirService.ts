@@ -194,7 +194,18 @@ export class NoirService {
       if (Array.isArray(value)) {
         processedInputs[key] = value;
       } else {
-        processedInputs[key] = isNaN(Number(value)) ? value : Number(value);
+        // For field values, keep large numbers as strings to preserve precision
+        // JavaScript Number loses precision for values > Number.MAX_SAFE_INTEGER
+        const strValue = String(value);
+        const numValue = Number(strValue);
+
+        // If value is a valid number within safe integer range, convert to Number
+        // Otherwise keep as string (noir_js handles string field values correctly)
+        if (!isNaN(numValue) && Number.isSafeInteger(numValue)) {
+          processedInputs[key] = numValue;
+        } else {
+          processedInputs[key] = strValue;
+        }
       }
     }
 

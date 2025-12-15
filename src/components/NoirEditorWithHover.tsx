@@ -432,6 +432,14 @@ export const NoirEditorWithHover = forwardRef<monaco.editor.IStandaloneCodeEdito
     // Force set the enhanced theme
     monaco.editor.setTheme(language === 'noir' ? 'noir-enhanced' : 'vs-dark');
 
+    // Register Cmd+A / Ctrl+A for select all (fixes keybinding issue)
+    editor.addCommand(
+      monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyA,
+      () => {
+        editor.trigger('keyboard', 'editor.action.selectAll', null);
+      }
+    );
+
     // Add CSS for inline analysis decorations and Monaco hover fixes
     const style = document.createElement('style');
     style.textContent = `
