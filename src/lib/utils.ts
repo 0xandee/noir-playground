@@ -26,3 +26,9 @@ export function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
 }
+
+export function getFileLanguage(filename: string) {
+  if (filename.endsWith('.nr')) return 'noir';
+  if (filename.endsWith('.toml')) return 'ini'; // Monaco uses 'ini' for TOML-like syntax
+  return 'plaintext';
+}

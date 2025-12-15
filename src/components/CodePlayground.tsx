@@ -1,38 +1,19 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
-import { CollapsiblePanel } from "@/components/ui/collapsible-panel";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import {
-  Download,
-  Settings,
-  Terminal,
-  Cpu,
-  Share,
-  Flame,
-  Target,
-  Table,
-  Activity,
-  RefreshCw,
-  CornerDownRight,
-  Play,
-  Link2,
-  Copy,
-} from "lucide-react";
 import { BsTwitterX, BsGithub } from "react-icons/bs";
 import { noirService, ExecutionStep } from "@/services/NoirService";
-import { NoirEditor } from "./NoirEditor";
-import { NoirEditorWithHover } from "./NoirEditorWithHover";
 import { ShareDialog } from "./ShareDialog";
-import { CombinedComplexityPanel } from "./complexity-analysis/CombinedComplexityPanel";
 import { CircuitComplexityReport, MetricType } from "@/types/circuitMetrics";
 import { usePanelState } from "@/hooks/usePanelState";
 import { ProfilerResult, NoirProfilerService } from "@/services/NoirProfilerService";
-import { BenchmarkPanel } from "./benchmark/BenchmarkPanel";
-import { DebugControlPanel, InspectorPanel } from "./debug";
 import * as monaco from 'monaco-editor';
+import { useIsMobile } from "@/hooks/use-mobile";
+
+import { EditorPanel } from "./playground/EditorPanel";
+import { ConsolePanel } from "./playground/ConsolePanel";
+import { ToolsPanel } from "./playground/ToolsPanel";
+import { MobilePlaygroundLayout } from "./playground/MobilePlaygroundLayout";
 
 interface CodePlaygroundProps {
   initialCode?: string;
@@ -51,6 +32,8 @@ interface CodePlaygroundProps {
 
 const CodePlayground = (props: CodePlaygroundProps = {}) => {
   const { initialCode, initialInputs, initialCargoToml, initialProofData, snippetTitle, snippetId } = props;
+  const isMobile = useIsMobile();
+  
   const [activeFile, setActiveFile] = useState("main.nr");
   const [files, setFiles] = useState({
     "main.nr": initialCode || `pub fn main(
@@ -119,12 +102,6 @@ compiler_version = ">=1.0.0"
   const [rightPanelWidth, setRightPanelWidth] = useState<number>(400); // Track right panel width
   const rightPanelRef = useRef<HTMLDivElement>(null);
 
-  const rightPanelTabs = [
-    { value: 'inputs' as const, label: 'Input/Output' },
-    { value: 'inspector' as const, label: 'Debugger' },
-    { value: 'profiler' as const, label: 'Profiler' },
-    { value: 'benchmark' as const, label: 'Benchmark' }
-  ];
   const stepQueueRef = useRef<ExecutionStep[]>([]);
   const stepTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const consoleRef = useRef<HTMLDivElement>(null);
@@ -149,6 +126,71 @@ compiler_version = ">=1.0.0"
   if (!profilerServiceRef.current) {
     profilerServiceRef.current = new NoirProfilerService();
   }
+
+  // Extract inputs from the main function signature
+  const extractInputsFromCode = (code: string): {
+    inputs: Record<string, string>;
+    types: Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>;
+    order: string[]
+  } => {
+    // Strip single-line comments to prevent ')' in comments from breaking the regex
+    const codeWithoutComments = code.replace(/\/\/.*$/gm, '');
+    const functionRegex = /fn\s+main\s*\([^)]*\)/;
+    const match = codeWithoutComments.match(functionRegex);
+    if (!match) return {
+      inputs: {},
+      types: {},
+      order: []
+    };
+
+    const paramString = match[0];
+    const paramRegex = /(\w+)\s*:\s*(pub\s+)?(\[?\w+(?:\s*;\s*\d+)?\]?)/g;
+    const extractedInputs: Record<string, string> = {};
+    const extractedTypes: Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }> = {};
+    const extractedOrder: string[] = [];
+
+    let paramMatch: RegExpExecArray | null;
+    while ((paramMatch = paramRegex.exec(paramString)) !== null) {
+      const paramName = paramMatch[1];
+      const isPublic = Boolean(paramMatch[2]);
+      const paramType = paramMatch[3];
+
+      // Check if it's an array type
+      const arrayMatch = paramType.match(/^\[(\w+);\s*(\d+)\]$/);
+      const isArray = Boolean(arrayMatch);
+      const arrayLength = arrayMatch ? parseInt(arrayMatch[2], 10) : undefined;
+      const baseType = arrayMatch ? arrayMatch[1] : paramType;
+
+      // Set default values based on type
+      let defaultValue = '10';
+      if (isArray) {
+        // Create default array based on length and type
+        const defaultElement = baseType === 'bool' ? 1 : 10;
+        const defaultArray = Array.from({ length: arrayLength! }, (_, i) => defaultElement);
+        defaultValue = `[${defaultArray.join(',')}]`;
+      } else if (baseType === 'bool') {
+        defaultValue = '1';
+      } else if (baseType !== 'Field') {
+        defaultValue = '25';
+      }
+
+      extractedInputs[paramName] = defaultValue;
+      extractedTypes[paramName] = {
+        type: paramType,
+        isPublic,
+        isArray,
+        arrayLength
+      };
+      extractedOrder.push(paramName);
+    }
+
+    const hasInputs = Object.keys(extractedInputs).length > 0;
+    return {
+      inputs: hasInputs ? extractedInputs : {},
+      types: hasInputs ? extractedTypes : {},
+      order: hasInputs ? extractedOrder : []
+    };
+  };
 
   // Extract input types when initial code is provided
   useEffect(() => {
@@ -290,6 +332,51 @@ compiler_version = ">=1.0.0"
     }
   };
 
+  const processInputsForNoir = (inputs: Record<string, string>): Record<string, string | number | string[]> => {
+    const processedInputs: Record<string, string | number | string[]> = {};
+
+    for (const [key, value] of Object.entries(inputs)) {
+      const typeInfo = inputTypes[key];
+
+      if (typeInfo?.isArray) {
+        try {
+          // Parse JSON array string
+          const arrayValues = JSON.parse(value);
+          if (Array.isArray(arrayValues)) {
+            // Validate array length
+            if (typeInfo.arrayLength && arrayValues.length !== typeInfo.arrayLength) {
+              throw new Error(`Array ${key} should have ${typeInfo.arrayLength} elements, but got ${arrayValues.length}`);
+            }
+
+            // Convert array elements to proper types and pass as JavaScript array
+            const typedArray = arrayValues.map(arrayValue => {
+              // For boolean types, convert to actual boolean
+              if (typeInfo.type.includes('bool')) {
+                return arrayValue === 1 || arrayValue === '1' || arrayValue === 'true' || arrayValue === true;
+              }
+              // For numeric types, convert to number
+              return isNaN(Number(arrayValue)) ? arrayValue : Number(arrayValue);
+            });
+
+            processedInputs[key] = typedArray;
+          } else {
+            throw new Error(`Expected array for ${key}`);
+          }
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            throw new Error(`Invalid array format for ${key}: ${value}. Expected JSON array like [1, 2, 3]`);
+          }
+          throw error;
+        }
+      } else {
+        // Regular input processing
+        processedInputs[key] = isNaN(Number(value)) ? value : Number(value);
+      }
+    }
+
+    return processedInputs;
+  };
+
   const handleRun = async () => {
     setIsRunning(true);
     setExecutionSteps([]);
@@ -367,134 +454,8 @@ compiler_version = ">=1.0.0"
     }
   };
 
-  const formatParameterType = (paramName: string): string => {
-    const typeInfo = inputTypes[paramName];
-    if (!typeInfo) return "Field";
-
-    const visibility = typeInfo.isPublic ? "pub " : "";
-    return `${visibility}${typeInfo.type}`;
-  };
-
-  // Convert array inputs to proper format for Noir
-  const processInputsForNoir = (inputs: Record<string, string>): Record<string, string | number | string[]> => {
-    const processedInputs: Record<string, string | number | string[]> = {};
-
-    for (const [key, value] of Object.entries(inputs)) {
-      const typeInfo = inputTypes[key];
-
-      if (typeInfo?.isArray) {
-        try {
-          // Parse JSON array string
-          const arrayValues = JSON.parse(value);
-          if (Array.isArray(arrayValues)) {
-            // Validate array length
-            if (typeInfo.arrayLength && arrayValues.length !== typeInfo.arrayLength) {
-              throw new Error(`Array ${key} should have ${typeInfo.arrayLength} elements, but got ${arrayValues.length}`);
-            }
-
-            // Convert array elements to proper types and pass as JavaScript array
-            const typedArray = arrayValues.map(arrayValue => {
-              // For boolean types, convert to actual boolean
-              if (typeInfo.type.includes('bool')) {
-                return arrayValue === 1 || arrayValue === '1' || arrayValue === 'true' || arrayValue === true;
-              }
-              // For numeric types, convert to number
-              return isNaN(Number(arrayValue)) ? arrayValue : Number(arrayValue);
-            });
-
-            processedInputs[key] = typedArray;
-          } else {
-            throw new Error(`Expected array for ${key}`);
-          }
-        } catch (error) {
-          if (error instanceof SyntaxError) {
-            throw new Error(`Invalid array format for ${key}: ${value}. Expected JSON array like [1, 2, 3]`);
-          }
-          throw error;
-        }
-      } else {
-        // Regular input processing
-        processedInputs[key] = isNaN(Number(value)) ? value : Number(value);
-      }
-    }
-
-    return processedInputs;
-  };
-
   const handleFileChange = (filename: string, content: string) => {
     setFiles(prev => ({ ...prev, [filename]: content }));
-  };
-
-  const getFileLanguage = (filename: string) => {
-    if (filename.endsWith('.nr')) return 'noir';
-    if (filename.endsWith('.toml')) return 'ini'; // Monaco uses 'ini' for TOML-like syntax
-    return 'plaintext';
-  };
-
-
-  // Extract inputs from the main function signature
-  const extractInputsFromCode = (code: string): {
-    inputs: Record<string, string>;
-    types: Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }>;
-    order: string[]
-  } => {
-    // Strip single-line comments to prevent ')' in comments from breaking the regex
-    const codeWithoutComments = code.replace(/\/\/.*$/gm, '');
-    const functionRegex = /fn\s+main\s*\([^)]*\)/;
-    const match = codeWithoutComments.match(functionRegex);
-    if (!match) return {
-      inputs: {},
-      types: {},
-      order: []
-    };
-
-    const paramString = match[0];
-    const paramRegex = /(\w+)\s*:\s*(pub\s+)?(\[?\w+(?:\s*;\s*\d+)?\]?)/g;
-    const extractedInputs: Record<string, string> = {};
-    const extractedTypes: Record<string, { type: string; isPublic: boolean; isArray?: boolean; arrayLength?: number }> = {};
-    const extractedOrder: string[] = [];
-
-    let paramMatch: RegExpExecArray | null;
-    while ((paramMatch = paramRegex.exec(paramString)) !== null) {
-      const paramName = paramMatch[1];
-      const isPublic = Boolean(paramMatch[2]);
-      const paramType = paramMatch[3];
-
-      // Check if it's an array type
-      const arrayMatch = paramType.match(/^\[(\w+);\s*(\d+)\]$/);
-      const isArray = Boolean(arrayMatch);
-      const arrayLength = arrayMatch ? parseInt(arrayMatch[2], 10) : undefined;
-      const baseType = arrayMatch ? arrayMatch[1] : paramType;
-
-      // Set default values based on type
-      let defaultValue = '10';
-      if (isArray) {
-        // Create default array based on length and type
-        const defaultElement = baseType === 'bool' ? 1 : 10;
-        const defaultArray = Array.from({ length: arrayLength! }, (_, i) => defaultElement);
-        defaultValue = `[${defaultArray.join(',')}]`;
-      } else if (baseType === 'bool') {
-        defaultValue = '1';
-      } else if (baseType !== 'Field') {
-        defaultValue = '25';
-      }
-
-      extractedInputs[paramName] = defaultValue;
-      extractedTypes[paramName] = {
-        type: paramType,
-        isPublic,
-        isArray,
-        arrayLength
-      };
-      extractedOrder.push(paramName);
-    }
-
-    const hasInputs = Object.keys(extractedInputs).length > 0;
-    return {
-      inputs: hasInputs ? extractedInputs : {},
-      types: hasInputs ? extractedTypes : {},
-      order: hasInputs ? extractedOrder : []
-    };
   };
 
   // Update inputs when main.nr changes
@@ -519,44 +480,63 @@ compiler_version = ">=1.0.0"
     }
   };
 
-  const renderConsoleContent = () => {
-    const formatStepMessage = (message: string) => {
-      return message;
-    };
+  // Props for child components
+  const editorProps = {
+    files,
+    activeFile,
+    setActiveFile,
+    handleFileChange,
+    handleMainFileChange,
+    handleShareClick,
+    isRunning,
+    monacoEditorRef,
+    enableHeatmap,
+    heatmapMetricType,
+    setComplexityReport,
+    isMobile
+  };
 
-    const allMessages = [
-      ...executionSteps.map(step => ({
-        id: `step-${step.message}`,
-        type: step.status === "success" ? "success" : step.status === "error" ? "error" : "info",
-        message: formatStepMessage(step.details ? `${step.message}: ${step.details}` : step.message),
-        timestamp: '',
-        isStep: true
-      })),
-      ...consoleMessages.map(msg => ({
-        ...msg,
-        isStep: false
-      }))
-    ];
+  const consoleProps = {
+    isExpanded: panelState.console,
+    onToggle: () => togglePanel('console'),
+    proveAndVerify,
+    setProveAndVerify,
+    isRunning,
+    handleRun,
+    consoleRef,
+    executionSteps,
+    consoleMessages,
+    isMobile
+  };
 
-    if (allMessages.length === 0) {
-      return (
-        <div className="flex items-center gap-2">
-          <span className="text-foreground select-text">Ready to execute...</span>
-        </div>
-      );
-    }
-
-    return allMessages.map((msg, i) => (
-      <div key={msg.id || i} className="flex items-center gap-2">
-        <span className={`select-text ${msg.type === "success" ? "text-green-400" :
-          msg.type === "error" ? "text-red-400" :
-            msg.type === "info" ? "text-foreground" :
-              "text-foreground"
-          }`}>
-          {msg.message}
-        </span>
-      </div>
-    ));
+  const toolsProps = {
+    rightPanelView,
+    setRightPanelView,
+    rightPanelWidth,
+    rightPanelRef,
+    inputs,
+    parameterOrder,
+    inputValidationErrors,
+    handleInputChange,
+    inputTypes,
+    proofData,
+    handleCopyField,
+    files,
+    activeFile,
+    monacoEditorRef,
+    enableHeatmap,
+    setEnableHeatmap,
+    complexityViewMode,
+    setComplexityViewMode,
+    isComplexityProfiling,
+    setIsComplexityProfiling,
+    complexityProfilerResult,
+    setComplexityProfilerResult,
+    handleComplexityRefresh,
+    addConsoleMessage,
+    clearConsoleMessages,
+    isRunning,
+    isMobile
   };
 
   return (
@@ -566,489 +546,46 @@ compiler_version = ">=1.0.0"
           <h1>Noir Playground - Zero-Knowledge Proof Development Environment</h1>
         </header>
 
-
         {/* Main Content */}
         <section className="flex flex-1 overflow-hidden" aria-label="Development Environment">
-          {/* Desktop Layout - Resizable Panels */}
-          <ResizablePanelGroup direction="horizontal" className="h-full">
-            {/* Left Panel - Code Editor and Console */}
-            <ResizablePanel defaultSize={59} minSize={30}>
-              <ResizablePanelGroup direction="vertical" className="h-full">
-                {/* Code Editor Panel */}
-                <ResizablePanel defaultSize={70} minSize={50}>
-                  <section className="h-full flex flex-col" aria-label="Code Editor">
-                    {/* Code Editor Header with File Tabs */}
-                    <header className="" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
-                      {/* File Tabs */}
-                      <div className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border">
-                        <div className="flex items-stretch h-8 overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
-                          {Object.keys(files).map((filename) => (
-                            <button
-                              key={filename}
-                              onClick={() => setActiveFile(filename)}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${activeFile === filename
-                                ? 'bg-background text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                              style={{ fontSize: '13px' }}
-                            >
-                              {filename}
-                            </button>
-                          ))}
-                        </div>
-                        <div className="flex items-center">
-                          <Button
-                            onClick={handleShareClick}
-                            variant="ghost"
-                            size="sm"
-                            title="Share"
-                            className="flex items-center gap-1 h-7 px-2"
-                          >
-                            <Link2 className="h-4 w-4" />
-                            <span className="select-none" style={{ fontSize: '13px' }}>Share</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </header>
+          {isMobile ? (
+             <MobilePlaygroundLayout
+               editorProps={editorProps}
+               consoleProps={consoleProps}
+               toolsProps={toolsProps}
+             />
+          ) : (
+            /* Desktop Layout - Resizable Panels */
+            <ResizablePanelGroup direction="horizontal" className="h-full">
+              {/* Left Panel - Code Editor and Console */}
+              <ResizablePanel defaultSize={59} minSize={30}>
+                <ResizablePanelGroup direction="vertical" className="h-full">
+                  {/* Code Editor Panel */}
+                  <ResizablePanel defaultSize={70} minSize={50}>
+                    <EditorPanel {...editorProps} />
+                  </ResizablePanel>
 
-                    {/* Code Editor */}
-                    <div className="flex-1">
-                      {activeFile === 'main.nr' ? (
-                        <NoirEditorWithHover
-                          ref={monacoEditorRef}
-                          value={files[activeFile]}
-                          onChange={(content) => {
-                            handleMainFileChange(content);
-                          }}
-                          disabled={isRunning}
-                          language={getFileLanguage(activeFile)}
-                          cargoToml={files["Nargo.toml"]}
-                          enableHeatmap={enableHeatmap}
-                          heatmapMetricType={heatmapMetricType}
-                          onComplexityReport={setComplexityReport}
-                        />
-                      ) : (
-                        <NoirEditor
-                          ref={monacoEditorRef}
-                          value={files[activeFile] || ''}
-                          onChange={(content) => {
-                            handleFileChange(activeFile, content);
-                          }}
-                          disabled={isRunning}
-                          language={getFileLanguage(activeFile)}
-                        />
-                      )}
-                    </div>
-                  </section>
-                </ResizablePanel>
+                  {/* Resizable Handle between Editor and Console */}
+                  <ResizableHandle
+                    className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
+                  />
 
-                {/* Resizable Handle between Editor and Console */}
-                <ResizableHandle
-                  className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
-                />
+                  {/* Console Panel */}
+                  <ConsolePanel {...consoleProps} />
+                </ResizablePanelGroup>
+              </ResizablePanel>
 
-                {/* Console Panel */}
-                <CollapsiblePanel
-                  id="console-panel"
-                  title="Console"
-                  icon={<Terminal className="h-4 w-4 text-primary" />}
-                  isExpanded={panelState.console}
-                  onToggle={() => togglePanel('console')}
-                  defaultSize={30}
-                  minSize={30}
-                  direction="vertical"
-                  headerActions={
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2 select-none" style={{ fontSize: '14px' }}>
-                        <Switch
-                          checked={proveAndVerify}
-                          onCheckedChange={setProveAndVerify}
-                          className="scale-75"
-                        />
-                        <span className="text-foreground">Prove & Verify</span>
-                      </div>
-                      <Button
-                        onClick={handleRun}
-                        disabled={isRunning}
-                        variant="default"
-                        size="sm"
-                        className="h-8 px-6"
-                      >
-                        Run
-                      </Button>
-                    </div>
-                  }
-                >
-                  <div className="h-full flex flex-col" style={{ backgroundColor: '#100E0F' }}>
-                    <div ref={consoleRef} className="p-4 flex-1 overflow-y-auto font-mono space-y-1" style={{ fontSize: '13px' }} role="log" aria-live="polite">
-                      {renderConsoleContent()}
-                    </div>
-                  </div>
-                </CollapsiblePanel>
-              </ResizablePanelGroup>
-            </ResizablePanel>
+              {/* Resizable Handle between Editor Area and Right Panel */}
+              <ResizableHandle
+                className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
+              />
 
-            {/* Resizable Handle between Editor Area and Right Panel */}
-            <ResizableHandle
-              className="bg-border hover:bg-border/50 data-[resize-handle-active]:bg-primary/20 transition-all duration-200 after:opacity-50"
-            />
-
-            {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
-            <ResizablePanel defaultSize={41} minSize={20}>
-              <section className="h-full flex flex-col" aria-label="Right Panel" ref={rightPanelRef}>
-                <header className="flex items-center justify-between px-4 py-2 h-[49px] border-b border-border select-none" style={{ backgroundColor: 'rgb(30, 30, 30)' }}>
-                  <div className="flex items-stretch h-full overflow-x-auto rounded-sm tab-scrollbar" style={{ backgroundColor: '#191819' }}>
-                    {rightPanelTabs.map((tab) => (
-                      <button
-                        key={tab.value}
-                        onClick={() => setRightPanelView(tab.value)}
-                        className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${rightPanelView === tab.value
-                          ? 'bg-background text-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                          }`}
-                        style={{ fontSize: '13px' }}
-                      >
-                        {tab.label}
-                      </button>
-                    ))}
-                  </div>
-
-                </header>
-                <div className="overflow-y-auto flex-1 min-h-0" style={{ backgroundColor: '#100E0F' }}>
-                  {/* Inputs Panel */}
-                  <div className={rightPanelView === 'inputs' ? 'block' : 'hidden'}>
-                    <div className="p-4">
-                      {/* Inputs Section */}
-                      <div className="mb-6">
-                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Inputs</h3>
-                        {parameterOrder.length === 0 ? (
-                          <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                            No inputs
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            {parameterOrder.map((key) => (
-                              <div key={key}>
-                                <label className="font-medium mb-2 block select-none text-muted-foreground" style={{ fontSize: '13px' }}>{key}: {formatParameterType(key)}</label>
-                                <input
-                                  type="text"
-                                  value={inputs[key] || ''}
-                                  onChange={(e) => handleInputChange(key, e.target.value)}
-                                  className={`w-full px-3 py-3 bg-muted/50 rounded focus:outline-none ring-1 transition-colors font-mono ${inputValidationErrors[key]
-                                    ? 'border-red-500/50 focus:ring-red-500/50'
-                                    : 'border-border ring-border'
-                                    }`}
-                                  style={{ fontSize: '13px' }}
-                                  disabled={isRunning}
-                                />
-                                {inputValidationErrors[key] && (
-                                  <p className="text-red-400 mt-1 select-none" style={{ fontSize: '13px' }}>{inputValidationErrors[key]}</p>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Visual Separator */}
-                      <div className="border-t border-border my-4"></div>
-
-                      {/* Outputs Section */}
-                      <div>
-                        <h3 className="font-semibold mb-4 text-foreground select-none" style={{ fontSize: '13px' }}>Outputs</h3>
-                        {proofData ? (
-                          <div className="space-y-4">
-                            {proofData.publicInputs && proofData.publicInputs.length > 0 && (
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
-                                  <button
-                                    onClick={() => handleCopyField(proofData.publicInputs!.join('\n'))}
-                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                                    title="Copy to clipboard"
-                                  >
-                                    <Copy className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                                <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono space-y-1 overflow-x-auto output-scrollbar" style={{ fontSize: '13px' }}>
-                                    {proofData.publicInputs.map((input: string, i: number) => (
-                                      <div key={i}>{input}</div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {proofData.returnValue && (
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
-                                  <button
-                                    onClick={() => handleCopyField(proofData.returnValue!)}
-                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                                    title="Copy to clipboard"
-                                  >
-                                    <Copy className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                                <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
-                                    {proofData.returnValue}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            {proofData.witness && proofData.witness.length > 0 && (
-                              <div>
-                                <div className="flex items-center justify-between mb-2">
-                                  <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
-                                  <button
-                                    onClick={() => handleCopyField(Array.from(proofData.witness!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
-                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                                    title="Copy to clipboard"
-                                  >
-                                    <Copy className="h-3.5 w-3.5" />
-                                  </button>
-                                </div>
-                                <div className="bg-muted/50 border border-border rounded">
-                                  <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
-                                    {Array.from(proofData.witness).map((b: number) => b.toString(16).padStart(2, '0')).join('')}
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-
-                            <div>
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-medium select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
-                                {proofData.proof && proofData.proof.length > 0 && (
-                                  <button
-                                    onClick={() => handleCopyField(Array.from(proofData.proof!).map((b: number) => b.toString(16).padStart(2, '0')).join(''))}
-                                    className="text-muted-foreground hover:text-foreground transition-colors p-1"
-                                    title="Copy to clipboard"
-                                  >
-                                    <Copy className="h-3.5 w-3.5" />
-                                  </button>
-                                )}
-                              </div>
-                              <div className="bg-muted/50 border border-border rounded">
-                                <div className="p-3 font-mono overflow-x-auto whitespace-nowrap output-scrollbar" style={{ fontSize: '13px' }}>
-                                  {proofData.proof && proofData.proof.length > 0
-                                    ? Array.from(proofData.proof).map((b: number) => b.toString(16).padStart(2, '0')).join('')
-                                    : 'No proof generated'}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="space-y-4">
-                            <div>
-                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Public Inputs</h3>
-                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                                No public inputs
-                              </div>
-                            </div>
-                            <div>
-                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Return Value</h3>
-                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                                No return value
-                              </div>
-                            </div>
-                            <div>
-                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Witness</h3>
-                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                                No witness data
-                              </div>
-                            </div>
-                            <div>
-                              <h3 className="font-medium mb-2 select-none text-muted-foreground" style={{ fontSize: '13px' }}>Proof</h3>
-                              <div className="bg-muted/50 border border-border p-3 rounded font-mono text-muted-foreground" style={{ fontSize: '13px' }}>
-                                No proof generated
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Profiler Panel */}
-                  <div className={rightPanelView === 'profiler' ? 'block' : 'hidden'}>
-                    <div className="flex flex-col">
-                      {/* Profiler Controls */}
-                      <div className="px-2 sm:px-4 py-3 border-b border-border bg-transparent">
-                        {/* Single row layout for normal width, 2-row for narrow */}
-                        <div className={`${rightPanelWidth > 320 ? 'flex' : 'hidden'} items-center justify-between`}>
-                          {/* Normal width: Single row layout */}
-                          <Button
-                            onClick={handleComplexityRefresh}
-                            disabled={isComplexityProfiling}
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 flex-shrink-0"
-                          >
-                            <RefreshCw className={`h-3 w-3 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
-                          </Button>
-
-                          <div className="flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
-                            <button
-                              onClick={() => setComplexityViewMode('metrics')}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
-                                ? 'text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                              style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                            >
-                              Metrics
-                            </button>
-                            <button
-                              onClick={() => setComplexityViewMode('insights')}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'insights'
-                                ? 'text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                              style={{ fontSize: '13px', ...(complexityViewMode === 'insights' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                            >
-                              Insights
-                            </button>
-                            <button
-                              onClick={() => setComplexityViewMode('flamegraph')}
-                              className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
-                                ? 'text-foreground shadow-sm'
-                                : 'text-muted-foreground hover:text-foreground'
-                                }`}
-                              style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                            >
-                              Flamegraph
-                            </button>
-                          </div>
-
-                          <div className="flex items-center gap-2 select-none flex-shrink-0" style={{ fontSize: '13px' }}>
-                            <Switch
-                              checked={enableHeatmap}
-                              onCheckedChange={setEnableHeatmap}
-                              className="scale-75"
-                            />
-                            <span className="text-foreground">Heatmap</span>
-                          </div>
-                        </div>
-
-                        {/* Narrow width: Two row layout */}
-                        <div className={`${rightPanelWidth <= 320 ? 'block' : 'hidden'} space-y-2`}>
-                          <div className="flex items-center justify-between">
-                            <Button
-                              onClick={handleComplexityRefresh}
-                              disabled={isComplexityProfiling}
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2"
-                            >
-                              <RefreshCw className={`h-3 w-3 mr-1 ${isComplexityProfiling ? 'animate-spin' : ''}`} />
-                              <span className="text-xs">Refresh</span>
-                            </Button>
-
-                            <div className="flex items-center gap-2 select-none" style={{ fontSize: '13px' }}>
-                              <Switch
-                                checked={enableHeatmap}
-                                onCheckedChange={setEnableHeatmap}
-                                className="scale-75"
-                              />
-                              <span className="text-foreground">Heatmap</span>
-                            </div>
-                          </div>
-
-                          <div className="flex justify-center">
-                            <div className="flex items-stretch h-8 rounded-sm overflow-hidden" style={{ backgroundColor: '#191819' }}>
-                              <button
-                                onClick={() => setComplexityViewMode('metrics')}
-                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'metrics'
-                                  ? 'text-foreground shadow-sm'
-                                  : 'text-muted-foreground hover:text-foreground'
-                                  }`}
-                                style={{ fontSize: '13px', ...(complexityViewMode === 'metrics' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                              >
-                                Metrics
-                              </button>
-                              <button
-                                onClick={() => setComplexityViewMode('insights')}
-                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'insights'
-                                  ? 'text-foreground shadow-sm'
-                                  : 'text-muted-foreground hover:text-foreground'
-                                  }`}
-                                style={{ fontSize: '13px', ...(complexityViewMode === 'insights' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                              >
-                                Insights
-                              </button>
-                              <button
-                                onClick={() => setComplexityViewMode('flamegraph')}
-                                className={`px-4 h-full flex items-center justify-center whitespace-nowrap rounded-sm transition-all duration-200 ${complexityViewMode === 'flamegraph'
-                                  ? 'text-foreground shadow-sm'
-                                  : 'text-muted-foreground hover:text-foreground'
-                                  }`}
-                                style={{ fontSize: '13px', ...(complexityViewMode === 'flamegraph' ? { backgroundColor: '#1e1e1e' } : {}) }}
-                              >
-                                Flamegraph
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Complexity Analysis Panel */}
-                      <div>
-                        <CombinedComplexityPanel
-                          sourceCode={files[activeFile] || ''}
-                          cargoToml={files['Nargo.toml'] || ''}
-                          className=""
-                          enableHeatmap={enableHeatmap}
-                          viewMode={complexityViewMode}
-                          onViewModeChange={setComplexityViewMode}
-                          isProfiling={isComplexityProfiling}
-                          onProfilingStart={() => setIsComplexityProfiling(true)}
-                          onProfilingComplete={(result) => {
-                            setComplexityProfilerResult(result);
-                            setIsComplexityProfiling(false);
-                          }}
-                          onProfilingError={() => setIsComplexityProfiling(false)}
-                          profilerResult={complexityProfilerResult}
-                          onLineClick={(lineNumber) => {
-                            if (monacoEditorRef.current) {
-                              monacoEditorRef.current.setPosition({ lineNumber, column: 1 });
-                              monacoEditorRef.current.focus();
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Benchmark Panel */}
-                  <div className={rightPanelView === 'benchmark' ? 'block' : 'hidden'}>
-                    <BenchmarkPanel
-                      sourceCode={files["main.nr"]}
-                      inputs={inputs}
-                      cargoToml={files["Nargo.toml"]}
-                      onConsoleMessage={addConsoleMessage}
-                      onClearConsole={clearConsoleMessages}
-                    />
-                  </div>
-
-                  {/* Inspector Panel */}
-                  <div className={rightPanelView === 'inspector' ? 'block h-full flex flex-col' : 'hidden'}>
-                    <DebugControlPanel
-                      sourceCode={files["main.nr"]}
-                      cargoToml={files["Nargo.toml"]}
-                      inputs={inputs}
-                    />
-                    <InspectorPanel className="flex-1" />
-                  </div>
-
-                </div>
-              </section>
-            </ResizablePanel>
-          </ResizablePanelGroup>
+              {/* Right Panel - Inputs/Outputs and Complexity Analysis */}
+              <ResizablePanel defaultSize={41} minSize={20}>
+                <ToolsPanel {...toolsProps} />
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          )}
         </section>
 
         {/* Footer */}
